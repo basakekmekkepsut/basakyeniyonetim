@@ -1,0 +1,144 @@
+import { useState } from 'react'
+import { ChevronDown, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useOkullar, useOkulFirmalari, okulEkle, okulGuncelle, okulSil } from './data'
+import OkulFormModal from './OkulFormModal'
+import BosDurum from '../../shared/BosDurum'
+import ConfirmModal from '../../shared/ConfirmModal'
+import { useToast } from '../../shared/Toast'
+import type { OkulSchool, OkulSchoolFormVerisi } from '../../lib/types'
+
+export default function OkullarPage() {
+  const { okullar, yukleniyor, hata } = useOkullar()
+  const { firmalar } = useOkulFirmalari()
+  const toast = useToast()
+  const [acikId, setAcikId] = useState<string | null>(null)
+  const [formAcik, setFormAcik] = useState(false)
+  const [duzenlenen, setDuzenlenen] = useState<OkulSchool | undefined>()
+  const [silinecek, setSilinecek] = useState<OkulSchool | undefined>()
+
+  async function handleKaydet(veri: OkulSchoolFormVerisi) {
+    if (duzenlenen) {
+      await okulGuncelle(duzenlenen.id, veri)
+      toast.basari('Okul güncellendi.')
+    } else {
+      await okulEkle(veri)
+      toast.basari('Okul eklendi.')
+    }
+  }
+
+  async function handleSil() {
+    if (!silinecek) return
+    try {
+      await okulSil(silinecek.id)
+      toast.basari('Okul silindi.')
+    } catch (err) {
+      toast.hata(err instanceof Error ? err.message : 'Silinemedi.')
+    } finally {
+      setSilinecek(undefined)
+    }
+  }
+
+  if (hata) return <p className="rounded-lg bg-bakery-danger/10 px-4 py-3 text-sm text-bakery-danger">{hata}</p>
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-bakery-coffee-900">Okullar</h2>
+        <button
+          onClick={() => {
+            setDuzenlenen(undefined)
+            setFormAcik(true)
+          }}
+          className="flex items-center gap-1.5 rounded-lg bg-bakery-amber-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-bakery-amber-500"
+        >
+          <Plus size={16} />
+          Yeni Okul
+        </button>
+      </div>
+
+      {yukleniyor ? (
+        <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+      ) : okullar.length === 0 ? (
+        <BosDurum baslik="Henüz okul eklenmedi" aciklama="İlk okulu eklemek için yukarıdaki butonu kullanın." />
+      ) : (
+        <div className="space-y-2">
+          {okullar.map((o) => {
+            const firma = firmalar.find((f) => f.id === o.firmaId)
+            const acik = acikId === o.id
+            return (
+              <div key={o.id} className="rounded-xl bg-white shadow-sm shadow-bakery-coffee-900/5">
+                <button
+                  onClick={() => setAcikId(acik ? null : o.id)}
+                  className="flex w-full items-center justify-between px-4 py-3 text-left"
+                >
+                  <div>
+                    <p className="font-medium text-bakery-coffee-900">{o.ad}</p>
+                    <p className="text-xs text-bakery-coffee-500">
+                      {firma ? firma.ad : 'Bağımsız'} · {o.lines.length} hat
+                    </p>
+                  </div>
+                  <ChevronDown size={18} className={`text-bakery-coffee-400 transition ${acik ? 'rotate-180' : ''}`} />
+                </button>
+
+                {acik && (
+                  <div className="border-t border-bakery-cream-100 px-4 py-3">
+                    {o.lines.length === 0 ? (
+                      <p className="text-sm text-bakery-coffee-400">Hat tanımlı değil.</p>
+                    ) : (
+                      <ul className="mb-3 space-y-1 text-sm text-bakery-coffee-600">
+                        {o.lines.map((l) => (
+                          <li key={l.id} className="flex items-center justify-between">
+                            <span>
+                              {l.urunAdi} — {l.adet} adet/gün {!l.aktif && <em className="text-bakery-coffee-400">(pasif)</em>}
+                            </span>
+                            <span className="text-xs text-bakery-coffee-400">
+                              {l.faturaHedefiId ? `→ ${firmalar.find((f) => f.id === l.faturaHedefiId)?.ad ?? '—'}` : '→ Doğrudan'}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="flex justify-end gap-1">
+                      <button
+                        onClick={() => {
+                          setDuzenlenen(o)
+                          setFormAcik(true)
+                        }}
+                        className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
+                        aria-label="Düzenle"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={() => setSilinecek(o)}
+                        className="rounded-lg p-1.5 text-bakery-danger hover:bg-bakery-danger/10"
+                        aria-label="Sil"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {formAcik && (
+        <OkulFormModal mevcut={duzenlenen} firmalar={firmalar} onKaydet={handleKaydet} onKapat={() => setFormAcik(false)} />
+      )}
+
+      {silinecek && (
+        <ConfirmModal
+          baslik="Okulu sil"
+          mesaj={`"${silinecek.ad}" okulunu silmek istediğinize emin misiniz?`}
+          onayEtiketi="Sil"
+          tehlikeli
+          onOnayla={handleSil}
+          onVazgec={() => setSilinecek(undefined)}
+        />
+      )}
+    </div>
+  )
+}

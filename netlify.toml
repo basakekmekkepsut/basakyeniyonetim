@@ -1,0 +1,14 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# React Router (client-side routing) için SPA fallback — statik dosyalar (portal.html,
+# sw.js, workbox-*.js, ikonlar vb.) zaten var oldukları için bu kuraldan önce
+# doğrudan sunulur; yalnızca eşleşmeyen yollar index.html'e düşer.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -1,0 +1,54 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "siparis_orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "silindi", "order": "ASCENDING" },
+        { "fieldPath": "teslimatTarihi", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "siparis_orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "silindi", "order": "ASCENDING" },
+        { "fieldPath": "olusturanUid", "order": "ASCENDING" },
+        { "fieldPath": "teslimatTarihi", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "veresiye_kayitlar",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "musteriId", "order": "ASCENDING" },
+        { "fieldPath": "tarih", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "veresiye_odemeler",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "musteriId", "order": "ASCENDING" },
+        { "fieldPath": "tarih", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "okul_orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tarih", "order": "ASCENDING" },
+        { "fieldPath": "lineId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "okul_orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tarih", "order": "ASCENDING" },
+        { "fieldPath": "kapandiMi", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

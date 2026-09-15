@@ -1,0 +1,232 @@
+import { useState, type FormEvent } from 'react'
+import { X } from 'lucide-react'
+import type { KullaniciProfili, Rol } from '../../../lib/types'
+import { BOS_PROFIL, type KullaniciSatiri } from './data'
+
+interface Props {
+  mevcut?: KullaniciSatiri
+  onKaydet: (uid: string, profil: KullaniciProfili) => Promise<void>
+  onKapat: () => void
+}
+
+export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props) {
+  const [uid, setUid] = useState(mevcut?.uid ?? '')
+  const [profil, setProfil] = useState<KullaniciProfili>(mevcut ?? BOS_PROFIL)
+  const [gonderiliyor, setGonderiliyor] = useState(false)
+  const [hata, setHata] = useState<string | null>(null)
+
+  function alanGuncelle<K extends keyof KullaniciProfili>(alan: K, deger: KullaniciProfili[K]) {
+    setProfil((p) => ({ ...p, [alan]: deger }))
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!mevcut && !uid.trim()) {
+      setHata('Firebase Authentication\'da oluşturduğunuz kullanıcının UID değerini girin.')
+      return
+    }
+    if (!profil.ad.trim()) {
+      setHata('Ad zorunludur.')
+      return
+    }
+    setHata(null)
+    setGonderiliyor(true)
+    try {
+      await onKaydet(mevcut ? mevcut.uid : uid.trim(), profil)
+      onKapat()
+    } catch (err) {
+      setHata(err instanceof Error ? err.message : 'Kaydedilemedi.')
+    } finally {
+      setGonderiliyor(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:items-center">
+      <form
+        onSubmit={handleSubmit}
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl md:rounded-2xl"
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-bakery-coffee-900">
+            {mevcut ? 'Kullanıcıyı Düzenle' : 'Yeni Kullanıcı Profili'}
+          </h3>
+          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-coffee-400 hover:bg-bakery-cream-100">
+            <X size={20} />
+          </button>
+        </div>
+
+        {!mevcut && (
+          <p className="mb-4 rounded-lg bg-bakery-cream-50 px-3 py-2 text-xs text-bakery-coffee-600">
+            Önce Firebase Console → Authentication'dan e-posta/şifre ile kullanıcıyı oluşturun, oradaki
+            UID'yi aşağıya yapıştırın. Bu form yalnızca yetki profilini (bu <code>users</code> dokümanını)
+            oluşturur.
+          </p>
+        )}
+
+        <div className="space-y-4">
+          {!mevcut && (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Firebase Auth UID *</label>
+              <input
+                value={uid}
+                onChange={(e) => setUid(e.target.value)}
+                className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 font-mono text-sm outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
+              />
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Ad Soyad *</label>
+              <input
+                type="text"
+                value={profil.ad}
+                onChange={(e) => alanGuncelle('ad', e.target.value)}
+                required
+                className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">E-posta</label>
+              <input
+                type="email"
+                value={profil.eposta}
+                onChange={(e) => alanGuncelle('eposta', e.target.value)}
+                className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Rol</label>
+            <select
+              value={profil.rol}
+              onChange={(e) => alanGuncelle('rol', e.target.value as Rol)}
+              className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 outline-none focus:border-bakery-amber-500"
+            >
+              <option value="personel">Personel</option>
+              <option value="admin">Yönetici</option>
+            </select>
+          </div>
+
+          {profil.rol === 'personel' && (
+            <div className="space-y-3 rounded-lg bg-bakery-cream-50 p-3">
+              <div>
+                <p className="mb-1.5 text-sm font-medium text-bakery-coffee-800">Görebileceği modüller</p>
+                <div className="flex flex-wrap gap-2">
+                  {(['siparis', 'veresiye', 'okul'] as const).map((m) => (
+                    <label key={m} className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={profil.modules[m]}
+                        onChange={(e) => alanGuncelle('modules', { ...profil.modules, [m]: e.target.checked })}
+                      />
+                      {m === 'siparis' ? 'Sipariş' : m === 'veresiye' ? 'Veresiye' : 'Okul'}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-1.5 text-sm font-medium text-bakery-coffee-800">Sipariş yetkileri</p>
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      ['orderAdd', 'Sipariş ekleyebilir'],
+                      ['orderViewAll', 'Tüm siparişleri görebilir'],
+                      ['products', 'Ürünleri yönetebilir']
+                    ] as const
+                  ).map(([key, etiket]) => (
+                    <label key={key} className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={profil.permissions.siparis[key]}
+                        onChange={(e) =>
+                          alanGuncelle('permissions', {
+                            ...profil.permissions,
+                            siparis: { ...profil.permissions.siparis, [key]: e.target.checked }
+                          })
+                        }
+                      />
+                      {etiket}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-1.5 text-sm font-medium text-bakery-coffee-800">Veresiye görünürlüğü</p>
+                <label className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={profil.permissions.veresiye.gorebilecegiMusteriler === 'all'}
+                    onChange={(e) =>
+                      alanGuncelle('permissions', {
+                        ...profil.permissions,
+                        veresiye: { gorebilecegiMusteriler: e.target.checked ? 'all' : [] }
+                      })
+                    }
+                  />
+                  Tüm müşterileri görebilir
+                </label>
+                <p className="mt-1 text-xs text-bakery-coffee-500">
+                  Kapalıysa şimdilik hiçbir müşteriyi göremez — kişi bazlı atama Veresiye modülü ile birlikte eklenecek.
+                </p>
+              </div>
+
+              <div>
+                <p className="mb-1.5 text-sm font-medium text-bakery-coffee-800">Okul yetkileri</p>
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      ['siparis', 'Sipariş girebilir'],
+                      ['okullar', 'Okulları yönetebilir'],
+                      ['urunler', 'Ürünleri yönetebilir'],
+                      ['ekstre', 'Ekstre görebilir'],
+                      ['mesaj', 'Mesaj gönderebilir']
+                    ] as const
+                  ).map(([key, etiket]) => (
+                    <label key={key} className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={profil.permissions.okul[key]}
+                        onChange={(e) =>
+                          alanGuncelle('permissions', {
+                            ...profil.permissions,
+                            okul: { ...profil.permissions.okul, [key]: e.target.checked }
+                          })
+                        }
+                      />
+                      {etiket}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <label className="flex items-center gap-2 text-sm font-medium text-bakery-coffee-800">
+            <input type="checkbox" checked={profil.aktif} onChange={(e) => alanGuncelle('aktif', e.target.checked)} />
+            Aktif (giriş yapabilir)
+          </label>
+
+          {hata && <p className="rounded-lg bg-bakery-danger/10 px-3 py-2 text-sm text-bakery-danger">{hata}</p>}
+        </div>
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-coffee-600 hover:bg-bakery-cream-100">
+            Vazgeç
+          </button>
+          <button
+            type="submit"
+            disabled={gonderiliyor}
+            className="rounded-lg bg-bakery-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-bakery-amber-500 disabled:opacity-60"
+          >
+            {gonderiliyor ? 'Kaydediliyor…' : 'Kaydet'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}

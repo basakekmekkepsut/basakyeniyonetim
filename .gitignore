@@ -1,0 +1,20 @@
+node_modules
+dist
+dist-ssr
+*.tsbuildinfo
+.env
+.env.local
+*.local
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebase
+functions/lib
+scripts/service-account.json
+scripts/*.json
+
+# Local Netlify folder
+.netlify

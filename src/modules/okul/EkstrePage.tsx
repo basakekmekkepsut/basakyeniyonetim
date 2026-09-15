@@ -1,0 +1,269 @@
+import { useMemo, useState } from 'react'
+import { ChevronDown, Lock } from 'lucide-react'
+import { useOkullar } from './data'
+import { useUrunler } from '../urunler/data'
+import { useAcikOkulOrders, useOkulTeslimatlar, gunuKapat } from './orderData'
+import { useOkulPayments, okulOdemeEkle, okulOdemeGuncelle, okulOdemeSil } from './paymentData'
+import OkulOdemeFormModal from './OkulOdemeFormModal'
+import ConfirmModal from '../../shared/ConfirmModal'
+import BosDurum from '../../shared/BosDurum'
+import TutarGoster from '../../shared/TutarGoster'
+import { useToast } from '../../shared/Toast'
+import { isAdmin, useSession } from '../../lib/session'
+import type { OkulPayment, OkulPaymentFormVerisi } from '../../lib/types'
+
+export default function EkstrePage() {
+  const { okullar } = useOkullar()
+  const { urunler } = useUrunler()
+  const { orders: acikOrders } = useAcikOkulOrders()
+  const { teslimatlar } = useOkulTeslimatlar()
+  const { payments } = useOkulPayments()
+  const session = useSession()
+  const toast = useToast()
+
+  const [acikTarih, setAcikTarih] = useState<string | null>(null)
+  const [acikOkulId, setAcikOkulId] = useState<string | null>(null)
+  const [kapatilacakTarih, setKapatilacakTarih] = useState<string | null>(null)
+  const [kapatiliyor, setKapatiliyor] = useState(false)
+  const [odemeFormOkul, setOdemeFormOkul] = useState<{ id: string; ad: string } | undefined>()
+  const [duzenlenenOdeme, setDuzenlenenOdeme] = useState<OkulPayment | undefined>()
+  const [silinecekOdeme, setSilinecekOdeme] = useState<OkulPayment | undefined>()
+
+  const beklemedeGunler = useMemo(() => {
+    const map = new Map<string, { tarih: string; tutar: number; satirlar: typeof acikOrders }>()
+    for (const o of acikOrders) {
+      const urun = urunler.find((u) => u.id === o.productId)
+      const tutar = o.adet * (urun?.fiyat ?? 0)
+      const g = map.get(o.tarih) ?? { tarih: o.tarih, tutar: 0, satirlar: [] }
+      g.tutar += tutar
+      g.satirlar.push(o)
+      map.set(o.tarih, g)
+    }
+    return [...map.values()].sort((a, b) => a.tarih.localeCompare(b.tarih))
+  }, [acikOrders, urunler])
+
+  const okulBakiyeleri = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const t of teslimatlar) {
+      map.set(t.schoolId, (map.get(t.schoolId) ?? 0) + t.tutar)
+    }
+    for (const p of payments) {
+      if (p.hedefTipi !== 'okul') continue
+      map.set(p.hedefId, (map.get(p.hedefId) ?? 0) - p.tutar)
+    }
+    return map
+  }, [teslimatlar, payments])
+
+  if (session.status !== 'signed-in') return null
+  const admin = isAdmin(session.profile)
+  const kullanici = { uid: session.user.uid }
+
+  async function handleKapat(tarih: string) {
+    setKapatiliyor(true)
+    try {
+      const sayisi = await gunuKapat(tarih, okullar, urunler, kullanici)
+      toast.basari(`${tarih} kapatıldı — ${sayisi} satır kesinleşti.`)
+    } catch (err) {
+      toast.hata(err instanceof Error ? err.message : 'Kapatılamadı.')
+    } finally {
+      setKapatiliyor(false)
+      setKapatilacakTarih(null)
+    }
+  }
+
+  async function handleOdemeKaydet(veri: OkulPaymentFormVerisi) {
+    if (duzenlenenOdeme) {
+      await okulOdemeGuncelle(duzenlenenOdeme.id, veri)
+      toast.basari('Ödeme güncellendi.')
+    } else {
+      await okulOdemeEkle(veri, kullanici)
+      toast.basari('Ödeme eklendi.')
+    }
+  }
+
+  async function handleOdemeSil() {
+    if (!silinecekOdeme) return
+    try {
+      await okulOdemeSil(silinecekOdeme.id)
+      toast.basari('Ödeme silindi.')
+    } catch (err) {
+      toast.hata(err instanceof Error ? err.message : 'Silinemedi.')
+    } finally {
+      setSilinecekOdeme(undefined)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="mb-3 text-lg font-semibold text-bakery-coffee-900">Beklemede</h2>
+        {beklemedeGunler.length === 0 ? (
+          <BosDurum baslik="Beklemede gün yok" aciklama="Tüm siparişler kapatılmış." />
+        ) : (
+          <div className="space-y-2">
+            {beklemedeGunler.map((g) => {
+              const acik = acikTarih === g.tarih
+              return (
+                <div key={g.tarih} className="rounded-xl bg-white shadow-sm shadow-bakery-coffee-900/5">
+                  <button
+                    onClick={() => setAcikTarih(acik ? null : g.tarih)}
+                    className="flex w-full items-center justify-between px-4 py-3 text-left"
+                  >
+                    <div>
+                      <p className="font-medium text-bakery-coffee-900">{g.tarih}</p>
+                      <p className="text-xs text-bakery-coffee-500">{g.satirlar.length} satır — tahmini tutar</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-semibold text-bakery-amber-600">
+                        <TutarGoster tutar={g.tutar} />
+                      </span>
+                      <ChevronDown size={18} className={`text-bakery-coffee-400 transition ${acik ? 'rotate-180' : ''}`} />
+                    </div>
+                  </button>
+                  {acik && (
+                    <div className="border-t border-bakery-cream-100 px-4 py-3">
+                      <ul className="mb-3 space-y-1 text-sm text-bakery-coffee-600">
+                        {g.satirlar.map((s) => {
+                          const okul = okullar.find((o) => o.id === s.schoolId)
+                          const urun = urunler.find((u) => u.id === s.productId)
+                          return (
+                            <li key={s.id} className="flex justify-between">
+                              <span>
+                                {okul?.ad ?? '—'} — {urun?.ad ?? '—'}
+                              </span>
+                              <span>{s.adet} adet</span>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                      {admin && (
+                        <button
+                          onClick={() => setKapatilacakTarih(g.tarih)}
+                          className="flex items-center gap-1.5 rounded-lg bg-bakery-coffee-700 px-3.5 py-2 text-sm font-medium text-white hover:bg-bakery-coffee-600"
+                        >
+                          <Lock size={14} />
+                          Günü Kapat
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h2 className="mb-3 text-lg font-semibold text-bakery-coffee-900">Kesinleşmiş Bakiyeler</h2>
+        {okullar.length === 0 ? (
+          <BosDurum baslik="Henüz okul yok" />
+        ) : (
+          <div className="space-y-2">
+            {okullar.map((okul) => {
+              const bakiye = okulBakiyeleri.get(okul.id) ?? 0
+              const acik = acikOkulId === okul.id
+              const okulTeslimatlari = teslimatlar.filter((t) => t.schoolId === okul.id)
+              const okulOdemeleri = payments.filter((p) => p.hedefTipi === 'okul' && p.hedefId === okul.id)
+
+              return (
+                <div key={okul.id} className="rounded-xl bg-white shadow-sm shadow-bakery-coffee-900/5">
+                  <button
+                    onClick={() => setAcikOkulId(acik ? null : okul.id)}
+                    className="flex w-full items-center justify-between px-4 py-3 text-left"
+                  >
+                    <p className="font-medium text-bakery-coffee-900">{okul.ad}</p>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-sm font-semibold ${bakiye > 0 ? 'text-bakery-danger' : 'text-bakery-success'}`}>
+                        <TutarGoster tutar={bakiye} />
+                      </span>
+                      <ChevronDown size={18} className={`text-bakery-coffee-400 transition ${acik ? 'rotate-180' : ''}`} />
+                    </div>
+                  </button>
+                  {acik && (
+                    <div className="border-t border-bakery-cream-100 px-4 py-3">
+                      <button
+                        onClick={() => setOdemeFormOkul({ id: okul.id, ad: okul.ad })}
+                        className="mb-3 rounded-lg bg-bakery-amber-500/10 px-3 py-1.5 text-xs font-medium text-bakery-amber-600 hover:bg-bakery-amber-500/20"
+                      >
+                        + Ödeme Ekle
+                      </button>
+                      {okulTeslimatlari.length === 0 && okulOdemeleri.length === 0 ? (
+                        <p className="text-sm text-bakery-coffee-400">Henüz kesinleşmiş hareket yok.</p>
+                      ) : (
+                        <ul className="space-y-1 text-sm">
+                          {okulTeslimatlari.map((t) => (
+                            <li key={t.id} className="flex justify-between text-bakery-coffee-600">
+                              <span>
+                                {t.tarih} — {t.adet}× {t.urunAdi}
+                              </span>
+                              <span className="text-bakery-danger">
+                                <TutarGoster tutar={t.tutar} />
+                              </span>
+                            </li>
+                          ))}
+                          {okulOdemeleri.map((p) => (
+                            <li key={p.id} className="flex items-center justify-between text-bakery-coffee-600">
+                              <span>
+                                {p.tarih} — Ödeme {p.not && `(${p.not})`}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-bakery-success">
+                                  <TutarGoster tutar={p.tutar} />
+                                </span>
+                                <button onClick={() => setDuzenlenenOdeme(p)} className="text-bakery-coffee-400 hover:text-bakery-coffee-600">
+                                  Düzenle
+                                </button>
+                                <button onClick={() => setSilinecekOdeme(p)} className="text-bakery-danger hover:text-red-700">
+                                  Sil
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {kapatilacakTarih && (
+        <ConfirmModal
+          baslik="Günü kapat"
+          mesaj={`${kapatilacakTarih} tarihini kapatmak istediğinize emin misiniz? Kapatma sonrası bu tarihteki siparişler değiştirilemez ve tutar kesinleşir.`}
+          onayEtiketi={kapatiliyor ? 'Kapatılıyor…' : 'Kapat'}
+          onOnayla={() => handleKapat(kapatilacakTarih)}
+          onVazgec={() => setKapatilacakTarih(null)}
+        />
+      )}
+
+      {(odemeFormOkul || duzenlenenOdeme) && (
+        <OkulOdemeFormModal
+          hedefTipi="okul"
+          hedefId={duzenlenenOdeme?.hedefId ?? odemeFormOkul!.id}
+          hedefAdi={duzenlenenOdeme ? (okullar.find((o) => o.id === duzenlenenOdeme.hedefId)?.ad ?? '') : odemeFormOkul!.ad}
+          mevcut={duzenlenenOdeme}
+          onKaydet={handleOdemeKaydet}
+          onKapat={() => {
+            setOdemeFormOkul(undefined)
+            setDuzenlenenOdeme(undefined)
+          }}
+        />
+      )}
+      {silinecekOdeme && (
+        <ConfirmModal
+          baslik="Ödemeyi sil"
+          mesaj="Bu ödemeyi silmek istediğinize emin misiniz?"
+          onayEtiketi="Sil"
+          tehlikeli
+          onOnayla={handleOdemeSil}
+          onVazgec={() => setSilinecekOdeme(undefined)}
+        />
+      )}
+    </div>
+  )
+}

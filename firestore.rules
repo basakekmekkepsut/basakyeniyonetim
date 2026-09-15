@@ -1,0 +1,171 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return isSignedIn() && userDoc().data.rol == 'admin';
+    }
+
+    function hasModule(modul) {
+      return isAdmin() || (isSignedIn() && userDoc().data.modules[modul] == true);
+    }
+
+    function siparisIzni(izin) {
+      return isAdmin() || (isSignedIn() && userDoc().data.permissions.siparis[izin] == true);
+    }
+
+    function okulIzni(izin) {
+      return isAdmin() || (isSignedIn() && userDoc().data.permissions.okul[izin] == true);
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      // Personel kendi rol/izin alanlarını yükseltemesin diye kullanıcı dokümanını
+      // yalnızca admin yazabilir (FIRESTORE_SCHEMA.md §1).
+      allow write: if isAdmin();
+    }
+
+    match /musteriler/{id} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin()
+        && request.resource.data.ad is string && request.resource.data.ad.size() > 0
+        && request.resource.data.moduller is list
+        && request.resource.data.aktif is bool
+        && request.resource.data.acilisBakiyesi is number
+        && request.resource.data.veresiyeBakiye is number
+      // Sipariş ekranında serbest metinle girilen isimler için: personel de minimal,
+      // borç/özel fiyat/un hesabı taşımayan bir "geçici müşteri" profili oluşturabilir.
+      || (hasModule('siparis')
+          && request.resource.data.ad is string && request.resource.data.ad.size() > 0
+          && request.resource.data.gecici == true
+          && request.resource.data.moduller == ['siparis']
+          && request.resource.data.acilisBakiyesi == 0
+          && request.resource.data.veresiyeBakiye == 0);
+      allow update: if isAdmin()
+        && request.resource.data.ad is string && request.resource.data.ad.size() > 0
+        && request.resource.data.moduller is list
+        && request.resource.data.aktif is bool
+        && request.resource.data.acilisBakiyesi is number
+        && request.resource.data.veresiyeBakiye is number
+      // Sipariş/Veresiye akışları müşterinin SADECE bakiyesini/un hesabı birikimini
+      // (transaction ile) güncelleyebilir — profil alanlarını değiştiremez (FIRESTORE_SCHEMA.md §7).
+      // Un Hesabı artık sipariş üzerinden de tetiklenebildiği için (ekmek ücretsiz
+      // sayılıp un bakiyesine eklenir) her iki modül de 'unHesabi' alanına yazabilir.
+      // 'gecici' ise "Kalıcı Müşteri Yap" önerisi kabul edildiğinde personel tarafından çevrilir.
+      || ((hasModule('veresiye') || hasModule('siparis'))
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['veresiyeBakiye', 'unHesabi', 'gecici']));
+      allow delete: if isAdmin();
+    }
+
+    match /products/{id} {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin()
+        && request.resource.data.ad is string && request.resource.data.ad.size() > 0
+        && request.resource.data.fiyat is number && request.resource.data.fiyat >= 0
+        && request.resource.data.aktif is bool
+        && request.resource.data.modules is list;
+      allow delete: if isAdmin();
+    }
+
+    match /settings/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /siparis_orders/{id} {
+      allow read: if isSignedIn()
+        && (isAdmin() || siparisIzni('orderViewAll') || resource.data.olusturanUid == request.auth.uid);
+      allow create: if hasModule('siparis') && siparisIzni('orderAdd')
+        && request.resource.data.olusturanUid == request.auth.uid
+        && request.resource.data.items is list
+        && request.resource.data.toplamTutar is number && request.resource.data.toplamTutar >= 0;
+      allow update: if isAdmin() || (hasModule('siparis')
+        && (siparisIzni('orderViewAll') || resource.data.olusturanUid == request.auth.uid));
+      allow delete: if isAdmin();
+    }
+
+    match /siparis_recurring_templates/{id} {
+      allow read: if hasModule('siparis');
+      allow write: if hasModule('siparis') && siparisIzni('orderAdd');
+    }
+
+    match /veresiye_kayitlar/{id} {
+      allow read: if isSignedIn();
+      // Sipariş modülü (otomatik yansıma) ve Veresiye modülü (manuel/un hesabı
+      // girişleri) bu koleksiyona yazar — her ikisi de ilgili modül yetkisini gerektirir.
+      allow create, update, delete: if isAdmin() || hasModule('siparis') || hasModule('veresiye');
+    }
+
+    match /veresiye_odemeler/{id} {
+      allow read: if isSignedIn();
+      allow create, update: if hasModule('veresiye') && request.resource.data.tutar is number && request.resource.data.tutar > 0;
+      allow delete: if hasModule('veresiye');
+    }
+
+    match /veresiye_sablonlar/{id} {
+      allow read: if hasModule('veresiye');
+      allow write: if hasModule('veresiye');
+    }
+
+    match /veresiye_unGirisleri/{id} {
+      allow read: if hasModule('veresiye');
+      allow create: if hasModule('veresiye') && request.resource.data.cuvalSayisi is number && request.resource.data.cuvalSayisi > 0;
+      allow update, delete: if isAdmin();
+    }
+
+    match /okul_schools/{id} {
+      allow read: if hasModule('okul');
+      allow write: if okulIzni('okullar');
+    }
+
+    match /okul_firmalar/{id} {
+      allow read: if hasModule('okul');
+      allow write: if okulIzni('okullar');
+    }
+
+    match /okul_orders/{id} {
+      allow read: if hasModule('okul');
+      allow create: if okulIzni('siparis') && request.resource.data.kapandiMi == false;
+      // kapandiMi'yi true'ya çevirmek (gün sonu kapanışı) yalnızca admin'in
+      // closeDay() akışı üzerinden olur — personel sadece açık satırları düzenler.
+      allow update: if isAdmin()
+        || (okulIzni('siparis') && resource.data.kapandiMi == false && request.resource.data.kapandiMi == false);
+      allow delete: if isAdmin() || (okulIzni('siparis') && resource.data.kapandiMi == false);
+    }
+
+    match /okul_teslimatlar/{id} {
+      allow read: if hasModule('okul');
+      // Donmuş mali kayıt — yalnızca closeDay() (admin) yazar, düzenleme/silme yok.
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    match /okul_kapanislar/{tarih} {
+      allow read: if hasModule('okul');
+      allow write: if isAdmin();
+    }
+
+    match /okul_payments/{id} {
+      allow read: if hasModule('okul');
+      allow create, update: if (okulIzni('okullar') || okulIzni('ekstre'))
+        && request.resource.data.tutar is number && request.resource.data.tutar > 0;
+      allow delete: if okulIzni('okullar') || okulIzni('ekstre');
+    }
+
+    // Faz 5'te kalan koleksiyonlara (activity_log vb.) FIRESTORE_SCHEMA.md §10'daki
+    // ilkelere göre özel kurallar eklenecek. O ana kadar güvenli varsayılan: kimliği
+    // doğrulanmış herkes okuyabilir, yalnızca admin yazabilir.
+    match /{document=**} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}
