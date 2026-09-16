@@ -4,6 +4,7 @@ import MusteriSecici from '../../shared/MusteriSecici'
 import { useUrunler } from '../urunler/data'
 import { useMusteriler } from '../musteriler/data'
 import { unHesabiAktifMi } from '../../shared/unHesabi'
+import { useVeresiyeMusteriFiltresi } from '../../shared/veresiyeErisim'
 import type { VeresiyeDurumu, VeresiyeKaydi } from '../../lib/types'
 import type { VeresiyeKaydiFormVerisi } from './data'
 
@@ -20,6 +21,7 @@ function bugunStr() {
 export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Props) {
   const { urunler } = useUrunler()
   const { musteriler } = useMusteriler()
+  const musteriFiltresi = useVeresiyeMusteriFiltresi()
   const [musteriId, setMusteriId] = useState(mevcut?.musteriId ?? '')
   const [musteriAdi, setMusteriAdi] = useState(mevcut?.musteriAdi ?? '')
   const [productId, setProductId] = useState(mevcut?.productId ?? '')
@@ -75,6 +77,7 @@ export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Pr
             <MusteriSecici
               modul="veresiye"
               seciliMusteriId={musteriId || null}
+              filtre={musteriFiltresi}
               onSec={(m) => {
                 setMusteriId(m.id)
                 setMusteriAdi(m.ad)

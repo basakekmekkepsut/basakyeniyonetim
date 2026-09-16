@@ -13,6 +13,7 @@ import ConfirmModal from '../../shared/ConfirmModal'
 import TutarGoster from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
 import { useSession } from '../../lib/session'
+import { useVeresiyeMusteriFiltresi } from '../../shared/veresiyeErisim'
 import type { VeresiyeKaydi, VeresiyeOdeme } from '../../lib/types'
 
 function bugunStr() {
@@ -41,8 +42,17 @@ export default function OzetPage() {
   const { baslangic, bitis } = donemAraligiHesapla(donem, ozelBaslangic, ozelBitis)
   const filtre = { baslangic, bitis, musteriId }
 
-  const { kayitlar, yukleniyor: kayitYukleniyor, hata: kayitHata } = useVeresiyeKayitlar(filtre)
-  const { odemeler, yukleniyor: odemeYukleniyor, hata: odemeHata } = useVeresiyeOdemeler(filtre)
+  const musteriFiltresi = useVeresiyeMusteriFiltresi()
+  const { kayitlar: tumKayitlar, yukleniyor: kayitYukleniyor, hata: kayitHata } = useVeresiyeKayitlar(filtre)
+  const { odemeler: tumOdemeler, yukleniyor: odemeYukleniyor, hata: odemeHata } = useVeresiyeOdemeler(filtre)
+  const kayitlar = useMemo(
+    () => tumKayitlar.filter((k) => musteriFiltresi({ id: k.musteriId })),
+    [tumKayitlar, musteriFiltresi]
+  )
+  const odemeler = useMemo(
+    () => tumOdemeler.filter((o) => musteriFiltresi({ id: o.musteriId })),
+    [tumOdemeler, musteriFiltresi]
+  )
 
   const grafikVerisi = useMemo(() => {
     const gunlukMap = new Map<string, { tarih: string; borc: number; tahsilat: number }>()
@@ -156,6 +166,7 @@ export default function OzetPage() {
               modul="veresiye"
               seciliMusteriId={musteriId}
               hepsiSecenegi
+              filtre={musteriFiltresi}
               onHepsiSec={() => setMusteriId(null)}
               onSec={(m) => setMusteriId(m.id)}
               placeholder="Tüm Müşteriler"

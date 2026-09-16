@@ -13,8 +13,43 @@ body {
   background-color: #fdf6ec;
   color: #3b2317;
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Modern kalıcı dokunuşlar: her yerde tek tek Tailwind class'ı değiştirmeden
+   tüm butonlara/etkileşimli öğelere yumuşak geçiş ve basılınca hafif küçülme
+   hissi kazandırır. */
+button,
+a {
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 100ms ease,
+    opacity 150ms ease;
+}
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+:focus-visible {
+  outline: 2px solid #e08a2e;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #f0ddbc;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #e0c69a;
 }

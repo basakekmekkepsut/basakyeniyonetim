@@ -33,22 +33,36 @@ export default function PortalApp() {
   const [sifre, setSifre] = useState('')
   const [yukleniyor, setYukleniyor] = useState(false)
   const [hata, setHata] = useState<string | null>(null)
+  const [hataKodu, setHataKodu] = useState<string | null>(null)
   const [veri, setVeri] = useState<PortalSonuc | null>(null)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!kod) {
       setHata('Geçersiz bağlantı — kod bulunamadı.')
+      setHataKodu(null)
       return
     }
     setHata(null)
+    setHataKodu(null)
     setYukleniyor(true)
     try {
       const cagir = httpsCallable<{ musteriId: string; sifre: string }, PortalSonuc>(requireFunctions(), 'portalGiris')
       const sonuc = await cagir({ musteriId: kod, sifre })
       setVeri(sonuc.data)
     } catch (err) {
-      setHata(err instanceof Error ? err.message.replace(/^\w+\/[\w-]+:\s*/, '') : 'Giriş yapılamadı.')
+      // Tam hatayı konsola yaz (CORS, izin, bağlantı, fonksiyon bulunamadı vb. teşhis için) —
+      // ekranda ise müşteriye anlamlı bir mesaj + küçük bir teknik kod satırı gösterilir.
+      // eslint-disable-next-line no-console
+      console.error('[portalGiris] Giriş hatası:', err)
+      const code = (err as { code?: string })?.code
+      const mesaj = err instanceof Error ? err.message.replace(/^\w+\/[\w-]+:\s*/, '') : 'Giriş yapılamadı.'
+      setHata(
+        code === 'functions/internal' || code === 'functions/unavailable' || code === 'functions/not-found'
+          ? 'Sistem şu anda ulaşılamıyor durumda. Lütfen daha sonra tekrar deneyin veya fırınla iletişime geçin.'
+          : mesaj
+      )
+      setHataKodu(code ? `Hata kodu: ${code}` : null)
     } finally {
       setYukleniyor(false)
     }
@@ -86,7 +100,12 @@ export default function PortalApp() {
               autoFocus
               className="mb-4 w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2.5 text-center text-lg tracking-widest text-bakery-coffee-900 outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
             />
-            {hata && <p className="mb-4 rounded-lg bg-bakery-danger/10 px-3 py-2 text-sm text-bakery-danger">{hata}</p>}
+            {hata && (
+              <div className="mb-4 rounded-lg bg-bakery-danger/10 px-3 py-2 text-sm text-bakery-danger">
+                <p>{hata}</p>
+                {hataKodu && <p className="mt-1 text-xs text-bakery-danger/70">{hataKodu}</p>}
+              </div>
+            )}
             <button
               type="submit"
               disabled={yukleniyor || sifre.length !== 6}

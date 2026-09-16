@@ -52,6 +52,7 @@ export interface Musteri {
   moduller: Modul[]
   aktif: boolean
   gecici: boolean // Düğün/dernek gibi tek seferlik müşteri — ana listelerde varsayılan gizli
+  silindi: boolean // Çöp kutusuna taşındı mı — true ise hiçbir seçici/listede görünmez (bkz. musteriler/data.ts)
   acilisBakiyesi: number // "Geçmiş Bakiye" — sisteme geçmeden önceki devreden borç
   veresiyeBakiye: number
   ozelFiyatlar: Record<string, number>
@@ -60,7 +61,7 @@ export interface Musteri {
   portalSifre: string | null // 6 haneli müşteri portalı parolası (kod = musteri.id)
 }
 
-export type MusteriGirisi = Omit<Musteri, 'id' | 'veresiyeBakiye' | 'portalSifre'>
+export type MusteriGirisi = Omit<Musteri, 'id' | 'veresiyeBakiye' | 'portalSifre' | 'silindi'>
 
 export interface Urun {
   id: string

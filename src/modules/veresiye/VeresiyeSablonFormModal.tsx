@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Plus, Trash2, X } from 'lucide-react'
 import MusteriSecici from '../../shared/MusteriSecici'
 import { useUrunler } from '../urunler/data'
+import { useVeresiyeMusteriFiltresi } from '../../shared/veresiyeErisim'
 import type { VeresiyeSablon, VeresiyeSablonFormVerisi, VeresiyeSablonKalemi } from '../../lib/types'
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 
 export default function VeresiyeSablonFormModal({ mevcut, onKaydet, onKapat }: Props) {
   const { urunler } = useUrunler()
+  const musteriFiltresi = useVeresiyeMusteriFiltresi()
   const [musteriId, setMusteriId] = useState(mevcut?.musteriId ?? '')
   const [musteriAdi, setMusteriAdi] = useState(mevcut?.musteriAdi ?? '')
   const [kalemler, setKalemler] = useState<VeresiyeSablonKalemi[]>(
@@ -69,6 +71,7 @@ export default function VeresiyeSablonFormModal({ mevcut, onKaydet, onKapat }: P
             <MusteriSecici
               modul="veresiye"
               seciliMusteriId={musteriId || null}
+              filtre={musteriFiltresi}
               onSec={(m) => {
                 setMusteriId(m.id)
                 setMusteriAdi(m.ad)

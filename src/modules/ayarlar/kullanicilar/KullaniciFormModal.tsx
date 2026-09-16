@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
 import type { KullaniciProfili, Rol } from '../../../lib/types'
 import { BOS_PROFIL, type KullaniciSatiri } from './data'
+import { useMusteriler } from '../../musteriler/data'
 
 interface Props {
   mevcut?: KullaniciSatiri
@@ -10,13 +11,25 @@ interface Props {
 }
 
 export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props) {
+  const { musteriler } = useMusteriler()
   const [uid, setUid] = useState(mevcut?.uid ?? '')
   const [profil, setProfil] = useState<KullaniciProfili>(mevcut ?? BOS_PROFIL)
   const [gonderiliyor, setGonderiliyor] = useState(false)
   const [hata, setHata] = useState<string | null>(null)
 
+  const veresiyeMusterileri = musteriler.filter((m) => m.aktif && m.moduller.includes('veresiye'))
+  const atanmisMusteriler = profil.permissions.veresiye.gorebilecegiMusteriler
+
   function alanGuncelle<K extends keyof KullaniciProfili>(alan: K, deger: KullaniciProfili[K]) {
     setProfil((p) => ({ ...p, [alan]: deger }))
+  }
+
+  function musteriAtamaDegistir(musteriId: string) {
+    if (atanmisMusteriler === 'all') return
+    const yeni = atanmisMusteriler.includes(musteriId)
+      ? atanmisMusteriler.filter((id) => id !== musteriId)
+      : [...atanmisMusteriler, musteriId]
+    alanGuncelle('permissions', { ...profil.permissions, veresiye: { gorebilecegiMusteriler: yeni } })
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -170,9 +183,35 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
                   />
                   Tüm müşterileri görebilir
                 </label>
-                <p className="mt-1 text-xs text-bakery-coffee-500">
-                  Kapalıysa şimdilik hiçbir müşteriyi göremez — kişi bazlı atama Veresiye modülü ile birlikte eklenecek.
-                </p>
+
+                {atanmisMusteriler !== 'all' && (
+                  <div className="mt-2">
+                    <p className="mb-1.5 text-xs text-bakery-coffee-500">
+                      Kapalıysa yalnızca aşağıda işaretlediğiniz müşterileri görebilir/işlem yapabilir
+                      ({atanmisMusteriler.length} seçili):
+                    </p>
+                    {veresiyeMusterileri.length === 0 ? (
+                      <p className="text-xs text-bakery-coffee-400">Henüz Veresiye modülünde müşteri yok.</p>
+                    ) : (
+                      <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto rounded-lg bg-white p-2">
+                        {veresiyeMusterileri.map((m) => (
+                          <button
+                            type="button"
+                            key={m.id}
+                            onClick={() => musteriAtamaDegistir(m.id)}
+                            className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                              atanmisMusteriler.includes(m.id)
+                                ? 'bg-bakery-amber-600 text-white'
+                                : 'bg-bakery-cream-100 text-bakery-coffee-600 hover:bg-bakery-cream-200'
+                            }`}
+                          >
+                            {m.ad}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>

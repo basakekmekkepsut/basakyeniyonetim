@@ -13,13 +13,13 @@ const MODUL_TANIMLARI: { key: Modul; yol: string; etiket: string; Icon: typeof C
 ]
 
 const navLinkClass = (aktif: boolean) =>
-  `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
-    aktif ? 'bg-bakery-coffee-600 text-white' : 'text-bakery-cream-100/90 hover:bg-bakery-coffee-600/60'
+  `flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium transition-all ${
+    aktif ? 'bg-bakery-coffee-600 text-white shadow-soft' : 'text-bakery-cream-100/90 hover:bg-white/10'
   }`
 
 const bottomNavLinkClass = (aktif: boolean) =>
-  `flex flex-1 flex-col items-center gap-0.5 py-2 text-xs font-medium ${
-    aktif ? 'text-bakery-amber-600' : 'text-bakery-coffee-500'
+  `flex flex-1 flex-col items-center gap-1 py-2 text-xs font-medium transition-all ${
+    aktif ? 'text-bakery-amber-600' : 'text-bakery-coffee-400'
   }`
 
 export default function Layout() {
@@ -33,10 +33,10 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bakery-cream-50">
-      <header className="sticky top-0 z-20 bg-bakery-coffee-800 pt-[env(safe-area-inset-top,0px)] shadow-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+      <header className="sticky top-0 z-20 bg-bakery-coffee-800/95 pt-[env(safe-area-inset-top,0px)] shadow-card backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2.5">
           <div className="flex items-center gap-2 text-white">
-            <img src="/logo.webp" alt="Başak Ekmek" className="h-9 w-28 rounded object-cover object-center" />
+            <img src="/logo.webp" alt="Başak Ekmek" className="h-9 w-28 rounded-lg object-cover object-center" />
           </div>
 
           <nav className="hidden gap-1 md:flex">
@@ -52,7 +52,7 @@ export default function Layout() {
             {isAdmin(profile) && (
               <Link
                 to="/ayarlar"
-                className="rounded-full bg-bakery-coffee-700 p-2 text-white hover:bg-bakery-coffee-600"
+                className="rounded-full bg-white/10 p-2.5 text-white hover:bg-white/20"
                 aria-label="Ayarlar"
               >
                 <Settings size={16} />
@@ -62,39 +62,48 @@ export default function Layout() {
             <div className="relative">
               <button
                 onClick={() => setMenuAcik((v) => !v)}
-                className="flex items-center gap-2 rounded-full bg-bakery-coffee-700 px-3 py-1.5 text-sm text-white hover:bg-bakery-coffee-600"
+                className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/20"
               >
                 <User size={16} />
                 <span className="hidden sm:inline">{profile.ad}</span>
               </button>
               {menuAcik && (
-                <div className="absolute right-0 top-full mt-2 w-48 rounded-lg bg-white p-1 shadow-lg shadow-bakery-coffee-900/20">
-                  <div className="px-3 py-2 text-xs text-bakery-coffee-500">
-                    {profile.rol === 'admin' ? 'Yönetici' : 'Personel'}
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setMenuAcik(false)} />
+                  <div className="absolute right-0 top-full z-40 mt-2 w-48 origin-top-right animate-pop-in rounded-2xl bg-white p-1.5 shadow-elevated">
+                    <div className="px-3 py-2 text-xs font-medium text-bakery-coffee-500">
+                      {profile.rol === 'admin' ? 'Yönetici' : 'Personel'}
+                    </div>
+                    <button
+                      onClick={() => signOut(requireAuth())}
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-bakery-danger hover:bg-bakery-danger/10"
+                    >
+                      <LogOut size={16} />
+                      Çıkış Yap
+                    </button>
                   </div>
-                  <button
-                    onClick={() => signOut(requireAuth())}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-bakery-danger hover:bg-bakery-cream-100"
-                  >
-                    <LogOut size={16} />
-                    Çıkış Yap
-                  </button>
-                </div>
+                </>
               )}
             </div>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-4 pb-20 md:pb-6">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-4 pb-24 md:pb-6">
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-bakery-cream-200 bg-white pb-[env(safe-area-inset-bottom,0px)] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex gap-1 border-t border-bakery-cream-200 bg-white/90 px-2 pt-1.5 pb-[calc(env(safe-area-inset-bottom,0px)+0.375rem)] shadow-elevated backdrop-blur-md md:hidden">
         {gorunurModuller.map(({ key, yol, etiket, Icon }) => (
           <NavLink key={key} to={yol} className={({ isActive }) => bottomNavLinkClass(isActive)}>
-            <Icon size={20} />
-            {etiket}
+            {({ isActive }) => (
+              <>
+                <span className={`flex h-8 w-12 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-bakery-amber-500/15' : ''}`}>
+                  <Icon size={20} />
+                </span>
+                {etiket}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

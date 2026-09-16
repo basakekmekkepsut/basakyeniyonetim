@@ -37,7 +37,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex max-w-sm items-center gap-2 rounded-lg px-4 py-2.5 text-sm text-white shadow-lg ${
+            className={`pointer-events-auto flex max-w-sm items-center gap-2.5 rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-elevated animate-slide-up ${
               t.tip === 'basari' ? 'bg-bakery-success' : 'bg-bakery-danger'
             }`}
           >

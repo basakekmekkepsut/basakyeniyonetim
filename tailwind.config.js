@@ -28,6 +28,26 @@ export default {
       },
       fontFamily: {
         sans: ['"Inter"', '"Segoe UI"', 'system-ui', 'sans-serif']
+      },
+      borderRadius: {
+        xl: '0.875rem',
+        '2xl': '1.25rem',
+        '3xl': '1.75rem'
+      },
+      boxShadow: {
+        soft: '0 1px 2px 0 rgba(59, 35, 23, 0.06), 0 2px 8px -2px rgba(59, 35, 23, 0.08)',
+        card: '0 4px 20px -6px rgba(59, 35, 23, 0.12)',
+        elevated: '0 16px 40px -12px rgba(59, 35, 23, 0.22)'
+      },
+      keyframes: {
+        'fade-in': { from: { opacity: 0 }, to: { opacity: 1 } },
+        'pop-in': { from: { opacity: 0, transform: 'scale(0.95) translateY(4px)' }, to: { opacity: 1, transform: 'scale(1) translateY(0)' } },
+        'slide-up': { from: { opacity: 0, transform: 'translateY(12px)' }, to: { opacity: 1, transform: 'translateY(0)' } }
+      },
+      animation: {
+        'fade-in': 'fade-in 150ms ease-out',
+        'pop-in': 'pop-in 180ms cubic-bezier(0.16, 1, 0.3, 1)',
+        'slide-up': 'slide-up 220ms cubic-bezier(0.16, 1, 0.3, 1)'
       }
     }
   },

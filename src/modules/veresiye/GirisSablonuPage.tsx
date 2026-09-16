@@ -1,14 +1,20 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useVeresiyeSablonlar, veresiyeSablonEkle, veresiyeSablonGuncelle, veresiyeSablonSil } from './sablonData'
 import VeresiyeSablonFormModal from './VeresiyeSablonFormModal'
 import BosDurum from '../../shared/BosDurum'
 import ConfirmModal from '../../shared/ConfirmModal'
 import { useToast } from '../../shared/Toast'
+import { useVeresiyeMusteriFiltresi } from '../../shared/veresiyeErisim'
 import type { VeresiyeSablon, VeresiyeSablonFormVerisi } from '../../lib/types'
 
 export default function GirisSablonuPage() {
-  const { sablonlar, yukleniyor, hata } = useVeresiyeSablonlar()
+  const { sablonlar: tumSablonlar, yukleniyor, hata } = useVeresiyeSablonlar()
+  const musteriFiltresi = useVeresiyeMusteriFiltresi()
+  const sablonlar = useMemo(
+    () => tumSablonlar.filter((s) => musteriFiltresi({ id: s.musteriId })),
+    [tumSablonlar, musteriFiltresi]
+  )
   const toast = useToast()
   const [formAcik, setFormAcik] = useState(false)
   const [duzenlenen, setDuzenlenen] = useState<VeresiyeSablon | undefined>()

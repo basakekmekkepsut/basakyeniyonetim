@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
 import MusteriSecici from '../../shared/MusteriSecici'
+import { useVeresiyeMusteriFiltresi } from '../../shared/veresiyeErisim'
 import type { VeresiyeOdeme, VeresiyeOdemeFormVerisi } from '../../lib/types'
 
 interface Props {
@@ -14,6 +15,7 @@ function bugunStr() {
 }
 
 export default function VeresiyeOdemeFormModal({ mevcut, onKaydet, onKapat }: Props) {
+  const musteriFiltresi = useVeresiyeMusteriFiltresi()
   const [musteriId, setMusteriId] = useState(mevcut?.musteriId ?? '')
   const [musteriAdi, setMusteriAdi] = useState(mevcut?.musteriAdi ?? '')
   const [tutar, setTutar] = useState(mevcut?.tutar ?? 0)
@@ -54,6 +56,7 @@ export default function VeresiyeOdemeFormModal({ mevcut, onKaydet, onKapat }: Pr
             <MusteriSecici
               modul="veresiye"
               seciliMusteriId={musteriId || null}
+              filtre={musteriFiltresi}
               onSec={(m) => {
                 setMusteriId(m.id)
                 setMusteriAdi(m.ad)

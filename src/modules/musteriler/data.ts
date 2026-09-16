@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   addDoc,
   collection,
@@ -20,8 +20,16 @@ import type { Musteri, MusteriGirisi } from '../../lib/types'
 
 const KOLEKSIYON = 'musteriler'
 
-export function useMusteriler() {
-  const [musteriler, setMusteriler] = useState<Musteri[]>([])
+/**
+ * copKutusu:false (varsayılan) — silindi!=true olan tüm müşterileri döndürür; bu
+ * sayede MusteriSecici, Günlük Giriş, Sipariş/Veresiye formları gibi TÜM diğer
+ * kullanım yerleri hiçbir ek filtre yazmadan çöp kutusundaki müşterileri otomatik
+ * olarak göstermez. copKutusu:true yalnızca Ayarlar > Müşteriler'in çöp kutusu
+ * görünümünde kullanılır. Firestore sorgusu hâlâ tüm koleksiyonu dinler — eski
+ * (silindi alanı hiç yazılmamış) dokümanlar da bu sayede "silinmemiş" sayılır.
+ */
+export function useMusteriler(opts?: { copKutusu?: boolean }) {
+  const [tumMusteriler, setTumMusteriler] = useState<Musteri[]>([])
   const [yukleniyor, setYukleniyor] = useState(true)
   const [hata, setHata] = useState<string | null>(null)
 
@@ -30,7 +38,7 @@ export function useMusteriler() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setMusteriler(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Musteri))
+        setTumMusteriler(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Musteri))
         setYukleniyor(false)
       },
       (err) => {
@@ -41,12 +49,19 @@ export function useMusteriler() {
     return unsub
   }, [])
 
+  const copKutusu = opts?.copKutusu ?? false
+  const musteriler = useMemo(
+    () => tumMusteriler.filter((m) => (copKutusu ? m.silindi === true : m.silindi !== true)),
+    [tumMusteriler, copKutusu]
+  )
+
   return { musteriler, yukleniyor, hata }
 }
 
 export async function musteriEkle(girisi: MusteriGirisi): Promise<void> {
   await addDoc(collection(requireDb(), KOLEKSIYON), {
     ...girisi,
+    silindi: false,
     veresiyeBakiye: girisi.acilisBakiyesi,
     // Portal linki için kod = doküman ID'sinin kendisi; parola sadece
     // veresiye müşterileri için baştan üretilir (bkz. Müşteri Portalı).
@@ -93,7 +108,15 @@ export async function musteriGuncelle(id: string, girisi: MusteriGirisi): Promis
 export async function serbestMusteriBulYaOlustur(ad: string): Promise<{ id: string; yeniMi: boolean }> {
   const adTemiz = ad.trim()
   const mevcutSnap = await getDocs(query(collection(requireDb(), KOLEKSIYON), where('ad', '==', adTemiz)))
-  if (!mevcutSnap.empty) return { id: mevcutSnap.docs[0].id, yeniMi: false }
+  if (!mevcutSnap.empty) {
+    const mevcutDoc = mevcutSnap.docs[0]
+    // Daha önce çöp kutusuna taşınmış aynı isimli bir müşteri varsa, yeni bir
+    // kopya oluşturmak yerine onu sessizce geri yükleyip yeniden kullanıyoruz.
+    if ((mevcutDoc.data() as Musteri).silindi) {
+      await updateDoc(mevcutDoc.ref, { silindi: false, guncellenmeTarihi: serverTimestamp() })
+    }
+    return { id: mevcutDoc.id, yeniMi: false }
+  }
 
   const ref = await addDoc(collection(requireDb(), KOLEKSIYON), {
     ad: adTemiz,
@@ -104,6 +127,7 @@ export async function serbestMusteriBulYaOlustur(ad: string): Promise<{ id: stri
     moduller: ['siparis'],
     aktif: true,
     gecici: true,
+    silindi: false,
     acilisBakiyesi: 0,
     veresiyeBakiye: 0,
     ozelFiyatlar: {},
@@ -131,8 +155,19 @@ export async function musteriAktifDurumDegistir(id: string, aktif: boolean): Pro
   await updateDoc(doc(requireDb(), KOLEKSIYON, id), { aktif, guncellenmeTarihi: serverTimestamp() })
 }
 
-export async function musteriSil(musteri: Musteri): Promise<void> {
+/** Müşteriyi çöp kutusuna taşır — geri alınabilir, hiçbir seçici/listede artık görünmez. */
+export async function musteriCopeTasi(musteri: Musteri): Promise<void> {
+  await updateDoc(doc(requireDb(), KOLEKSIYON, musteri.id), { silindi: true, guncellenmeTarihi: serverTimestamp() })
+}
+
+/** Çöp kutusundaki bir müşteriyi geri yükler. */
+export async function musteriGeriYukle(musteri: Musteri): Promise<void> {
+  await updateDoc(doc(requireDb(), KOLEKSIYON, musteri.id), { silindi: false, guncellenmeTarihi: serverTimestamp() })
+}
+
+/** Çöp kutusundan kalıcı olarak siler — yalnızca açık bakiyesi/aktif bağlantısı olmayan müşteriler için. */
+export async function musteriKaliciSil(musteri: Musteri): Promise<void> {
   const sebep = await musteriKullanimdaMi(musteri.id, musteri.veresiyeBakiye)
-  if (sebep) throw new Error(`Müşteri silinemedi: ${sebep} Önce "Pasif" yapabilirsiniz.`)
+  if (sebep) throw new Error(`Müşteri kalıcı silinemedi: ${sebep}`)
   await deleteDoc(doc(requireDb(), KOLEKSIYON, musteri.id))
 }

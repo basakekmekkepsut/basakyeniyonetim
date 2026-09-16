@@ -34,6 +34,14 @@ service cloud.firestore {
     }
 
     match /musteriler/{id} {
+      // NOT: Kişi bazlı Veresiye müşteri ataması burada KASITLI olarak zorunlu
+      // kılınmıyor — Firestore, resource.data'ya bağlı bir kural içeren ama
+      // eşleşen bir where() kısıtı olmayan geniş/filtresiz liste sorgularını
+      // (ör. useMusteriler()'ın tüm koleksiyonu dinlemesi) doğrulayamadığı için
+      // TAMAMEN reddeder — tam da bu kısıtlamanın hedeflediği "yalnızca Veresiye
+      // modülü olan personel" için tüm müşteri listesini kilitlemiş olurdu.
+      // Kısıtlama bu yüzden uygulama katmanında (bkz. shared/veresiyeErisim.ts,
+      // her Veresiye ekranı/seçici) uygulanır; bu kural bilinçli olarak geniş kalır.
       allow read: if isSignedIn();
       allow create: if isAdmin()
         && request.resource.data.ad is string && request.resource.data.ad.size() > 0
@@ -98,6 +106,10 @@ service cloud.firestore {
     }
 
     match /veresiye_kayitlar/{id} {
+      // NOT: bkz. musteriler/{id} yukarıdaki not — geniş/filtresiz liste sorguları
+      // (OzetPage "Tüm Müşteriler" görünümü) resource.data'ya bağlı bir kuralla
+      // tamamen reddedilir. Kişi bazlı kısıtlama bu yüzden uygulama katmanında
+      // (shared/veresiyeErisim.ts) uygulanır, bu kural bilinçli olarak geniş kalır.
       allow read: if isSignedIn();
       // Sipariş modülü (otomatik yansıma) ve Veresiye modülü (manuel/un hesabı
       // girişleri) bu koleksiyona yazar — her ikisi de ilgili modül yetkisini gerektirir.

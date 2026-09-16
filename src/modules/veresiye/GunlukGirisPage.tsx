@@ -10,6 +10,7 @@ import { formatTutar } from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
 import { useSession } from '../../lib/session'
 import { unHesabiAktifMi } from '../../shared/unHesabi'
+import { useVeresiyeMusteriFiltresi } from '../../shared/veresiyeErisim'
 import type { Musteri } from '../../lib/types'
 
 function bugunStr() {
@@ -27,6 +28,7 @@ export default function GunlukGirisPage() {
   const { musteriler, yukleniyor: musteriYukleniyor } = useMusteriler()
   const { urunler } = useUrunler()
   const { sablonlar } = useVeresiyeSablonlar()
+  const musteriFiltresi = useVeresiyeMusteriFiltresi()
 
   const [tarih, setTarih] = useState(bugunStr())
   const [satirlar, setSatirlar] = useState<Record<string, SatirState>>({})
@@ -35,8 +37,8 @@ export default function GunlukGirisPage() {
   const [kaydediliyor, setKaydediliyor] = useState(false)
 
   const veresiyeMusterileri = useMemo(
-    () => musteriler.filter((m) => m.aktif && m.moduller.includes('veresiye')),
-    [musteriler]
+    () => musteriler.filter((m) => m.aktif && m.moduller.includes('veresiye') && musteriFiltresi(m)),
+    [musteriler, musteriFiltresi]
   )
   const veresiyeUrunleri = useMemo(() => urunler.filter((u) => u.aktif && u.modules.includes('veresiye')), [urunler])
 
