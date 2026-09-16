@@ -14,7 +14,6 @@ import ConfirmModal from '../../shared/ConfirmModal'
 import TutarGoster from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
 import { isAdmin, useSession } from '../../lib/session'
-import { useVeresiyeMusteriFiltresi } from '../../shared/veresiyeErisim'
 import type { VeresiyeKaydi, VeresiyeOdeme } from '../../lib/types'
 
 function bugunStr() {
@@ -98,23 +97,21 @@ export default function OzetPage() {
 
   const filtre = { baslangic, bitis, musteriId }
 
-  const musteriFiltresi = useVeresiyeMusteriFiltresi()
+  // NOT: Özet artık kişi bazlı müşteri kısıtlamasına TABİ DEĞİL — tek sınır
+  // yukarıdaki 7 günlük zaman aralığı (bkz. enEskiTarihPersonel). Personel tüm
+  // müşterilerin son 1 haftalık veresiye hareketini görebilir.
   const { kayitlar: tumKayitlar, yukleniyor: kayitYukleniyor, hata: kayitHata } = useVeresiyeKayitlar(filtre)
   const { odemeler: tumOdemeler, yukleniyor: odemeYukleniyor, hata: odemeHata } = useVeresiyeOdemeler(filtre)
   const kayitlar = useMemo(
     () =>
       tumKayitlar.filter((k) => {
-        if (!musteriFiltresi({ id: k.musteriId })) return false
         if (kaynakFiltre === 'siparis') return k.girisYontemi === 'siparis'
         if (kaynakFiltre === 'veresiye') return k.girisYontemi !== 'siparis'
         return true
       }),
-    [tumKayitlar, musteriFiltresi, kaynakFiltre]
+    [tumKayitlar, kaynakFiltre]
   )
-  const odemeler = useMemo(
-    () => enSonOnce(tumOdemeler.filter((o) => musteriFiltresi({ id: o.musteriId }))),
-    [tumOdemeler, musteriFiltresi]
-  )
+  const odemeler = useMemo(() => enSonOnce(tumOdemeler), [tumOdemeler])
   const siraliKayitlar = useMemo(() => enSonOnce(kayitlar), [kayitlar])
   const kayitGruplari = useMemo(() => gruplaByMusteriVeTarih(siraliKayitlar), [siraliKayitlar])
 
@@ -236,7 +233,6 @@ export default function OzetPage() {
               modul="veresiye"
               seciliMusteriId={musteriId}
               hepsiSecenegi
-              filtre={musteriFiltresi}
               onHepsiSec={() => setMusteriId(null)}
               onSec={(m) => setMusteriId(m.id)}
               placeholder="Tüm Müşteriler"
