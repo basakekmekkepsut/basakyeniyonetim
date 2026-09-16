@@ -13,7 +13,7 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      includeAssets: ['logo.webp'],
+      includeAssets: ['logo.webp', 'icon-192.png', 'icon-512.png'],
       manifest: {
         name: 'Başak Ekmek Yönetim',
         short_name: 'Başak Ekmek',
@@ -21,10 +21,14 @@ export default defineConfig({
         theme_color: '#7c4a2d',
         background_color: '#fdf6ec',
         display: 'standalone',
+        orientation: 'portrait',
         start_url: '/',
+        id: '/',
         icons: [
-          { src: '/logo.webp', sizes: '1092x1092', type: 'image/webp', purpose: 'any' },
-          { src: '/logo.webp', sizes: '1092x1092', type: 'image/webp', purpose: 'maskable' }
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/logo.webp', sizes: '1092x1092', type: 'image/webp', purpose: 'any' }
         ]
       },
       injectManifest: {
