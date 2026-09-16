@@ -7,6 +7,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Push bildirimi (FCM) arka planda mesaj almak için kendi service worker
+      // kodumuzu yazmamızı gerektiriyor — bu yüzden hazır generateSW yerine
+      // injectManifest stratejisi kullanılıyor (bkz. src/sw.ts).
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       includeAssets: ['logo.webp'],
       manifest: {
         name: 'Başak Ekmek Yönetim',
@@ -21,15 +27,8 @@ export default defineConfig({
           { src: '/logo.webp', sizes: '1092x1092', type: 'image/webp', purpose: 'maskable' }
         ]
       },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webp}'],
-        // Service worker kaydı hem ana uygulamadan hem de portal.html'den erişilebilen
-        // TEK bir origin'i kapsar. Bu denylist olmadan, ana uygulamayı bir kez ziyaret
-        // eden herhangi bir cihaz (personel ya da müşteri), sonradan portal.html'e
-        // gitmeye çalıştığında da servis çalışanı isteği index.html'e (personel giriş
-        // ekranı) yönlendirir — müşteri portalı hiç açılmaz.
-        navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/portal\.html/]
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webp}']
       }
     })
   ],

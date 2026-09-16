@@ -1,8 +1,10 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Bell, BellRing } from 'lucide-react'
 import { httpsCallable } from 'firebase/functions'
 import { isFirebaseConfigured, requireFunctions } from '../lib/firebase'
 import { formatTutar } from '../shared/TutarGoster'
 import { cuvalGoster } from '../shared/unHesabi'
+import { portalBildirimleriEtkinlestir, pushDurumuGetir, type PushDurum } from '../shared/pushBildirimleri'
 
 interface PortalHareket {
   tarih: string
@@ -35,6 +37,24 @@ export default function PortalApp() {
   const [hata, setHata] = useState<string | null>(null)
   const [hataKodu, setHataKodu] = useState<string | null>(null)
   const [veri, setVeri] = useState<PortalSonuc | null>(null)
+  const [pushDurum, setPushDurum] = useState<PushDurum>('izin_verilmedi')
+  const [pushIsleniyor, setPushIsleniyor] = useState(false)
+
+  useEffect(() => {
+    pushDurumuGetir().then(setPushDurum)
+  }, [])
+
+  async function handleBildirimAc() {
+    setPushIsleniyor(true)
+    try {
+      await portalBildirimleriEtkinlestir(kod, sifre)
+      setPushDurum('aktif')
+    } catch (err) {
+      setHata(err instanceof Error ? err.message : 'Bildirimler açılamadı.')
+    } finally {
+      setPushIsleniyor(false)
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -160,6 +180,24 @@ export default function PortalApp() {
                 </ul>
               )}
             </div>
+
+            {pushDurum !== 'desteklenmiyor' && pushDurum !== 'aktif' && (
+              <button
+                onClick={handleBildirimAc}
+                disabled={pushIsleniyor || pushDurum === 'reddedildi'}
+                title={pushDurum === 'reddedildi' ? 'Tarayıcı ayarlarından bildirim izni vermeniz gerekiyor.' : undefined}
+                className="flex w-full items-center justify-center gap-1.5 rounded-2xl bg-white py-2.5 text-sm font-medium text-bakery-coffee-700 shadow-lg shadow-bakery-coffee-900/10 hover:bg-bakery-cream-50 disabled:opacity-50"
+              >
+                <Bell size={15} />
+                {pushIsleniyor ? 'Açılıyor…' : 'Bildirimleri Aç'}
+              </button>
+            )}
+            {pushDurum === 'aktif' && (
+              <div className="flex items-center justify-center gap-1.5 rounded-2xl bg-white py-2.5 text-sm font-medium text-bakery-success shadow-lg shadow-bakery-coffee-900/10">
+                <BellRing size={15} />
+                Bildirimler açık
+              </div>
+            )}
 
             <button
               onClick={() => {

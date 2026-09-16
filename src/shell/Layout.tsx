@@ -1,9 +1,11 @@
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
-import { ClipboardList, HandCoins, School, LogOut, Settings, User } from 'lucide-react'
+import { Bell, BellRing, ClipboardList, HandCoins, School, LogOut, Settings, User } from 'lucide-react'
 import { requireAuth } from '../lib/firebase'
 import { hasModule, isAdmin, useSession } from '../lib/session'
+import { personelBildirimleriEtkinlestir, pushDurumuGetir, type PushDurum } from '../shared/pushBildirimleri'
+import { useToast } from '../shared/Toast'
 import type { Modul } from '../lib/types'
 
 const MODUL_TANIMLARI: { key: Modul; yol: string; etiket: string; Icon: typeof ClipboardList }[] = [
@@ -24,7 +26,27 @@ const bottomNavLinkClass = (aktif: boolean) =>
 
 export default function Layout() {
   const session = useSession()
+  const toast = useToast()
   const [menuAcik, setMenuAcik] = useState(false)
+  const [pushDurum, setPushDurum] = useState<PushDurum>('izin_verilmedi')
+  const [pushIsleniyor, setPushIsleniyor] = useState(false)
+
+  useEffect(() => {
+    pushDurumuGetir().then(setPushDurum)
+  }, [])
+
+  async function handleBildirimAc() {
+    setPushIsleniyor(true)
+    try {
+      await personelBildirimleriEtkinlestir()
+      setPushDurum('aktif')
+      toast.basari('Bildirimler açıldı.')
+    } catch (err) {
+      toast.hata(err instanceof Error ? err.message : 'Bildirimler açılamadı.')
+    } finally {
+      setPushIsleniyor(false)
+    }
+  }
 
   if (session.status !== 'signed-in') return null
   const { profile } = session
@@ -74,6 +96,23 @@ export default function Layout() {
                     <div className="px-3 py-2 text-xs font-medium text-bakery-coffee-500">
                       {profile.rol === 'admin' ? 'Yönetici' : 'Personel'}
                     </div>
+                    {pushDurum !== 'desteklenmiyor' && pushDurum !== 'aktif' && (
+                      <button
+                        onClick={handleBildirimAc}
+                        disabled={pushIsleniyor || pushDurum === 'reddedildi'}
+                        title={pushDurum === 'reddedildi' ? 'Tarayıcı ayarlarından bildirim izni vermeniz gerekiyor.' : undefined}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-bakery-coffee-700 hover:bg-bakery-cream-100 disabled:opacity-50"
+                      >
+                        <Bell size={16} />
+                        {pushIsleniyor ? 'Açılıyor…' : 'Bildirimleri Aç'}
+                      </button>
+                    )}
+                    {pushDurum === 'aktif' && (
+                      <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-bakery-success">
+                        <BellRing size={16} />
+                        Bildirimler açık
+                      </div>
+                    )}
                     <button
                       onClick={() => signOut(requireAuth())}
                       className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-bakery-danger hover:bg-bakery-danger/10"

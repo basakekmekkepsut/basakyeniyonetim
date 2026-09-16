@@ -1,7 +1,8 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import { defineSecret } from 'firebase-functions/params'
 import { initializeApp } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
+import { getFirestore, FieldValue } from 'firebase-admin/firestore'
+import { getMessaging } from 'firebase-admin/messaging'
 
 initializeApp()
 
@@ -104,4 +105,107 @@ export const portalGiris = onCall<PortalGirisData>({ region: 'europe-west1' }, a
     unHesabi: musteri.unHesabi ?? null,
     hareketler
   }
+})
+
+// --- Push bildirimleri (FCM) ---
+
+interface PushTokenKaydetData {
+  token: string
+}
+
+/**
+ * Personel/admin için FCM cihaz tokenını kaydeder. Kişinin kendi `users/{uid}`
+ * dokümanını client'tan doğrudan yazamaması (firestore.rules — yalnızca admin
+ * yazabilir, ayrıcalık yükseltmeyi önlemek için) NEDENİYLE bu callable üzerinden,
+ * admin SDK ile (rules bypass) yazılır — yalnızca KENDİ token'ını ekleyebilir.
+ */
+export const pushTokenKaydet = onCall<PushTokenKaydetData>({ region: 'europe-west1' }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Bu işlem için giriş yapmış olmanız gerekiyor.')
+  }
+  const { token } = request.data ?? {}
+  if (!token || typeof token !== 'string') {
+    throw new HttpsError('invalid-argument', 'Geçerli bir bildirim token\'ı gerekiyor.')
+  }
+  await getFirestore()
+    .doc(`users/${request.auth.uid}`)
+    .update({ fcmTokens: FieldValue.arrayUnion(token) })
+  return { basarili: true }
+})
+
+interface PortalPushTokenKaydetData {
+  musteriId: string
+  sifre: string
+  token: string
+}
+
+/**
+ * Müşteri portalı için FCM cihaz tokenını kaydeder — portalGiris ile aynı
+ * kod+şifre doğrulamasını kullanır (müşteri Firebase Auth kullanmaz).
+ */
+export const portalPushTokenKaydet = onCall<PortalPushTokenKaydetData>({ region: 'europe-west1' }, async (request) => {
+  const { musteriId, sifre, token } = request.data ?? {}
+  if (!musteriId || typeof musteriId !== 'string' || !sifre || typeof sifre !== 'string') {
+    throw new HttpsError('invalid-argument', 'Kod ve şifre gerekli.')
+  }
+  if (!token || typeof token !== 'string') {
+    throw new HttpsError('invalid-argument', 'Geçerli bir bildirim token\'ı gerekiyor.')
+  }
+
+  const db = getFirestore()
+  const musteriRef = db.doc(`musteriler/${musteriId}`)
+  const musteriSnap = await musteriRef.get()
+  const musteri = musteriSnap.data()
+
+  if (!musteriSnap.exists || !musteri?.portalSifre || musteri.portalSifre !== sifre) {
+    throw new HttpsError('permission-denied', 'Kod veya şifre hatalı.')
+  }
+
+  await musteriRef.update({ fcmTokens: FieldValue.arrayUnion(token) })
+  return { basarili: true }
+})
+
+interface PushTestGonderData {
+  hedefTipi: 'personel' | 'musteri'
+  id: string
+}
+
+/**
+ * Admin panelinden tetiklenen test bildirimi — belirtilen personel (users/{id})
+ * veya müşterinin (musteriler/{id}) kayıtlı TÜM cihazlarına gönderir. Artık
+ * geçersiz (kaldırılmış/süresi dolmuş) token'lar otomatik temizlenir.
+ */
+export const pushTestGonder = onCall<PushTestGonderData>({ region: 'europe-west1' }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Bu işlem için giriş yapmış olmanız gerekiyor.')
+  }
+  const db = getFirestore()
+  const cagiranSnap = await db.doc(`users/${request.auth.uid}`).get()
+  if (cagiranSnap.data()?.rol !== 'admin') {
+    throw new HttpsError('permission-denied', 'Bu işlem yalnızca yöneticiler içindir.')
+  }
+
+  const { hedefTipi, id } = request.data ?? {}
+  if ((hedefTipi !== 'personel' && hedefTipi !== 'musteri') || !id || typeof id !== 'string') {
+    throw new HttpsError('invalid-argument', 'Geçerli bir hedef gerekiyor.')
+  }
+
+  const hedefRef = db.doc(hedefTipi === 'personel' ? `users/${id}` : `musteriler/${id}`)
+  const hedefSnap = await hedefRef.get()
+  const tokenlar: string[] = hedefSnap.data()?.fcmTokens ?? []
+  if (tokenlar.length === 0) {
+    throw new HttpsError('failed-precondition', 'Bu kişi için kayıtlı bildirim izni yok — önce uygulamadan "Bildirimleri Aç" ile izin vermesi gerekiyor.')
+  }
+
+  const sonuc = await getMessaging().sendEachForMulticast({
+    tokens: tokenlar,
+    notification: { title: 'Başak Ekmek', body: 'Bu bir test bildirimidir — bildirimleriniz çalışıyor.' }
+  })
+
+  const geciriliTokenlar = tokenlar.filter((_, i) => sonuc.responses[i].success)
+  if (geciriliTokenlar.length !== tokenlar.length) {
+    await hedefRef.update({ fcmTokens: geciriliTokenlar })
+  }
+
+  return { basarili: sonuc.successCount, basarisiz: sonuc.failureCount }
 })
