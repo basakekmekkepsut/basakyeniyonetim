@@ -29,12 +29,12 @@ export default function TelegramAyarlariPage() {
     }
   }
 
-  if (yukleniyor) return <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+  if (yukleniyor) return <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md space-y-4 rounded-xl bg-white p-5 shadow-sm shadow-bakery-coffee-900/5">
-      <h2 className="text-lg font-semibold text-bakery-coffee-900">Telegram Bildirimleri</h2>
-      <p className="text-sm text-bakery-coffee-500">
+    <form onSubmit={handleSubmit} className="max-w-md space-y-4 rounded-xl bg-bakery-surface p-5 shadow-sm shadow-bakery-coffee-900/5">
+      <h2 className="text-lg font-semibold text-bakery-ink-900">Telegram Bildirimleri</h2>
+      <p className="text-sm text-bakery-ink-500">
         Her modülün sipariş/borç listesini gönderdiği Telegram grup/kanal ID'lerini girin. Bot token'ı
         güvenlik nedeniyle burada değil, sunucu tarafı ortam değişkeninde saklanır.
       </p>
@@ -47,7 +47,7 @@ export default function TelegramAyarlariPage() {
         ] as const
       ).map(([key, etiket, deger, setter]) => (
         <div key={key}>
-          <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">{etiket} Chat ID</label>
+          <label className="mb-1 block text-sm font-medium text-bakery-ink-800">{etiket} Chat ID</label>
           <input
             value={deger}
             onChange={(e) => setter(e.target.value)}

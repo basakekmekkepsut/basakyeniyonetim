@@ -6,15 +6,46 @@
   color-scheme: light;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Metin tonları (koyu → açık) */
+  --ink-900: 59 35 23;
+  --ink-800: 74 44 28;
+  --ink-700: 92 56 35;
+  --ink-600: 124 74 45;
+  --ink-500: 150 96 63;
+  --ink-400: 180 138 100;
+  --ink-300: 201 166 134;
+  /* Sayfa/zemin tonları (açık → koyu) */
+  --cream-50: 253 246 236;
+  --cream-100: 248 236 216;
+  --cream-200: 240 221 188;
+  /* Kart/panel zemini */
+  --surface: 255 255 255;
+}
+
+:root[data-tema='koyu'] {
+  color-scheme: dark;
+  --ink-900: 248 240 230;
+  --ink-800: 235 224 209;
+  --ink-700: 214 198 178;
+  --ink-600: 189 168 144;
+  --ink-500: 163 141 118;
+  --ink-400: 136 116 97;
+  --ink-300: 110 94 79;
+  --cream-50: 26 20 17;
+  --cream-100: 38 30 25;
+  --cream-200: 52 42 35;
+  --surface: 45 36 30;
 }
 
 body {
   margin: 0;
-  background-color: #fdf6ec;
-  color: #3b2317;
+  background-color: rgb(var(--cream-50));
+  color: rgb(var(--ink-900));
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 * {
@@ -47,9 +78,9 @@ button:active:not(:disabled) {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background-color: #f0ddbc;
+  background-color: rgb(var(--cream-200));
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #e0c69a;
+  background-color: rgb(var(--ink-400));
 }

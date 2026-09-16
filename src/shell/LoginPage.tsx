@@ -39,16 +39,16 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bakery-cream-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-lg shadow-bakery-coffee-900/10">
+      <div className="w-full max-w-sm rounded-2xl bg-bakery-surface p-8 shadow-lg shadow-bakery-coffee-900/10">
         <div className="mb-6 text-center">
           <img src="/logo.webp" alt="Başak Ekmek" className="mx-auto mb-3 h-16 w-44 rounded-lg object-cover object-center" />
-          <h1 className="text-xl font-semibold text-bakery-coffee-900">Başak Ekmek Yönetim</h1>
-          <p className="mt-1 text-sm text-bakery-coffee-600">Devam etmek için giriş yapın</p>
+          <h1 className="text-xl font-semibold text-bakery-ink-900">Başak Ekmek Yönetim</h1>
+          <p className="mt-1 text-sm text-bakery-ink-600">Devam etmek için giriş yapın</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800" htmlFor="eposta">
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800" htmlFor="eposta">
               E-posta
             </label>
             <input
@@ -58,12 +58,12 @@ export default function LoginPage() {
               autoComplete="username"
               value={eposta}
               onChange={(e) => setEposta(e.target.value)}
-              className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2.5 text-bakery-coffee-900 outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
+              className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2.5 text-bakery-ink-900 outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800" htmlFor="sifre">
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800" htmlFor="sifre">
               Şifre
             </label>
             <input
@@ -73,7 +73,7 @@ export default function LoginPage() {
               autoComplete="current-password"
               value={sifre}
               onChange={(e) => setSifre(e.target.value)}
-              className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2.5 text-bakery-coffee-900 outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
+              className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2.5 text-bakery-ink-900 outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
             />
           </div>
 

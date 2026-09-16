@@ -87,8 +87,8 @@ export default function GirisSablonuPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-bakery-coffee-900">Giriş Şablonu</h2>
-        <p className="mt-1 text-sm text-bakery-coffee-500">
+        <h2 className="text-lg font-semibold text-bakery-ink-900">Giriş Şablonu</h2>
+        <p className="mt-1 text-sm text-bakery-ink-500">
           Hangi müşterinin hangi ekmeği düzenli aldığını burada bir kere ayarla — Günlük Giriş ekranında her gün sadece adetleri
           gireceksin, müşteri/ürün seçmene gerek kalmayacak. Bir müşteri geçici olarak almıyorsa satırı silmeye gerek yok, tikini
           kaldır (pasif yap), tekrar aldığında tekrar işaretlersin.
@@ -96,12 +96,12 @@ export default function GirisSablonuPage() {
       </div>
 
       {yukleniyor ? (
-        <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+        <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
       ) : satirlar.length === 0 ? (
         <BosDurum baslik="Henüz giriş şablonu yok" aciklama="Aşağıdaki formdan bir satır ekleyerek başlayın." />
       ) : (
-        <div className="overflow-hidden rounded-2xl bg-white shadow-soft">
-          <div className="hidden items-center gap-3 border-b border-bakery-cream-100 px-4 py-2 text-xs font-medium uppercase tracking-wide text-bakery-coffee-400 sm:flex">
+        <div className="overflow-hidden rounded-2xl bg-bakery-surface shadow-soft">
+          <div className="hidden items-center gap-3 border-b border-bakery-cream-100 px-4 py-2 text-xs font-medium uppercase tracking-wide text-bakery-ink-400 sm:flex">
             <span className="w-14 shrink-0">Durum</span>
             <span className="flex-1">Müşteri</span>
             <span className="flex-1">Ekmek Türü</span>
@@ -112,21 +112,21 @@ export default function GirisSablonuPage() {
               <div key={`${s.sablonId}-${s.kalemIndex}`} className="flex items-center gap-3 px-4 py-2">
                 <label className="flex w-14 shrink-0 items-center gap-1.5">
                   <input type="checkbox" checked={s.aktif} onChange={(e) => handleAktifDegistir(s, e.target.checked)} />
-                  <span className={`hidden text-xs sm:inline ${s.aktif ? 'text-bakery-success' : 'text-bakery-coffee-400'}`}>
+                  <span className={`hidden text-xs sm:inline ${s.aktif ? 'text-bakery-success' : 'text-bakery-ink-400'}`}>
                     {s.aktif ? 'Aktif' : 'Pasif'}
                   </span>
                 </label>
-                <span className={`flex-1 truncate text-sm font-medium ${s.aktif ? 'text-bakery-coffee-900' : 'text-bakery-coffee-400'}`}>
+                <span className={`flex-1 truncate text-sm font-medium ${s.aktif ? 'text-bakery-ink-900' : 'text-bakery-ink-400'}`}>
                   {s.musteriAdi}
                 </span>
-                <span className={`flex-1 truncate text-sm ${s.aktif ? 'text-bakery-coffee-600' : 'text-bakery-coffee-300'}`}>
+                <span className={`flex-1 truncate text-sm ${s.aktif ? 'text-bakery-ink-600' : 'text-bakery-ink-300'}`}>
                   {s.urunAdi}
                 </span>
                 <div className="flex w-24 shrink-0 items-center justify-end gap-0.5">
                   <button
                     onClick={() => handleSiraDegistir(i, -1)}
                     disabled={i === 0}
-                    className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100 disabled:opacity-30"
+                    className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100 disabled:opacity-30"
                     aria-label="Yukarı taşı"
                   >
                     <ChevronUp size={16} />
@@ -134,7 +134,7 @@ export default function GirisSablonuPage() {
                   <button
                     onClick={() => handleSiraDegistir(i, 1)}
                     disabled={i === satirlar.length - 1}
-                    className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100 disabled:opacity-30"
+                    className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100 disabled:opacity-30"
                     aria-label="Aşağı taşı"
                   >
                     <ChevronDown size={16} />
@@ -153,11 +153,11 @@ export default function GirisSablonuPage() {
         </div>
       )}
 
-      <div className="rounded-2xl bg-white p-4 shadow-soft">
-        <h3 className="mb-3 text-sm font-semibold text-bakery-coffee-900">Satır Ekle</h3>
+      <div className="rounded-2xl bg-bakery-surface p-4 shadow-soft">
+        <h3 className="mb-3 text-sm font-semibold text-bakery-ink-900">Satır Ekle</h3>
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
           <div>
-            <label className="mb-1 block text-xs font-medium text-bakery-coffee-500">Müşteri</label>
+            <label className="mb-1 block text-xs font-medium text-bakery-ink-500">Müşteri</label>
             <MusteriSecici
               modul="veresiye"
               seciliMusteriId={yeniMusteriId || null}
@@ -168,7 +168,7 @@ export default function GirisSablonuPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-bakery-coffee-500">Ekmek Türü</label>
+            <label className="mb-1 block text-xs font-medium text-bakery-ink-500">Ekmek Türü</label>
             <select
               value={yeniProductId}
               onChange={(e) => setYeniProductId(e.target.value)}

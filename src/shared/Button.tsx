@@ -10,9 +10,9 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARYANT_SINIFI: Record<Variant, string> = {
   primary: 'bg-bakery-amber-600 text-white shadow-soft hover:bg-bakery-amber-500 hover:shadow-card disabled:hover:bg-bakery-amber-600',
-  secondary: 'bg-bakery-cream-100 text-bakery-coffee-700 hover:bg-bakery-cream-200',
+  secondary: 'bg-bakery-cream-100 text-bakery-ink-700 hover:bg-bakery-cream-200',
   danger: 'bg-bakery-danger/10 text-bakery-danger hover:bg-bakery-danger hover:text-white',
-  ghost: 'text-bakery-coffee-600 hover:bg-bakery-cream-100'
+  ghost: 'text-bakery-ink-600 hover:bg-bakery-cream-100'
 }
 
 const BOYUT_SINIFI: Record<Boyut, string> = {

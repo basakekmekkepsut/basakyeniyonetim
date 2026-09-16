@@ -28,7 +28,7 @@ export default function SiparisLayout() {
               `shrink-0 border-b-2 px-3 py-2 text-sm font-medium transition ${
                 isActive
                   ? 'border-bakery-amber-600 text-bakery-amber-600'
-                  : 'border-transparent text-bakery-coffee-500 hover:text-bakery-coffee-700'
+                  : 'border-transparent text-bakery-ink-500 hover:text-bakery-ink-700'
               }`
             }
           >

@@ -11,7 +11,7 @@ const SEKMELER = [
 export default function AyarlarLayout() {
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-bakery-coffee-900">Ayarlar</h1>
+      <h1 className="text-xl font-semibold text-bakery-ink-900">Ayarlar</h1>
       <nav className="flex gap-1 overflow-x-auto border-b border-bakery-cream-200">
         {SEKMELER.map((s) => (
           <NavLink
@@ -21,7 +21,7 @@ export default function AyarlarLayout() {
               `shrink-0 border-b-2 px-3 py-2 text-sm font-medium transition ${
                 isActive
                   ? 'border-bakery-amber-600 text-bakery-amber-600'
-                  : 'border-transparent text-bakery-coffee-500 hover:text-bakery-coffee-700'
+                  : 'border-transparent text-bakery-ink-500 hover:text-bakery-ink-700'
               }`
             }
           >

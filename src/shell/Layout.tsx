@@ -1,10 +1,11 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
-import { Bell, BellRing, ClipboardList, HandCoins, School, LogOut, Settings, User } from 'lucide-react'
+import { Bell, BellRing, ClipboardList, HandCoins, School, LogOut, Moon, Settings, Sun, User } from 'lucide-react'
 import { requireAuth } from '../lib/firebase'
 import { hasModule, isAdmin, useSession } from '../lib/session'
 import { personelBildirimleriEtkinlestir, pushDurumuGetir, type PushDurum } from '../shared/pushBildirimleri'
+import { temaBaslat, temaDegistir, yaziBoyutuBaslat, yaziBoyutuDegistir, type Tema, type YaziBoyutu } from '../shared/gorunum'
 import { useToast } from '../shared/Toast'
 import type { Modul } from '../lib/types'
 
@@ -16,12 +17,12 @@ const MODUL_TANIMLARI: { key: Modul; yol: string; etiket: string; Icon: typeof C
 
 const navLinkClass = (aktif: boolean) =>
   `flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium transition-all ${
-    aktif ? 'bg-bakery-coffee-600 text-white shadow-soft' : 'text-bakery-cream-100/90 hover:bg-white/10'
+    aktif ? 'bg-bakery-coffee-600 text-white shadow-soft' : 'text-bakery-cream-100/90 hover:bg-bakery-surface/10'
   }`
 
 const bottomNavLinkClass = (aktif: boolean) =>
   `flex flex-1 flex-col items-center gap-1 py-2 text-xs font-medium transition-all ${
-    aktif ? 'text-bakery-amber-600' : 'text-bakery-coffee-400'
+    aktif ? 'text-bakery-amber-600' : 'text-bakery-ink-400'
   }`
 
 export default function Layout() {
@@ -30,6 +31,8 @@ export default function Layout() {
   const [menuAcik, setMenuAcik] = useState(false)
   const [pushDurum, setPushDurum] = useState<PushDurum>('izin_verilmedi')
   const [pushIsleniyor, setPushIsleniyor] = useState(false)
+  const [tema, setTema] = useState<Tema>(() => temaBaslat())
+  const [yaziBoyutu, setYaziBoyutu] = useState<YaziBoyutu>(() => yaziBoyutuBaslat())
 
   useEffect(() => {
     pushDurumuGetir().then(setPushDurum)
@@ -71,10 +74,26 @@ export default function Layout() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setYaziBoyutu((v) => yaziBoyutuDegistir(v))}
+              className="rounded-full bg-bakery-surface/10 px-2.5 py-2 text-xs font-bold text-white hover:bg-bakery-surface/20"
+              aria-label="Yazı boyutu"
+              title={`Yazı boyutu: ${yaziBoyutu === 'normal' ? 'Normal' : yaziBoyutu === 'buyuk' ? 'Büyük' : 'Ekstra Büyük'} — değiştirmek için tıklayın`}
+            >
+              Aa
+            </button>
+            <button
+              onClick={() => setTema((v) => temaDegistir(v))}
+              className="rounded-full bg-bakery-surface/10 p-2.5 text-white hover:bg-bakery-surface/20"
+              aria-label="Karanlık/Aydınlık mod"
+              title={tema === 'koyu' ? 'Aydınlık moda geç' : 'Karanlık moda geç'}
+            >
+              {tema === 'koyu' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
             {isAdmin(profile) && (
               <Link
                 to="/ayarlar"
-                className="rounded-full bg-white/10 p-2.5 text-white hover:bg-white/20"
+                className="rounded-full bg-bakery-surface/10 p-2.5 text-white hover:bg-bakery-surface/20"
                 aria-label="Ayarlar"
               >
                 <Settings size={16} />
@@ -84,7 +103,7 @@ export default function Layout() {
             <div className="relative">
               <button
                 onClick={() => setMenuAcik((v) => !v)}
-                className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/20"
+                className="flex items-center gap-2 rounded-full bg-bakery-surface/10 px-3 py-2 text-sm text-white hover:bg-bakery-surface/20"
               >
                 <User size={16} />
                 <span className="hidden sm:inline">{profile.ad}</span>
@@ -92,8 +111,8 @@ export default function Layout() {
               {menuAcik && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setMenuAcik(false)} />
-                  <div className="absolute right-0 top-full z-40 mt-2 w-48 origin-top-right animate-pop-in rounded-2xl bg-white p-1.5 shadow-elevated">
-                    <div className="px-3 py-2 text-xs font-medium text-bakery-coffee-500">
+                  <div className="absolute right-0 top-full z-40 mt-2 w-48 origin-top-right animate-pop-in rounded-2xl bg-bakery-surface p-1.5 shadow-elevated">
+                    <div className="px-3 py-2 text-xs font-medium text-bakery-ink-500">
                       {profile.rol === 'admin' ? 'Yönetici' : 'Personel'}
                     </div>
                     {pushDurum !== 'desteklenmiyor' && pushDurum !== 'aktif' && (
@@ -101,7 +120,7 @@ export default function Layout() {
                         onClick={handleBildirimAc}
                         disabled={pushIsleniyor || pushDurum === 'reddedildi'}
                         title={pushDurum === 'reddedildi' ? 'Tarayıcı ayarlarından bildirim izni vermeniz gerekiyor.' : undefined}
-                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-bakery-coffee-700 hover:bg-bakery-cream-100 disabled:opacity-50"
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-bakery-ink-700 hover:bg-bakery-cream-100 disabled:opacity-50"
                       >
                         <Bell size={16} />
                         {pushIsleniyor ? 'Açılıyor…' : 'Bildirimleri Aç'}
@@ -132,7 +151,7 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex gap-1 border-t border-bakery-cream-200 bg-white/90 px-2 pt-1.5 pb-[calc(env(safe-area-inset-bottom,0px)+0.375rem)] shadow-elevated backdrop-blur-md md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex gap-1 border-t border-bakery-cream-200 bg-bakery-surface/90 px-2 pt-1.5 pb-[calc(env(safe-area-inset-bottom,0px)+0.375rem)] shadow-elevated backdrop-blur-md md:hidden">
         {gorunurModuller.map(({ key, yol, etiket, Icon }) => (
           <NavLink key={key} to={yol} className={({ isActive }) => bottomNavLinkClass(isActive)}>
             {({ isActive }) => (
@@ -152,9 +171,9 @@ export default function Layout() {
 
 export function Placeholder({ baslik, children }: { baslik: string; children?: ReactNode }) {
   return (
-    <div className="rounded-xl bg-white p-6 shadow-sm shadow-bakery-coffee-900/5">
-      <h2 className="mb-2 text-lg font-semibold text-bakery-coffee-900">{baslik}</h2>
-      {children ?? <p className="text-sm text-bakery-coffee-500">Bu modül henüz geliştirilme aşamasında.</p>}
+    <div className="rounded-xl bg-bakery-surface p-6 shadow-sm shadow-bakery-coffee-900/5">
+      <h2 className="mb-2 text-lg font-semibold text-bakery-ink-900">{baslik}</h2>
+      {children ?? <p className="text-sm text-bakery-ink-500">Bu modül henüz geliştirilme aşamasında.</p>}
     </div>
   )
 }

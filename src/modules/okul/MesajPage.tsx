@@ -73,12 +73,12 @@ export default function MesajPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-bakery-coffee-900">Mesaj</h2>
+        <h2 className="text-lg font-semibold text-bakery-ink-900">Mesaj</h2>
         <input
           type="date"
           value={tarih}
           onChange={(e) => setTarih(e.target.value)}
-          className="rounded-lg border border-bakery-cream-200 bg-white px-2.5 py-2 text-sm outline-none focus:border-bakery-amber-500"
+          className="rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2.5 py-2 text-sm outline-none focus:border-bakery-amber-500"
         />
       </div>
 
@@ -93,12 +93,12 @@ export default function MesajPage() {
       </button>
 
       {yukleniyor ? (
-        <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+        <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
       ) : !mesajMetni ? (
         <BosDurum baslik="Bu tarihte sipariş yok" />
       ) : (
-        <div className="rounded-xl bg-white p-4 shadow-sm shadow-bakery-coffee-900/5">
-          <pre className="mb-4 whitespace-pre-wrap rounded-lg bg-bakery-cream-50 p-3 font-sans text-sm text-bakery-coffee-800">
+        <div className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
+          <pre className="mb-4 whitespace-pre-wrap rounded-lg bg-bakery-cream-50 p-3 font-sans text-sm text-bakery-ink-800">
             {mesajMetni}
           </pre>
           <div className="flex flex-wrap gap-2">

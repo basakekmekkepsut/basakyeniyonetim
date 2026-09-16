@@ -173,17 +173,17 @@ export default function GunlukGirisPage() {
     }
   }
 
-  if (musteriYukleniyor) return <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+  if (musteriYukleniyor) return <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
 
   return (
     <div className="space-y-4 pb-24">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-bakery-coffee-900">Günlük Giriş</h2>
+        <h2 className="text-lg font-semibold text-bakery-ink-900">Günlük Giriş</h2>
         <input
           type="date"
           value={tarih}
           onChange={(e) => setTarih(e.target.value)}
-          className="rounded-lg border border-bakery-cream-200 bg-white px-2.5 py-2 text-sm outline-none focus:border-bakery-amber-500"
+          className="rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2.5 py-2 text-sm outline-none focus:border-bakery-amber-500"
         />
       </div>
 
@@ -205,23 +205,23 @@ export default function GunlukGirisPage() {
             const unMusterisi = unHesabiAktifMi(m)
 
             return (
-              <div key={m.id} className="rounded-lg bg-white p-1.5 shadow-sm shadow-bakery-coffee-900/5">
+              <div key={m.id} className="rounded-lg bg-bakery-surface p-1.5 shadow-sm shadow-bakery-coffee-900/5">
                 <div className="mb-1 flex items-center gap-1">
-                  <p className="truncate text-[11px] font-medium leading-tight text-bakery-coffee-900">{m.ad}</p>
+                  <p className="truncate text-[11px] font-medium leading-tight text-bakery-ink-900">{m.ad}</p>
                   {unMusterisi && <span className="shrink-0 text-[9px] font-medium text-blue-600">Un</span>}
                 </div>
 
                 <div className="space-y-1">
                   {gosterilenUrunler.map((u) => (
                     <div key={u.id}>
-                      <p className="truncate text-[9px] leading-tight text-bakery-coffee-500">{u.ad}</p>
+                      <p className="truncate text-[9px] leading-tight text-bakery-ink-500">{u.ad}</p>
                       <div className="flex items-center justify-center gap-0.5">
                         <button
                           type="button"
                           tabIndex={-1}
                           aria-label={`${m.ad} ${u.ad} azalt`}
                           onClick={() => miktarDegistir(m.id, u.id, -1)}
-                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-bakery-cream-100 text-bakery-coffee-600 hover:bg-bakery-cream-200"
+                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-bakery-cream-100 text-bakery-ink-600 hover:bg-bakery-cream-200"
                         >
                           <Minus size={10} />
                         </button>
@@ -235,7 +235,7 @@ export default function GunlukGirisPage() {
                           onChange={(e) => miktarAyarla(m.id, u.id, Math.round(Number(e.target.value)) || 0)}
                           onFocus={(e) => e.target.select()}
                           onKeyDown={entereGec}
-                          className="w-6 min-w-0 rounded border border-bakery-cream-200 bg-bakery-cream-50 px-0 py-0.5 text-center text-[11px] font-medium text-bakery-coffee-900 outline-none focus:border-bakery-amber-500 focus:ring-1 focus:ring-bakery-amber-500/30"
+                          className="w-6 min-w-0 rounded border border-bakery-cream-200 bg-bakery-cream-50 px-0 py-0.5 text-center text-[11px] font-medium text-bakery-ink-900 outline-none focus:border-bakery-amber-500 focus:ring-1 focus:ring-bakery-amber-500/30"
                         />
                         <button
                           type="button"
@@ -252,7 +252,7 @@ export default function GunlukGirisPage() {
 
                   {unMusterisi && m.unHesabi?.adetPerCuval && (
                     <div className="border-t border-dashed border-bakery-cream-200 pt-1">
-                      <p className="truncate text-[9px] leading-tight text-bakery-coffee-500">Çuval</p>
+                      <p className="truncate text-[9px] leading-tight text-bakery-ink-500">Çuval</p>
                       <input
                         ref={girisRefineEkle}
                         type="number"
@@ -264,7 +264,7 @@ export default function GunlukGirisPage() {
                         onChange={(e) => setCuvalGirisleri((prev) => ({ ...prev, [m.id]: Math.max(0, Number(e.target.value) || 0) }))}
                         onFocus={(e) => e.target.select()}
                         onKeyDown={entereGec}
-                        className="w-full rounded border border-bakery-cream-200 bg-bakery-cream-50 px-0 py-0.5 text-center text-[11px] font-medium text-bakery-coffee-900 outline-none focus:border-bakery-amber-500 focus:ring-1 focus:ring-bakery-amber-500/30"
+                        className="w-full rounded border border-bakery-cream-200 bg-bakery-cream-50 px-0 py-0.5 text-center text-[11px] font-medium text-bakery-ink-900 outline-none focus:border-bakery-amber-500 focus:ring-1 focus:ring-bakery-amber-500/30"
                       />
                     </div>
                   )}
@@ -275,7 +275,7 @@ export default function GunlukGirisPage() {
                     value=""
                     tabIndex={-1}
                     onChange={(e) => urunEkle(m.id, e.target.value)}
-                    className="mt-1 w-full rounded border border-dashed border-bakery-cream-300 bg-transparent px-0.5 py-0.5 text-[8px] text-bakery-coffee-500 outline-none focus:border-bakery-amber-500"
+                    className="mt-1 w-full rounded border border-dashed border-bakery-cream-300 bg-transparent px-0.5 py-0.5 text-[8px] text-bakery-ink-500 outline-none focus:border-bakery-amber-500"
                   >
                     <option value="">+ Ürün</option>
                     {eklenebilirUrunler.map((u) => (
@@ -288,7 +288,7 @@ export default function GunlukGirisPage() {
 
                 <div className="mt-1 flex items-center justify-between gap-0.5 border-t border-bakery-cream-100 pt-1">
                   {unMusterisi ? (
-                    <span className="text-[8px] leading-tight text-bakery-coffee-500">Ücretsiz</span>
+                    <span className="text-[8px] leading-tight text-bakery-ink-500">Ücretsiz</span>
                   ) : (
                     <input
                       type="checkbox"
@@ -298,7 +298,7 @@ export default function GunlukGirisPage() {
                       className="h-3 w-3 shrink-0"
                     />
                   )}
-                  <span className="truncate text-[10px] font-semibold text-bakery-coffee-900">
+                  <span className="truncate text-[10px] font-semibold text-bakery-ink-900">
                     {unMusterisi ? '' : formatTutar(toplam)}
                   </span>
                 </div>
@@ -309,9 +309,9 @@ export default function GunlukGirisPage() {
       )}
 
       {veresiyeMusterileri.length > 0 && veresiyeUrunleri.length > 0 && (
-        <div className="fixed inset-x-0 bottom-16 z-10 border-t border-bakery-cream-200 bg-white/95 px-4 py-3 backdrop-blur md:bottom-0">
+        <div className="fixed inset-x-0 bottom-16 z-10 border-t border-bakery-cream-200 bg-bakery-surface/95 px-4 py-3 backdrop-blur md:bottom-0">
           <div className="mx-auto flex max-w-6xl items-center justify-between">
-            <span className="text-sm text-bakery-coffee-600">
+            <span className="text-sm text-bakery-ink-600">
               {doluSatirSayisi > 0 ? `${doluSatirSayisi} müşteri için giriş hazır` : 'Henüz miktar girilmedi'}
             </span>
             <button

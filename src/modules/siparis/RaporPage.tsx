@@ -42,7 +42,7 @@ export default function RaporPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-bakery-coffee-900">Rapor</h2>
+        <h2 className="text-lg font-semibold text-bakery-ink-900">Rapor</h2>
         <DonemFiltre
           secili={donem}
           onSeciliDegis={setDonem}
@@ -55,41 +55,41 @@ export default function RaporPage() {
       </div>
 
       {yukleniyor ? (
-        <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+        <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
       ) : gecerliSiparisler.length === 0 ? (
         <BosDurum baslik="Bu aralıkta sipariş yok" />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-xl bg-white p-4 shadow-sm shadow-bakery-coffee-900/5">
-              <p className="text-xs text-bakery-coffee-500">Sipariş Sayısı</p>
-              <p className="text-xl font-semibold text-bakery-coffee-900">{ozet.siparisSayisi}</p>
+            <div className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
+              <p className="text-xs text-bakery-ink-500">Sipariş Sayısı</p>
+              <p className="text-xl font-semibold text-bakery-ink-900">{ozet.siparisSayisi}</p>
             </div>
-            <div className="rounded-xl bg-white p-4 shadow-sm shadow-bakery-coffee-900/5">
-              <p className="text-xs text-bakery-coffee-500">Toplam Tutar</p>
-              <p className="text-xl font-semibold text-bakery-coffee-900">
+            <div className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
+              <p className="text-xs text-bakery-ink-500">Toplam Tutar</p>
+              <p className="text-xl font-semibold text-bakery-ink-900">
                 <TutarGoster tutar={ozet.toplamTutar} />
               </p>
             </div>
-            <div className="rounded-xl bg-white p-4 shadow-sm shadow-bakery-coffee-900/5">
-              <p className="text-xs text-bakery-coffee-500">Ödenen Sipariş</p>
+            <div className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
+              <p className="text-xs text-bakery-ink-500">Ödenen Sipariş</p>
               <p className="text-xl font-semibold text-bakery-success">{ozet.odenenSayisi}</p>
             </div>
-            <div className="rounded-xl bg-white p-4 shadow-sm shadow-bakery-coffee-900/5">
-              <p className="text-xs text-bakery-coffee-500">Ödenen Tutar</p>
+            <div className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
+              <p className="text-xs text-bakery-ink-500">Ödenen Tutar</p>
               <p className="text-xl font-semibold text-bakery-success">
                 <TutarGoster tutar={ozet.odenenTutar} />
               </p>
             </div>
           </div>
 
-          <div className="rounded-xl bg-white p-4 shadow-sm shadow-bakery-coffee-900/5">
-            <h3 className="mb-3 text-sm font-semibold text-bakery-coffee-800">Ürün Bazında Dağılım</h3>
+          <div className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
+            <h3 className="mb-3 text-sm font-semibold text-bakery-ink-800">Ürün Bazında Dağılım</h3>
             <div className="space-y-1.5">
               {ozet.urunToplamlari.map(([ad, adet]) => (
                 <div key={ad} className="flex items-center justify-between text-sm">
-                  <span className="text-bakery-coffee-700">{ad}</span>
-                  <span className="font-medium text-bakery-coffee-900">{adet} adet</span>
+                  <span className="text-bakery-ink-700">{ad}</span>
+                  <span className="font-medium text-bakery-ink-900">{adet} adet</span>
                 </div>
               ))}
             </div>

@@ -197,7 +197,7 @@ export default function OzetPage() {
             <button
               onClick={() => setGrafikAcik((v) => !v)}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${
-                grafikAcik ? 'bg-bakery-coffee-700 text-white' : 'bg-bakery-cream-100 text-bakery-coffee-600 hover:bg-bakery-cream-200'
+                grafikAcik ? 'bg-bakery-coffee-700 text-white' : 'bg-bakery-cream-100 text-bakery-ink-600 hover:bg-bakery-cream-200'
               }`}
             >
               <BarChart2 size={16} />
@@ -222,7 +222,7 @@ export default function OzetPage() {
         </div>
 
         {personelKistlamasiUygulandi && (
-          <p className="text-xs text-bakery-coffee-500">
+          <p className="text-xs text-bakery-ink-500">
             Personel görünümü geçmişe dönük en fazla son 7 günü kapsar — daha eski kayıtlar için bir yöneticiye danışın.
           </p>
         )}
@@ -242,7 +242,7 @@ export default function OzetPage() {
             <button
               onClick={() => setGorunum('teslimatlar')}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                gorunum === 'teslimatlar' ? 'bg-white text-bakery-coffee-900 shadow-sm' : 'text-bakery-coffee-500'
+                gorunum === 'teslimatlar' ? 'bg-bakery-surface text-bakery-ink-900 shadow-sm' : 'text-bakery-ink-500'
               }`}
             >
               Teslimatlar
@@ -250,7 +250,7 @@ export default function OzetPage() {
             <button
               onClick={() => setGorunum('odemeler')}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                gorunum === 'odemeler' ? 'bg-white text-bakery-coffee-900 shadow-sm' : 'text-bakery-coffee-500'
+                gorunum === 'odemeler' ? 'bg-bakery-surface text-bakery-ink-900 shadow-sm' : 'text-bakery-ink-500'
               }`}
             >
               Ödemeler
@@ -263,7 +263,7 @@ export default function OzetPage() {
             <button
               onClick={() => setKaynakFiltre('tumu')}
               className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
-                kaynakFiltre === 'tumu' ? 'bg-white text-bakery-coffee-900 shadow-sm' : 'text-bakery-coffee-500'
+                kaynakFiltre === 'tumu' ? 'bg-bakery-surface text-bakery-ink-900 shadow-sm' : 'text-bakery-ink-500'
               }`}
             >
               Tümü
@@ -271,7 +271,7 @@ export default function OzetPage() {
             <button
               onClick={() => setKaynakFiltre('siparis')}
               className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
-                kaynakFiltre === 'siparis' ? 'bg-white text-bakery-coffee-900 shadow-sm' : 'text-bakery-coffee-500'
+                kaynakFiltre === 'siparis' ? 'bg-bakery-surface text-bakery-ink-900 shadow-sm' : 'text-bakery-ink-500'
               }`}
             >
               Siparişten Gelen
@@ -279,7 +279,7 @@ export default function OzetPage() {
             <button
               onClick={() => setKaynakFiltre('veresiye')}
               className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
-                kaynakFiltre === 'veresiye' ? 'bg-white text-bakery-coffee-900 shadow-sm' : 'text-bakery-coffee-500'
+                kaynakFiltre === 'veresiye' ? 'bg-bakery-surface text-bakery-ink-900 shadow-sm' : 'text-bakery-ink-500'
               }`}
             >
               Doğrudan Veresiye
@@ -289,10 +289,10 @@ export default function OzetPage() {
       </div>
 
       {grafikAcik && (
-        <div className="rounded-xl bg-white p-4 shadow-sm shadow-bakery-coffee-900/5">
-          <h3 className="mb-3 text-sm font-semibold text-bakery-coffee-800">Borç / Tahsilat Trend</h3>
+        <div className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
+          <h3 className="mb-3 text-sm font-semibold text-bakery-ink-800">Borç / Tahsilat Trend</h3>
           {grafikVerisi.length === 0 ? (
-            <p className="text-sm text-bakery-coffee-400">Bu aralıkta veri yok.</p>
+            <p className="text-sm text-bakery-ink-400">Bu aralıkta veri yok.</p>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={grafikVerisi}>
@@ -311,7 +311,7 @@ export default function OzetPage() {
 
       {gorunum === 'teslimatlar' ? (
         kayitYukleniyor ? (
-          <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+          <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
         ) : kayitlar.length === 0 ? (
           <BosDurum baslik="Bu aralıkta kayıt yok" />
         ) : (
@@ -319,15 +319,15 @@ export default function OzetPage() {
             {/* Mobil: kart görünümü — aynı müşterinin aynı gün aldığı ürünler tek kartta */}
             <div className="space-y-2 md:hidden">
               {kayitGruplari.map((grup) => (
-                <div key={grup.anahtar} className="rounded-xl bg-white p-3 shadow-sm shadow-bakery-coffee-900/5">
+                <div key={grup.anahtar} className="rounded-xl bg-bakery-surface p-3 shadow-sm shadow-bakery-coffee-900/5">
                   <div className="mb-1 flex items-center justify-between gap-2">
-                    <p className="truncate text-sm font-medium text-bakery-coffee-900">{grup.musteriAdi}</p>
-                    <span className="shrink-0 text-xs text-bakery-coffee-400">{grup.tarih}</span>
+                    <p className="truncate text-sm font-medium text-bakery-ink-900">{grup.musteriAdi}</p>
+                    <span className="shrink-0 text-xs text-bakery-ink-400">{grup.tarih}</span>
                   </div>
                   <div className="divide-y divide-bakery-cream-100">
                     {grup.kayitlar.map((k) => (
                       <div key={k.id} className="flex items-center justify-between gap-2 py-1 text-sm">
-                        <span className="flex min-w-0 items-center gap-1.5 truncate text-bakery-coffee-600">
+                        <span className="flex min-w-0 items-center gap-1.5 truncate text-bakery-ink-600">
                           {k.adet}× {k.urunAdi}
                           {k.girisYontemi === 'siparis' && (
                             <span className="shrink-0 rounded-full bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
@@ -337,7 +337,7 @@ export default function OzetPage() {
                         </span>
                         <div className="flex shrink-0 items-center gap-1.5">
                           <DurumRozeti durum={k.durum} />
-                          <span className="font-semibold text-bakery-coffee-900">
+                          <span className="font-semibold text-bakery-ink-900">
                             <TutarGoster tutar={k.tutar} />
                           </span>
                           <button
@@ -345,7 +345,7 @@ export default function OzetPage() {
                               setDuzenlenenKayit(k)
                               setKayitFormAcik(true)
                             }}
-                            className="rounded p-1 text-bakery-coffee-400 hover:bg-bakery-cream-100"
+                            className="rounded p-1 text-bakery-ink-400 hover:bg-bakery-cream-100"
                             aria-label="Düzenle"
                           >
                             <Pencil size={13} />
@@ -366,10 +366,10 @@ export default function OzetPage() {
             </div>
 
             {/* Masaüstü: tablo görünümü */}
-            <div className="hidden overflow-x-auto rounded-xl bg-white shadow-sm shadow-bakery-coffee-900/5 md:block">
+            <div className="hidden overflow-x-auto rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5 md:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-bakery-cream-100 text-left text-bakery-coffee-500">
+                  <tr className="border-b border-bakery-cream-100 text-left text-bakery-ink-500">
                     <th className="px-4 py-3 font-medium">Tarih</th>
                     <th className="px-4 py-3 font-medium">Müşteri</th>
                     <th className="px-4 py-3 font-medium">Tür</th>
@@ -383,10 +383,10 @@ export default function OzetPage() {
                 <tbody>
                   {siraliKayitlar.map((k) => (
                     <tr key={k.id} className="border-b border-bakery-cream-100 last:border-0">
-                      <td className="px-4 py-3 text-bakery-coffee-600">{k.tarih}</td>
-                      <td className="px-4 py-3 font-medium text-bakery-coffee-900">{k.musteriAdi}</td>
-                      <td className="px-4 py-3 text-bakery-coffee-600">{k.urunAdi}</td>
-                      <td className="px-4 py-3 text-bakery-coffee-600">{k.adet}</td>
+                      <td className="px-4 py-3 text-bakery-ink-600">{k.tarih}</td>
+                      <td className="px-4 py-3 font-medium text-bakery-ink-900">{k.musteriAdi}</td>
+                      <td className="px-4 py-3 text-bakery-ink-600">{k.urunAdi}</td>
+                      <td className="px-4 py-3 text-bakery-ink-600">{k.adet}</td>
                       <td className="px-4 py-3">
                         <TutarGoster tutar={k.tutar} />
                       </td>
@@ -397,7 +397,7 @@ export default function OzetPage() {
                         {k.girisYontemi === 'siparis' ? (
                           <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600">Sipariş</span>
                         ) : (
-                          <span className="text-xs text-bakery-coffee-400">Veresiye</span>
+                          <span className="text-xs text-bakery-ink-400">Veresiye</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -407,7 +407,7 @@ export default function OzetPage() {
                               setDuzenlenenKayit(k)
                               setKayitFormAcik(true)
                             }}
-                            className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
+                            className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
                             aria-label="Düzenle"
                           >
                             <Pencil size={16} />
@@ -429,7 +429,7 @@ export default function OzetPage() {
           </>
         )
       ) : odemeYukleniyor ? (
-        <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+        <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
       ) : odemeler.length === 0 ? (
         <BosDurum baslik="Bu aralıkta ödeme yok" />
       ) : (
@@ -437,24 +437,24 @@ export default function OzetPage() {
           {/* Mobil: kart görünümü */}
           <div className="space-y-2 md:hidden">
             {odemeler.map((o) => (
-              <div key={o.id} className="rounded-xl bg-white p-3.5 shadow-sm shadow-bakery-coffee-900/5">
+              <div key={o.id} className="rounded-xl bg-bakery-surface p-3.5 shadow-sm shadow-bakery-coffee-900/5">
                 <div className="mb-1.5 flex items-start justify-between gap-2">
                   <div>
-                    <p className="font-medium text-bakery-coffee-900">{o.musteriAdi}</p>
-                    <p className="text-xs text-bakery-coffee-500">{o.tarih}</p>
+                    <p className="font-medium text-bakery-ink-900">{o.musteriAdi}</p>
+                    <p className="text-xs text-bakery-ink-500">{o.tarih}</p>
                   </div>
                   <span className="font-semibold text-bakery-success">
                     <TutarGoster tutar={o.tutar} />
                   </span>
                 </div>
-                {o.not && <p className="mb-2 text-sm text-bakery-coffee-500">{o.not}</p>}
+                {o.not && <p className="mb-2 text-sm text-bakery-ink-500">{o.not}</p>}
                 <div className="flex justify-end gap-1 border-t border-bakery-cream-100 pt-2">
                   <button
                     onClick={() => {
                       setDuzenlenenOdeme(o)
                       setOdemeFormAcik(true)
                     }}
-                    className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
+                    className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
                     aria-label="Düzenle"
                   >
                     <Pencil size={16} />
@@ -472,10 +472,10 @@ export default function OzetPage() {
           </div>
 
           {/* Masaüstü: tablo görünümü */}
-          <div className="hidden overflow-x-auto rounded-xl bg-white shadow-sm shadow-bakery-coffee-900/5 md:block">
+          <div className="hidden overflow-x-auto rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5 md:block">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-bakery-cream-100 text-left text-bakery-coffee-500">
+                <tr className="border-b border-bakery-cream-100 text-left text-bakery-ink-500">
                   <th className="px-4 py-3 font-medium">Tarih</th>
                   <th className="px-4 py-3 font-medium">Müşteri</th>
                   <th className="px-4 py-3 font-medium">Tutar</th>
@@ -486,12 +486,12 @@ export default function OzetPage() {
               <tbody>
                 {odemeler.map((o) => (
                   <tr key={o.id} className="border-b border-bakery-cream-100 last:border-0">
-                    <td className="px-4 py-3 text-bakery-coffee-600">{o.tarih}</td>
-                    <td className="px-4 py-3 font-medium text-bakery-coffee-900">{o.musteriAdi}</td>
+                    <td className="px-4 py-3 text-bakery-ink-600">{o.tarih}</td>
+                    <td className="px-4 py-3 font-medium text-bakery-ink-900">{o.musteriAdi}</td>
                     <td className="px-4 py-3 text-bakery-success">
                       <TutarGoster tutar={o.tutar} />
                     </td>
-                    <td className="px-4 py-3 text-bakery-coffee-500">{o.not}</td>
+                    <td className="px-4 py-3 text-bakery-ink-500">{o.not}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
                         <button
@@ -499,7 +499,7 @@ export default function OzetPage() {
                             setDuzenlenenOdeme(o)
                             setOdemeFormAcik(true)
                           }}
-                          className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
+                          className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
                           aria-label="Düzenle"
                         >
                           <Pencil size={16} />

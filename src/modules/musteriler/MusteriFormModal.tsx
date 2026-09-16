@@ -150,20 +150,20 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:items-center">
       <form
         onSubmit={handleSubmit}
-        className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl md:rounded-2xl"
+        className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-bakery-surface p-5 shadow-xl md:rounded-2xl"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-bakery-coffee-900">
+          <h3 className="text-base font-semibold text-bakery-ink-900">
             {mevcut ? 'Müşteriyi Düzenle' : 'Yeni Müşteri'}
           </h3>
-          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-coffee-400 hover:bg-bakery-cream-100">
+          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-ink-400 hover:bg-bakery-cream-100">
             <X size={20} />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Ad *</label>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Ad *</label>
             <input
               type="text"
               value={ad}
@@ -176,7 +176,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Ad Soyad</label>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Ad Soyad</label>
               <input
                 type="text"
                 value={adSoyad}
@@ -186,7 +186,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-bakery-coffee-800">Hitap Şekli</label>
+              <label className="mb-1.5 block text-sm font-medium text-bakery-ink-800">Hitap Şekli</label>
               <div className="flex gap-1.5">
                 {(
                   [
@@ -200,7 +200,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
                     key={etiket}
                     onClick={() => setHitapSekli(key)}
                     className={`flex-1 rounded-lg px-2 py-2 text-sm font-medium transition ${
-                      hitapSekli === key ? 'bg-bakery-amber-600 text-white' : 'bg-bakery-cream-100 text-bakery-coffee-600 hover:bg-bakery-cream-200'
+                      hitapSekli === key ? 'bg-bakery-amber-600 text-white' : 'bg-bakery-cream-100 text-bakery-ink-600 hover:bg-bakery-cream-200'
                     }`}
                   >
                     {etiket}
@@ -212,7 +212,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Telefon</label>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Telefon</label>
               <input
                 type="tel"
                 value={telefon}
@@ -221,7 +221,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Adres</label>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Adres</label>
               <input
                 type="text"
                 value={adres}
@@ -232,7 +232,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-bakery-coffee-800">Hangi modüllerde görünsün?</label>
+            <label className="mb-1.5 block text-sm font-medium text-bakery-ink-800">Hangi modüllerde görünsün?</label>
             <div className="flex flex-wrap gap-2">
               {MODUL_ETIKETLERI.map(({ key, etiket }) => (
                 <button
@@ -242,7 +242,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
                   className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
                     moduller.includes(key)
                       ? 'bg-bakery-amber-600 text-white'
-                      : 'bg-bakery-cream-100 text-bakery-coffee-600 hover:bg-bakery-cream-200'
+                      : 'bg-bakery-cream-100 text-bakery-ink-600 hover:bg-bakery-cream-200'
                   }`}
                 >
                   {etiket}
@@ -251,12 +251,12 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
             </div>
           </div>
 
-          <label className="flex items-start gap-2 rounded-lg bg-bakery-cream-50 px-3 py-2.5 text-sm text-bakery-coffee-800">
+          <label className="flex items-start gap-2 rounded-lg bg-bakery-cream-50 px-3 py-2.5 text-sm text-bakery-ink-800">
             <input type="checkbox" checked={gecici} onChange={(e) => setGecici(e.target.checked)} className="mt-0.5" />
             <span>
               <span className="font-medium">Geçici / Düğün Müşterisi</span>
               <br />
-              <span className="text-xs text-bakery-coffee-500">
+              <span className="text-xs text-bakery-ink-500">
                 Tek seferlik etkinlik müşterileri — ana müşteri listesinde varsayılan olarak gizlenir.
               </span>
             </span>
@@ -265,24 +265,24 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
           {veresiyeSecili && (
             <div className="space-y-3 rounded-lg bg-bakery-cream-50 p-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Geçmiş Bakiye (₺)</label>
+                <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Geçmiş Bakiye (₺)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={acilisBakiyesi}
                   onChange={(e) => setAcilisBakiyesi(Number(e.target.value))}
-                  className="w-full rounded-lg border border-bakery-cream-200 bg-white px-3 py-2 outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
+                  className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-surface px-3 py-2 outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
                 />
-                <p className="mt-1 text-xs text-bakery-coffee-500">Sisteme geçmeden önceki devreden borç — güncel bakiyeye dahil edilir.</p>
+                <p className="mt-1 text-xs text-bakery-ink-500">Sisteme geçmeden önceki devreden borç — güncel bakiyeye dahil edilir.</p>
               </div>
 
               {veresiyeUrunleri.length > 0 && (
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-bakery-coffee-800">Ürüne Özel Fiyatlar</label>
+                  <label className="mb-1.5 block text-sm font-medium text-bakery-ink-800">Ürüne Özel Fiyatlar</label>
                   <div className="space-y-1.5">
                     {veresiyeUrunleri.map((u) => (
                       <div key={u.id} className="flex items-center gap-2">
-                        <span className="flex-1 text-sm text-bakery-coffee-600">{u.ad}</span>
+                        <span className="flex-1 text-sm text-bakery-ink-600">{u.ad}</span>
                         <input
                           type="number"
                           min={0}
@@ -290,7 +290,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
                           placeholder={`Standart: ₺${u.fiyat}`}
                           value={ozelFiyatlar[u.id] ?? ''}
                           onChange={(e) => ozelFiyatDegistir(u.id, e.target.value)}
-                          className="w-28 rounded-lg border border-bakery-cream-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-bakery-amber-500"
+                          className="w-28 rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1.5 text-sm outline-none focus:border-bakery-amber-500"
                         />
                         {mevcut && ozelFiyatlar[u.id] && Number(ozelFiyatlar[u.id]) > 0 && (
                           <button
@@ -309,7 +309,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
 
               {veresiyeUrunleri.length > 0 && (
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-bakery-coffee-800">
+                  <label className="mb-1.5 block text-sm font-medium text-bakery-ink-800">
                     Günlük Girişte Gösterilecek Ürünler
                   </label>
                   <div className="flex flex-wrap gap-1.5">
@@ -321,25 +321,25 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
                         className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
                           sikUrunler.includes(u.id)
                             ? 'bg-bakery-amber-600 text-white'
-                            : 'bg-white text-bakery-coffee-500 ring-1 ring-inset ring-bakery-cream-200 hover:bg-bakery-cream-100'
+                            : 'bg-bakery-surface text-bakery-ink-500 ring-1 ring-inset ring-bakery-cream-200 hover:bg-bakery-cream-100'
                         }`}
                       >
                         {u.ad}
                       </button>
                     ))}
                   </div>
-                  <p className="mt-1 text-xs text-bakery-coffee-500">
+                  <p className="mt-1 text-xs text-bakery-ink-500">
                     Hiçbiri seçilmezse Günlük Giriş'te tüm ürünler gösterilir. Seçiliyse yalnızca bu ürünler listelenir
                     (o gün farklı bir ürün alırsa "+ Ürün Ekle" ile tek seferlik eklenebilir).
                   </p>
                 </div>
               )}
 
-              <label className="flex items-center gap-2 text-sm font-medium text-bakery-coffee-800">
+              <label className="flex items-center gap-2 text-sm font-medium text-bakery-ink-800">
                 <input type="checkbox" checked={unHesabiAktif} onChange={(e) => setUnHesabiAktif(e.target.checked)} />
                 Bu müşteride un hesabını uygula
               </label>
-              <p className="-mt-2 text-xs text-bakery-coffee-500">
+              <p className="-mt-2 text-xs text-bakery-ink-500">
                 Aktifse ekmek tamamen ücretsizdir — ödeme yalnızca getirilen un (çuval) ile yapılır, ₺ bakiyesi hiç etkilenmez.
               </p>
 
@@ -347,11 +347,11 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2">
-                      <label className="mb-1 block text-xs font-medium text-bakery-coffee-700">Referans Ürün</label>
+                      <label className="mb-1 block text-xs font-medium text-bakery-ink-700">Referans Ürün</label>
                       <select
                         value={referansUrunId}
                         onChange={(e) => setReferansUrunId(e.target.value)}
-                        className="w-full rounded-lg border border-bakery-cream-200 bg-white px-3 py-2 text-sm outline-none focus:border-bakery-amber-500"
+                        className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-surface px-3 py-2 text-sm outline-none focus:border-bakery-amber-500"
                       >
                         <option value="">Seçin…</option>
                         {urunler.filter((u) => u.aktif).map((u) => (
@@ -362,7 +362,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
                       </select>
                     </div>
                     <div className="col-span-2">
-                      <label className="mb-1 block text-xs font-medium text-bakery-coffee-700">
+                      <label className="mb-1 block text-xs font-medium text-bakery-ink-700">
                         Kaç eşdeğer adette 1 çuval un
                       </label>
                       <input
@@ -370,14 +370,14 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
                         min={1}
                         value={adetPerCuval}
                         onChange={(e) => setAdetPerCuval(Number(e.target.value))}
-                        className="w-full rounded-lg border border-bakery-cream-200 bg-white px-3 py-2 text-sm outline-none focus:border-bakery-amber-500"
+                        className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-surface px-3 py-2 text-sm outline-none focus:border-bakery-amber-500"
                       />
                     </div>
                   </div>
 
                   {mevcut?.unHesabi && (
-                    <div className="rounded-lg bg-white px-3 py-2.5 text-sm">
-                      <p className="text-xs text-bakery-coffee-500">Güncel un bakiyesi (canlı önizleme)</p>
+                    <div className="rounded-lg bg-bakery-surface px-3 py-2.5 text-sm">
+                      <p className="text-xs text-bakery-ink-500">Güncel un bakiyesi (canlı önizleme)</p>
                       <p className={`font-semibold ${mevcut.unHesabi.birikenEsdegerAdet > 0 ? 'text-bakery-danger' : 'text-bakery-success'}`}>
                         {cuvalGoster(mevcut.unHesabi.birikenEsdegerAdet, adetPerCuval || null)}
                       </p>
@@ -387,12 +387,12 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
               )}
 
               {mevcut && (
-                <div className="space-y-2 rounded-lg bg-white p-3">
-                  <p className="text-sm font-medium text-bakery-coffee-800">Müşteri Portalı</p>
-                  <p className="break-all text-xs text-bakery-coffee-500">
+                <div className="space-y-2 rounded-lg bg-bakery-surface p-3">
+                  <p className="text-sm font-medium text-bakery-ink-800">Müşteri Portalı</p>
+                  <p className="break-all text-xs text-bakery-ink-500">
                     {window.location.origin}/portal.html?kod={mevcut.id}
                   </p>
-                  <p className="text-sm text-bakery-coffee-700">
+                  <p className="text-sm text-bakery-ink-700">
                     Şifre: <strong className="font-mono">{portalSifre ?? '—'}</strong>
                   </p>
                   <div className="flex gap-2">
@@ -400,7 +400,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
                       type="button"
                       onClick={handleParolaYenile}
                       disabled={parolaYenileniyor}
-                      className="flex items-center gap-1.5 rounded-lg bg-bakery-cream-100 px-3 py-1.5 text-xs font-medium text-bakery-coffee-600 hover:bg-bakery-cream-200 disabled:opacity-60"
+                      className="flex items-center gap-1.5 rounded-lg bg-bakery-cream-100 px-3 py-1.5 text-xs font-medium text-bakery-ink-600 hover:bg-bakery-cream-200 disabled:opacity-60"
                     >
                       <RefreshCw size={12} />
                       Şifreyi Yenile
@@ -419,7 +419,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
             </div>
           )}
 
-          <label className="flex items-center gap-2 text-sm font-medium text-bakery-coffee-800">
+          <label className="flex items-center gap-2 text-sm font-medium text-bakery-ink-800">
             <input type="checkbox" checked={aktif} onChange={(e) => setAktif(e.target.checked)} />
             Aktif müşteri
           </label>
@@ -428,7 +428,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-coffee-600 hover:bg-bakery-cream-100">
+          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-ink-600 hover:bg-bakery-cream-100">
             Vazgeç
           </button>
           <button

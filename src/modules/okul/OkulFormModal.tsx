@@ -66,17 +66,17 @@ export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: P
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:items-center">
-      <form onSubmit={handleSubmit} className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl md:rounded-2xl">
+      <form onSubmit={handleSubmit} className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-bakery-surface p-5 shadow-xl md:rounded-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-bakery-coffee-900">{mevcut ? 'Okulu Düzenle' : 'Yeni Okul'}</h3>
-          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-coffee-400 hover:bg-bakery-cream-100">
+          <h3 className="text-base font-semibold text-bakery-ink-900">{mevcut ? 'Okulu Düzenle' : 'Yeni Okul'}</h3>
+          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-ink-400 hover:bg-bakery-cream-100">
             <X size={20} />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Okul Adı *</label>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Okul Adı *</label>
             <input
               type="text"
               value={ad}
@@ -87,7 +87,7 @@ export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: P
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Firma (lojistik grup)</label>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Firma (lojistik grup)</label>
             <select
               value={firmaId}
               onChange={(e) => setFirmaId(e.target.value)}
@@ -103,7 +103,7 @@ export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: P
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">
               Bağımsız veresiye hesabı (opsiyonel)
             </label>
             <MusteriSecici
@@ -114,14 +114,14 @@ export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: P
               placeholder="Yok"
               onSec={(m) => setMusteriId(m.id)}
             />
-            <p className="mt-1 text-xs text-bakery-coffee-500">
+            <p className="mt-1 text-xs text-bakery-ink-500">
               Sadece bu okulun kendi ayrı veresiye hesabı varsa seçin (günlük ekmek siparişinden bağımsız).
             </p>
           </div>
 
           <div>
             <div className="mb-1.5 flex items-center justify-between">
-              <label className="text-sm font-medium text-bakery-coffee-800">Hatlar (ürün + günlük adet)</label>
+              <label className="text-sm font-medium text-bakery-ink-800">Hatlar (ürün + günlük adet)</label>
               <button type="button" onClick={hatEkle} className="flex items-center gap-1 text-sm font-medium text-bakery-amber-600 hover:text-bakery-amber-500">
                 <Plus size={14} />
                 Hat Ekle
@@ -129,7 +129,7 @@ export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: P
             </div>
 
             {lines.length === 0 ? (
-              <p className="rounded-lg bg-bakery-cream-50 px-3 py-3 text-sm text-bakery-coffee-400">Henüz hat eklenmedi.</p>
+              <p className="rounded-lg bg-bakery-cream-50 px-3 py-3 text-sm text-bakery-ink-400">Henüz hat eklenmedi.</p>
             ) : (
               <div className="space-y-2">
                 {lines.map((l) => (
@@ -138,7 +138,7 @@ export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: P
                       <select
                         value={l.productId}
                         onChange={(e) => urunSec(l.id, e.target.value)}
-                        className="flex-1 rounded-lg border border-bakery-cream-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-bakery-amber-500"
+                        className="flex-1 rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1.5 text-sm outline-none focus:border-bakery-amber-500"
                       >
                         <option value="">Ürün seçin…</option>
                         {okulUrunleri.map((u) => (
@@ -152,7 +152,7 @@ export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: P
                         min={1}
                         value={l.adet}
                         onChange={(e) => hatGuncelle(l.id, { adet: Number(e.target.value) })}
-                        className="w-16 rounded-lg border border-bakery-cream-200 bg-white px-2 py-1.5 text-center text-sm outline-none focus:border-bakery-amber-500"
+                        className="w-16 rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1.5 text-center text-sm outline-none focus:border-bakery-amber-500"
                       />
                       <button type="button" onClick={() => hatSil(l.id)} className="rounded-lg p-1.5 text-bakery-danger hover:bg-bakery-danger/10">
                         <Trash2 size={16} />
@@ -162,7 +162,7 @@ export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: P
                       <select
                         value={l.faturaHedefiId ?? ''}
                         onChange={(e) => hatGuncelle(l.id, { faturaHedefiId: e.target.value || null })}
-                        className="flex-1 rounded-lg border border-bakery-cream-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-bakery-amber-500"
+                        className="flex-1 rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1.5 text-xs outline-none focus:border-bakery-amber-500"
                       >
                         <option value="">Fatura: Doğrudan bu okula</option>
                         {firmalar.map((f) => (
@@ -171,7 +171,7 @@ export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: P
                           </option>
                         ))}
                       </select>
-                      <label className="flex items-center gap-1.5 text-xs text-bakery-coffee-600">
+                      <label className="flex items-center gap-1.5 text-xs text-bakery-ink-600">
                         <input type="checkbox" checked={l.aktif} onChange={(e) => hatGuncelle(l.id, { aktif: e.target.checked })} />
                         Aktif
                       </label>
@@ -186,7 +186,7 @@ export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: P
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-coffee-600 hover:bg-bakery-cream-100">
+          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-ink-600 hover:bg-bakery-cream-100">
             Vazgeç
           </button>
           <button

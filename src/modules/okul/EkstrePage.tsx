@@ -109,7 +109,7 @@ export default function EkstrePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-bakery-coffee-900">Beklemede</h2>
+        <h2 className="mb-3 text-lg font-semibold text-bakery-ink-900">Beklemede</h2>
         {beklemedeGunler.length === 0 ? (
           <BosDurum baslik="Beklemede gün yok" aciklama="Tüm siparişler kapatılmış." />
         ) : (
@@ -117,25 +117,25 @@ export default function EkstrePage() {
             {beklemedeGunler.map((g) => {
               const acik = acikTarih === g.tarih
               return (
-                <div key={g.tarih} className="rounded-xl bg-white shadow-sm shadow-bakery-coffee-900/5">
+                <div key={g.tarih} className="rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
                   <button
                     onClick={() => setAcikTarih(acik ? null : g.tarih)}
                     className="flex w-full items-center justify-between px-4 py-3 text-left"
                   >
                     <div>
-                      <p className="font-medium text-bakery-coffee-900">{g.tarih}</p>
-                      <p className="text-xs text-bakery-coffee-500">{g.satirlar.length} satır — tahmini tutar</p>
+                      <p className="font-medium text-bakery-ink-900">{g.tarih}</p>
+                      <p className="text-xs text-bakery-ink-500">{g.satirlar.length} satır — tahmini tutar</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-semibold text-bakery-amber-600">
                         <TutarGoster tutar={g.tutar} />
                       </span>
-                      <ChevronDown size={18} className={`text-bakery-coffee-400 transition ${acik ? 'rotate-180' : ''}`} />
+                      <ChevronDown size={18} className={`text-bakery-ink-400 transition ${acik ? 'rotate-180' : ''}`} />
                     </div>
                   </button>
                   {acik && (
                     <div className="border-t border-bakery-cream-100 px-4 py-3">
-                      <ul className="mb-3 space-y-1 text-sm text-bakery-coffee-600">
+                      <ul className="mb-3 space-y-1 text-sm text-bakery-ink-600">
                         {g.satirlar.map((s) => {
                           const okul = okullar.find((o) => o.id === s.schoolId)
                           const urun = urunler.find((u) => u.id === s.productId)
@@ -177,7 +177,7 @@ export default function EkstrePage() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-bakery-coffee-900">Kesinleşmiş Bakiyeler</h2>
+        <h2 className="mb-3 text-lg font-semibold text-bakery-ink-900">Kesinleşmiş Bakiyeler</h2>
         {okullar.length === 0 ? (
           <BosDurum baslik="Henüz okul yok" />
         ) : (
@@ -189,17 +189,17 @@ export default function EkstrePage() {
               const okulOdemeleri = payments.filter((p) => p.hedefTipi === 'okul' && p.hedefId === okul.id)
 
               return (
-                <div key={okul.id} className="rounded-xl bg-white shadow-sm shadow-bakery-coffee-900/5">
+                <div key={okul.id} className="rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
                   <button
                     onClick={() => setAcikOkulId(acik ? null : okul.id)}
                     className="flex w-full items-center justify-between px-4 py-3 text-left"
                   >
-                    <p className="font-medium text-bakery-coffee-900">{okul.ad}</p>
+                    <p className="font-medium text-bakery-ink-900">{okul.ad}</p>
                     <div className="flex items-center gap-3">
                       <span className={`text-sm font-semibold ${bakiye > 0 ? 'text-bakery-danger' : 'text-bakery-success'}`}>
                         <TutarGoster tutar={bakiye} />
                       </span>
-                      <ChevronDown size={18} className={`text-bakery-coffee-400 transition ${acik ? 'rotate-180' : ''}`} />
+                      <ChevronDown size={18} className={`text-bakery-ink-400 transition ${acik ? 'rotate-180' : ''}`} />
                     </div>
                   </button>
                   {acik && (
@@ -211,11 +211,11 @@ export default function EkstrePage() {
                         + Ödeme Ekle
                       </button>
                       {okulTeslimatlari.length === 0 && okulOdemeleri.length === 0 ? (
-                        <p className="text-sm text-bakery-coffee-400">Henüz kesinleşmiş hareket yok.</p>
+                        <p className="text-sm text-bakery-ink-400">Henüz kesinleşmiş hareket yok.</p>
                       ) : (
                         <ul className="space-y-1 text-sm">
                           {okulTeslimatlari.map((t) => (
-                            <li key={t.id} className="flex justify-between text-bakery-coffee-600">
+                            <li key={t.id} className="flex justify-between text-bakery-ink-600">
                               <span>
                                 {t.tarih} — {t.adet}× {t.urunAdi}
                               </span>
@@ -225,7 +225,7 @@ export default function EkstrePage() {
                             </li>
                           ))}
                           {okulOdemeleri.map((p) => (
-                            <li key={p.id} className="flex items-center justify-between text-bakery-coffee-600">
+                            <li key={p.id} className="flex items-center justify-between text-bakery-ink-600">
                               <span>
                                 {p.tarih} — Ödeme {p.not && `(${p.not})`}
                               </span>
@@ -233,7 +233,7 @@ export default function EkstrePage() {
                                 <span className="font-medium text-bakery-success">
                                   <TutarGoster tutar={p.tutar} />
                                 </span>
-                                <button onClick={() => setDuzenlenenOdeme(p)} className="text-bakery-coffee-400 hover:text-bakery-coffee-600">
+                                <button onClick={() => setDuzenlenenOdeme(p)} className="text-bakery-ink-400 hover:text-bakery-ink-600">
                                   Düzenle
                                 </button>
                                 <button onClick={() => setSilinecekOdeme(p)} className="text-bakery-danger hover:text-red-700">

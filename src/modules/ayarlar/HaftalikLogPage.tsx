@@ -133,7 +133,7 @@ export default function HaftalikLogPage() {
   }
 
   const TUR_STIL: Record<HareketTuru, string> = {
-    kayit: 'bg-bakery-coffee-100 text-bakery-coffee-700',
+    kayit: 'bg-bakery-coffee-100 text-bakery-ink-700',
     odeme: 'bg-green-500/10 text-green-700',
     un: 'bg-blue-500/10 text-blue-700'
   }
@@ -143,14 +143,14 @@ export default function HaftalikLogPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-semibold text-bakery-coffee-900">Haftalık Log Kaydı</h2>
-          <p className="text-sm text-bakery-coffee-500">Son {gunSayisi} güne ait veresiye hareketleri.</p>
+          <h2 className="text-lg font-semibold text-bakery-ink-900">Haftalık Log Kaydı</h2>
+          <p className="text-sm text-bakery-ink-500">Son {gunSayisi} güne ait veresiye hareketleri.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <select
             value={gunSayisi}
             onChange={(e) => setGunSayisi(Number(e.target.value))}
-            className="rounded-lg border border-bakery-cream-200 bg-white px-2.5 py-2 text-sm outline-none focus:border-bakery-amber-500"
+            className="rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2.5 py-2 text-sm outline-none focus:border-bakery-amber-500"
           >
             {GUN_SECENEKLERI.map((g) => (
               <option key={g} value={g}>
@@ -161,7 +161,7 @@ export default function HaftalikLogPage() {
           <button
             onClick={yukle}
             disabled={yukleniyor}
-            className="flex items-center gap-1.5 rounded-lg bg-bakery-cream-100 px-3 py-2 text-sm font-medium text-bakery-coffee-600 hover:bg-bakery-cream-200 disabled:opacity-60"
+            className="flex items-center gap-1.5 rounded-lg bg-bakery-cream-100 px-3 py-2 text-sm font-medium text-bakery-ink-600 hover:bg-bakery-cream-200 disabled:opacity-60"
           >
             <RefreshCw size={14} className={yukleniyor ? 'animate-spin' : ''} />
             Yenile
@@ -180,16 +180,16 @@ export default function HaftalikLogPage() {
       {hata && <p className="rounded-lg bg-bakery-danger/10 px-3 py-2 text-sm text-bakery-danger">{hata}</p>}
 
       {yukleniyor ? (
-        <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+        <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
       ) : hareketler.length === 0 ? (
-        <p className="rounded-xl bg-white p-6 text-center text-sm text-bakery-coffee-500 shadow-sm shadow-bakery-coffee-900/5">
+        <p className="rounded-xl bg-bakery-surface p-6 text-center text-sm text-bakery-ink-500 shadow-sm shadow-bakery-coffee-900/5">
           Son {gunSayisi} günde herhangi bir hareket bulunamadı.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl bg-white shadow-sm shadow-bakery-coffee-900/5">
+        <div className="overflow-x-auto rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-bakery-cream-100 text-left text-xs font-medium uppercase text-bakery-coffee-400">
+              <tr className="border-b border-bakery-cream-100 text-left text-xs font-medium uppercase text-bakery-ink-400">
                 <th className="px-3 py-2.5">Tarih</th>
                 <th className="px-3 py-2.5">Tür</th>
                 <th className="px-3 py-2.5">Müşteri</th>
@@ -201,14 +201,14 @@ export default function HaftalikLogPage() {
             <tbody>
               {hareketler.map((h, i) => (
                 <tr key={i} className="border-b border-bakery-cream-50 last:border-0">
-                  <td className="px-3 py-2 text-bakery-coffee-600">{h.tarih}</td>
+                  <td className="px-3 py-2 text-bakery-ink-600">{h.tarih}</td>
                   <td className="px-3 py-2">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TUR_STIL[h.tur]}`}>{TUR_ETIKET[h.tur]}</span>
                   </td>
-                  <td className="px-3 py-2 font-medium text-bakery-coffee-900">{h.musteriAdi}</td>
-                  <td className="px-3 py-2 text-bakery-coffee-600">{h.aciklama}</td>
-                  <td className="px-3 py-2 text-right text-bakery-coffee-900">{h.tutar ? formatTutar(h.tutar) : '—'}</td>
-                  <td className="px-3 py-2 text-xs text-bakery-coffee-500">{kullaniciAdi(h.olusturanUid)}</td>
+                  <td className="px-3 py-2 font-medium text-bakery-ink-900">{h.musteriAdi}</td>
+                  <td className="px-3 py-2 text-bakery-ink-600">{h.aciklama}</td>
+                  <td className="px-3 py-2 text-right text-bakery-ink-900">{h.tutar ? formatTutar(h.tutar) : '—'}</td>
+                  <td className="px-3 py-2 text-xs text-bakery-ink-500">{kullaniciAdi(h.olusturanUid)}</td>
                 </tr>
               ))}
             </tbody>

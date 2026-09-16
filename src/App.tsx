@@ -125,7 +125,7 @@ function SessionGate() {
 function FullscreenLoading() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-bakery-cream-50">
-      <div className="text-sm text-bakery-coffee-500">Yükleniyor…</div>
+      <div className="text-sm text-bakery-ink-500">Yükleniyor…</div>
     </div>
   )
 }

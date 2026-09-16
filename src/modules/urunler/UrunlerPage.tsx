@@ -53,15 +53,15 @@ export default function UrunlerPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold text-bakery-coffee-900">Ürünler</h2>
+        <h2 className="text-lg font-semibold text-bakery-ink-900">Ürünler</h2>
         <div className="flex gap-2">
           <div className="relative flex-1 sm:w-64">
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-bakery-coffee-400" />
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-bakery-ink-400" />
             <input
               value={arama}
               onChange={(e) => setArama(e.target.value)}
               placeholder="Ürün ara…"
-              className="w-full rounded-lg border border-bakery-cream-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
+              className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-surface py-2 pl-9 pr-3 text-sm outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
             />
           </div>
           <button
@@ -78,17 +78,17 @@ export default function UrunlerPage() {
       </div>
 
       {yukleniyor ? (
-        <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+        <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
       ) : filtrelenmis.length === 0 ? (
         <BosDurum
           baslik={urunler.length === 0 ? 'Henüz ürün eklenmedi' : 'Aramanızla eşleşen ürün yok'}
           aciklama={urunler.length === 0 ? 'İlk ürünü eklemek için yukarıdaki butonu kullanın.' : undefined}
         />
       ) : (
-        <div className="overflow-x-auto rounded-xl bg-white shadow-sm shadow-bakery-coffee-900/5">
+        <div className="overflow-x-auto rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-bakery-cream-100 text-left text-bakery-coffee-500">
+              <tr className="border-b border-bakery-cream-100 text-left text-bakery-ink-500">
                 <th className="px-4 py-3 font-medium">Ürün</th>
                 <th className="px-4 py-3 font-medium">Fiyat</th>
                 <th className="px-4 py-3 font-medium">Modüller</th>
@@ -99,14 +99,14 @@ export default function UrunlerPage() {
             <tbody>
               {filtrelenmis.map((u) => (
                 <tr key={u.id} className="border-b border-bakery-cream-100 last:border-0">
-                  <td className="px-4 py-3 font-medium text-bakery-coffee-900">{u.ad}</td>
+                  <td className="px-4 py-3 font-medium text-bakery-ink-900">{u.ad}</td>
                   <td className="px-4 py-3">
                     <TutarGoster tutar={u.fiyat} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {u.modules.map((m) => (
-                        <span key={m} className="rounded-full bg-bakery-cream-100 px-2 py-0.5 text-xs text-bakery-coffee-600">
+                        <span key={m} className="rounded-full bg-bakery-cream-100 px-2 py-0.5 text-xs text-bakery-ink-600">
                           {MODUL_ETIKETI[m] ?? m}
                         </span>
                       ))}
@@ -116,7 +116,7 @@ export default function UrunlerPage() {
                     <button
                       onClick={() => urunAktifDurumDegistir(u.id, !u.aktif)}
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        u.aktif ? 'bg-bakery-success/10 text-bakery-success' : 'bg-bakery-cream-100 text-bakery-coffee-500'
+                        u.aktif ? 'bg-bakery-success/10 text-bakery-success' : 'bg-bakery-cream-100 text-bakery-ink-500'
                       }`}
                     >
                       {u.aktif ? 'Aktif' : 'Pasif'}
@@ -129,7 +129,7 @@ export default function UrunlerPage() {
                           setDuzenlenen(u)
                           setFormAcik(true)
                         }}
-                        className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
+                        className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
                         aria-label="Düzenle"
                       >
                         <Pencil size={16} />

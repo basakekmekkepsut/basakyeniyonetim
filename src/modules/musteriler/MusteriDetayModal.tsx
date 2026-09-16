@@ -80,32 +80,32 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-bakery-coffee-900/40 backdrop-blur-sm animate-fade-in md:items-center">
-      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white shadow-elevated animate-slide-up md:rounded-2xl">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-2 border-b border-bakery-cream-100 bg-white/95 px-5 py-4 backdrop-blur">
+      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-bakery-surface shadow-elevated animate-slide-up md:rounded-2xl">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-2 border-b border-bakery-cream-100 bg-bakery-surface/95 px-5 py-4 backdrop-blur">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-semibold text-bakery-coffee-900">{m.ad}</h3>
+              <h3 className="text-base font-semibold text-bakery-ink-900">{m.ad}</h3>
               {!m.aktif && (
-                <span className="rounded-full bg-bakery-cream-100 px-2 py-0.5 text-xs font-medium text-bakery-coffee-500">Pasif</span>
+                <span className="rounded-full bg-bakery-cream-100 px-2 py-0.5 text-xs font-medium text-bakery-ink-500">Pasif</span>
               )}
               {m.gecici && (
                 <span className="rounded-full bg-bakery-amber-500/10 px-2 py-0.5 text-xs font-medium text-bakery-amber-600">Geçici</span>
               )}
             </div>
-            {m.adSoyad && <p className="mt-0.5 text-sm text-bakery-coffee-500">{musteriHitabi(m)}</p>}
+            {m.adSoyad && <p className="mt-0.5 text-sm text-bakery-ink-500">{musteriHitabi(m)}</p>}
           </div>
-          <button onClick={onKapat} className="rounded-full p-1.5 text-bakery-coffee-400 hover:bg-bakery-cream-100" aria-label="Kapat">
+          <button onClick={onKapat} className="rounded-full p-1.5 text-bakery-ink-400 hover:bg-bakery-cream-100" aria-label="Kapat">
             <X size={20} />
           </button>
         </div>
 
         <div className="space-y-4 px-5 py-4">
           {(m.telefon || m.adres) && (
-            <div className="space-y-1.5 text-sm text-bakery-coffee-600">
+            <div className="space-y-1.5 text-sm text-bakery-ink-600">
               {m.telefon && (
                 <div className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
-                    <Phone size={14} className="text-bakery-coffee-400" />
+                    <Phone size={14} className="text-bakery-ink-400" />
                     {m.telefon}
                   </span>
                   <button
@@ -119,7 +119,7 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
               )}
               {m.adres && (
                 <p className="flex items-start gap-2">
-                  <MapPin size={14} className="mt-0.5 shrink-0 text-bakery-coffee-400" />
+                  <MapPin size={14} className="mt-0.5 shrink-0 text-bakery-ink-400" />
                   {m.adres}
                 </p>
               )}
@@ -128,7 +128,7 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
 
           <div className="flex flex-wrap gap-1.5">
             {m.moduller.map((mod) => (
-              <span key={mod} className="rounded-full bg-bakery-cream-100 px-2.5 py-1 text-xs font-medium text-bakery-coffee-600">
+              <span key={mod} className="rounded-full bg-bakery-cream-100 px-2.5 py-1 text-xs font-medium text-bakery-ink-600">
                 {MODUL_ETIKETI[mod] ?? mod}
               </span>
             ))}
@@ -139,7 +139,7 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
             <div className="rounded-2xl bg-bakery-cream-50 p-4">
               {unMusterisi ? (
                 <>
-                  <p className="text-xs text-bakery-coffee-500">Un Bakiyesi</p>
+                  <p className="text-xs text-bakery-ink-500">Un Bakiyesi</p>
                   <p
                     className={`text-xl font-bold ${
                       (m.unHesabi?.birikenEsdegerAdet ?? 0) > 0 ? 'text-bakery-danger' : 'text-bakery-success'
@@ -150,7 +150,7 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
                 </>
               ) : (
                 <>
-                  <p className="text-xs text-bakery-coffee-500">Veresiye Bakiyesi</p>
+                  <p className="text-xs text-bakery-ink-500">Veresiye Bakiyesi</p>
                   <p className={`text-xl font-bold ${m.veresiyeBakiye > 0 ? 'text-bakery-danger' : 'text-bakery-success'}`}>
                     {formatTutar(m.veresiyeBakiye)}
                   </p>
@@ -161,26 +161,26 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
 
           {veresiyeSecili && Object.keys(m.ozelFiyatlar).length > 0 && (
             <div>
-              <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-bakery-coffee-400">Özel Fiyatlar</p>
-              <p className="text-sm text-bakery-coffee-600">{Object.keys(m.ozelFiyatlar).length} üründe özel fiyat tanımlı</p>
+              <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-bakery-ink-400">Özel Fiyatlar</p>
+              <p className="text-sm text-bakery-ink-600">{Object.keys(m.ozelFiyatlar).length} üründe özel fiyat tanımlı</p>
             </div>
           )}
 
           {veresiyeSecili && (
             <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-bakery-coffee-400">Son Hareketler</p>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-bakery-ink-400">Son Hareketler</p>
               {hareketler.length === 0 ? (
-                <p className="text-sm text-bakery-coffee-400">Henüz hareket yok.</p>
+                <p className="text-sm text-bakery-ink-400">Henüz hareket yok.</p>
               ) : (
                 <ul className="space-y-2">
                   {hareketler.map((h, i) => (
                     <li key={i} className="flex items-center justify-between gap-2 border-b border-bakery-cream-100 pb-2 text-sm last:border-0">
                       <div>
-                        <p className="text-bakery-coffee-800">{h.aciklama}</p>
-                        <p className="text-xs text-bakery-coffee-400">{h.tarih}</p>
+                        <p className="text-bakery-ink-800">{h.aciklama}</p>
+                        <p className="text-xs text-bakery-ink-400">{h.tarih}</p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
-                        <span className={h.tur === 'odeme' ? 'font-medium text-bakery-success' : 'font-medium text-bakery-coffee-900'}>
+                        <span className={h.tur === 'odeme' ? 'font-medium text-bakery-success' : 'font-medium text-bakery-ink-900'}>
                           {h.tur === 'odeme' ? '+ ' : ''}
                           {formatTutar(h.tutar)}
                         </span>
@@ -194,17 +194,17 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
           )}
         </div>
 
-        <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-bakery-cream-100 bg-white/95 px-5 py-3.5 backdrop-blur">
+        <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-bakery-cream-100 bg-bakery-surface/95 px-5 py-3.5 backdrop-blur">
           {admin && (
             <button
               onClick={handleTestBildirim}
               title="Test bildirimi gönder"
-              className="mr-auto rounded-xl p-2 text-bakery-coffee-500 hover:bg-bakery-cream-100"
+              className="mr-auto rounded-xl p-2 text-bakery-ink-500 hover:bg-bakery-cream-100"
             >
               <Bell size={16} />
             </button>
           )}
-          <button onClick={onKapat} className="rounded-xl px-4 py-2 text-sm font-medium text-bakery-coffee-600 hover:bg-bakery-cream-100">
+          <button onClick={onKapat} className="rounded-xl px-4 py-2 text-sm font-medium text-bakery-ink-600 hover:bg-bakery-cream-100">
             Kapat
           </button>
           <button

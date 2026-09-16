@@ -43,7 +43,7 @@ export default function OkullarPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-bakery-coffee-900">Okullar</h2>
+        <h2 className="text-lg font-semibold text-bakery-ink-900">Okullar</h2>
         <button
           onClick={() => {
             setDuzenlenen(undefined)
@@ -57,7 +57,7 @@ export default function OkullarPage() {
       </div>
 
       {yukleniyor ? (
-        <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+        <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
       ) : okullar.length === 0 ? (
         <BosDurum baslik="Henüz okul eklenmedi" aciklama="İlk okulu eklemek için yukarıdaki butonu kullanın." />
       ) : (
@@ -66,32 +66,32 @@ export default function OkullarPage() {
             const firma = firmalar.find((f) => f.id === o.firmaId)
             const acik = acikId === o.id
             return (
-              <div key={o.id} className="rounded-xl bg-white shadow-sm shadow-bakery-coffee-900/5">
+              <div key={o.id} className="rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
                 <button
                   onClick={() => setAcikId(acik ? null : o.id)}
                   className="flex w-full items-center justify-between px-4 py-3 text-left"
                 >
                   <div>
-                    <p className="font-medium text-bakery-coffee-900">{o.ad}</p>
-                    <p className="text-xs text-bakery-coffee-500">
+                    <p className="font-medium text-bakery-ink-900">{o.ad}</p>
+                    <p className="text-xs text-bakery-ink-500">
                       {firma ? firma.ad : 'Bağımsız'} · {o.lines.length} hat
                     </p>
                   </div>
-                  <ChevronDown size={18} className={`text-bakery-coffee-400 transition ${acik ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={18} className={`text-bakery-ink-400 transition ${acik ? 'rotate-180' : ''}`} />
                 </button>
 
                 {acik && (
                   <div className="border-t border-bakery-cream-100 px-4 py-3">
                     {o.lines.length === 0 ? (
-                      <p className="text-sm text-bakery-coffee-400">Hat tanımlı değil.</p>
+                      <p className="text-sm text-bakery-ink-400">Hat tanımlı değil.</p>
                     ) : (
-                      <ul className="mb-3 space-y-1 text-sm text-bakery-coffee-600">
+                      <ul className="mb-3 space-y-1 text-sm text-bakery-ink-600">
                         {o.lines.map((l) => (
                           <li key={l.id} className="flex items-center justify-between">
                             <span>
-                              {l.urunAdi} — {l.adet} adet/gün {!l.aktif && <em className="text-bakery-coffee-400">(pasif)</em>}
+                              {l.urunAdi} — {l.adet} adet/gün {!l.aktif && <em className="text-bakery-ink-400">(pasif)</em>}
                             </span>
-                            <span className="text-xs text-bakery-coffee-400">
+                            <span className="text-xs text-bakery-ink-400">
                               {l.faturaHedefiId ? `→ ${firmalar.find((f) => f.id === l.faturaHedefiId)?.ad ?? '—'}` : '→ Doğrudan'}
                             </span>
                           </li>
@@ -104,7 +104,7 @@ export default function OkullarPage() {
                           setDuzenlenen(o)
                           setFormAcik(true)
                         }}
-                        className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
+                        className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
                         aria-label="Düzenle"
                       >
                         <Pencil size={16} />

@@ -31,7 +31,7 @@ const DURUM_ETIKETI: Record<SiparisDurumu, string> = {
 }
 
 const DURUM_RENGI: Record<SiparisDurumu, string> = {
-  planlandi: 'bg-bakery-coffee-100 text-bakery-coffee-500',
+  planlandi: 'bg-bakery-coffee-100 text-bakery-ink-500',
   yeni: 'bg-bakery-amber-500/15 text-bakery-amber-600',
   hazirlaniyor: 'bg-blue-500/15 text-blue-600',
   teslim_edildi: 'bg-bakery-success/10 text-bakery-success',
@@ -172,18 +172,18 @@ export default function SiparislerPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 sm:max-w-xs">
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-bakery-coffee-400" />
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-bakery-ink-400" />
             <input
               value={arama}
               onChange={(e) => setArama(e.target.value)}
               placeholder="Müşteri ara…"
-              className="w-full rounded-lg border border-bakery-cream-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
+              className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-surface py-2 pl-9 pr-3 text-sm outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
             />
           </div>
           <select
             value={urunFiltre}
             onChange={(e) => setUrunFiltre(e.target.value)}
-            className="rounded-lg border border-bakery-cream-200 bg-white px-2.5 py-2 text-sm outline-none focus:border-bakery-amber-500"
+            className="rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2.5 py-2 text-sm outline-none focus:border-bakery-amber-500"
           >
             <option value="hepsi">Tüm Ürünler</option>
             {siparisUrunleri.map((u) => (
@@ -195,7 +195,7 @@ export default function SiparislerPage() {
           <button
             onClick={() => setCopKutusu((v) => !v)}
             className={`ml-auto rounded-lg px-3 py-2 text-sm font-medium ${
-              copKutusu ? 'bg-bakery-danger/10 text-bakery-danger' : 'text-bakery-coffee-500 hover:bg-bakery-cream-100'
+              copKutusu ? 'bg-bakery-danger/10 text-bakery-danger' : 'text-bakery-ink-500 hover:bg-bakery-cream-100'
             }`}
           >
             {copKutusu ? 'Çöp Kutusundan Çık' : 'Çöp Kutusu'}
@@ -204,7 +204,7 @@ export default function SiparislerPage() {
       </div>
 
       {yukleniyor ? (
-        <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+        <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
       ) : filtrelenmis.length === 0 ? (
         <BosDurum
           baslik={copKutusu ? 'Çöp kutusu boş' : 'Bu aralıkta sipariş yok'}
@@ -213,25 +213,25 @@ export default function SiparislerPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtrelenmis.map((s) => (
-            <div key={s.id} className="rounded-xl bg-white p-4 shadow-sm shadow-bakery-coffee-900/5">
+            <div key={s.id} className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
               <div className="mb-2 flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <p className="font-medium text-bakery-coffee-900">{s.musteriAdi}</p>
+                    <p className="font-medium text-bakery-ink-900">{s.musteriAdi}</p>
                     {s.musteriGecici && (
-                      <span className="rounded-full bg-bakery-coffee-100 px-2 py-0.5 text-xs font-medium text-bakery-coffee-500">
+                      <span className="rounded-full bg-bakery-coffee-100 px-2 py-0.5 text-xs font-medium text-bakery-ink-500">
                         Geçici Müşteri
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-bakery-coffee-500">{s.teslimatTarihi}</p>
+                  <p className="text-sm text-bakery-ink-500">{s.teslimatTarihi}</p>
                 </div>
                 <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${DURUM_RENGI[s.durum]}`}>
                   {DURUM_ETIKETI[s.durum]}
                 </span>
               </div>
 
-              <ul className="mb-2 space-y-0.5 text-sm text-bakery-coffee-600">
+              <ul className="mb-2 space-y-0.5 text-sm text-bakery-ink-600">
                 {s.items.map((it, i) => (
                   <li key={i} className="flex justify-between">
                     <span>
@@ -242,11 +242,11 @@ export default function SiparislerPage() {
                 ))}
               </ul>
 
-              {s.adres && <p className="mb-1 text-xs text-bakery-coffee-400">{s.adres}</p>}
-              {s.not && <p className="mb-2 text-xs italic text-bakery-coffee-400">"{s.not}"</p>}
+              {s.adres && <p className="mb-1 text-xs text-bakery-ink-400">{s.adres}</p>}
+              {s.not && <p className="mb-2 text-xs italic text-bakery-ink-400">"{s.not}"</p>}
 
               <div className="mb-3 flex items-center justify-between border-t border-bakery-cream-100 pt-2">
-                <span className="text-sm font-semibold text-bakery-coffee-900">
+                <span className="text-sm font-semibold text-bakery-ink-900">
                   <TutarGoster tutar={s.toplamTutar} />
                 </span>
                 <span
@@ -266,7 +266,7 @@ export default function SiparislerPage() {
                 <div className="flex justify-end gap-1">
                   <button
                     onClick={() => siparisGeriYukle(s, kullanici).then(() => toast.basari('Sipariş geri yüklendi.'))}
-                    className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-bakery-coffee-600 hover:bg-bakery-cream-100"
+                    className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-bakery-ink-600 hover:bg-bakery-cream-100"
                   >
                     <RotateCcw size={14} />
                     Geri Yükle
@@ -286,7 +286,7 @@ export default function SiparislerPage() {
                   <select
                     value={s.durum}
                     onChange={(e) => siparisDurumGuncelle(s, e.target.value as SiparisDurumu, kullanici)}
-                    className="rounded-lg border border-bakery-cream-200 bg-white px-2 py-1 text-xs outline-none"
+                    className="rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1 text-xs outline-none"
                   >
                     {(Object.keys(DURUM_ETIKETI) as SiparisDurumu[]).map((d) => (
                       <option key={d} value={d}>
@@ -300,7 +300,7 @@ export default function SiparislerPage() {
                       onClick={() =>
                         siparisOdemeDurumuGuncelle(s, s.odemeDurumu === 'odendi' ? 'odenmedi' : 'odendi', kullanici)
                       }
-                      className="rounded-lg px-2 py-1 text-xs font-medium text-bakery-coffee-500 hover:bg-bakery-cream-100"
+                      className="rounded-lg px-2 py-1 text-xs font-medium text-bakery-ink-500 hover:bg-bakery-cream-100"
                     >
                       {s.odemeDurumu === 'odendi' ? 'Ödenmedi işaretle' : 'Ödendi işaretle'}
                     </button>
@@ -313,7 +313,7 @@ export default function SiparislerPage() {
                         setDuzenlenen(undefined)
                         setFormAcik(true)
                       }}
-                      className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
+                      className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
                       aria-label="Kopyala"
                     >
                       <Copy size={16} />
@@ -324,7 +324,7 @@ export default function SiparislerPage() {
                         setKopyaKaynagi(undefined)
                         setFormAcik(true)
                       }}
-                      className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
+                      className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
                       aria-label="Düzenle"
                     >
                       <Pencil size={16} />

@@ -105,15 +105,15 @@ export default function MusterilerPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold text-bakery-coffee-900">Müşteriler</h2>
+        <h2 className="text-lg font-semibold text-bakery-ink-900">Müşteriler</h2>
         <div className="flex gap-2">
           <div className="relative flex-1 sm:w-64">
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-bakery-coffee-400" />
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-bakery-ink-400" />
             <input
               value={arama}
               onChange={(e) => setArama(e.target.value)}
               placeholder="Ad veya telefon ara…"
-              className="w-full rounded-xl border border-bakery-cream-200 bg-white py-2 pl-9 pr-3 text-sm shadow-soft outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
+              className="w-full rounded-xl border border-bakery-cream-200 bg-bakery-surface py-2 pl-9 pr-3 text-sm shadow-soft outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
             />
           </div>
           {!copKutusu && (
@@ -133,7 +133,7 @@ export default function MusterilerPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         {!copKutusu && geciciSayisi > 0 ? (
-          <label className="flex w-fit items-center gap-2 text-sm text-bakery-coffee-600">
+          <label className="flex w-fit items-center gap-2 text-sm text-bakery-ink-600">
             <input type="checkbox" checked={geciciGoster} onChange={(e) => setGeciciGoster(e.target.checked)} />
             Geçici / Düğün müşterilerini de göster ({geciciSayisi})
           </label>
@@ -143,7 +143,7 @@ export default function MusterilerPage() {
         <button
           onClick={() => setCopKutusu((v) => !v)}
           className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-            copKutusu ? 'bg-bakery-danger/10 text-bakery-danger' : 'text-bakery-coffee-500 hover:bg-bakery-cream-100'
+            copKutusu ? 'bg-bakery-danger/10 text-bakery-danger' : 'text-bakery-ink-500 hover:bg-bakery-cream-100'
           }`}
         >
           {copKutusu ? 'Çöp Kutusundan Çık' : 'Çöp Kutusu'}
@@ -151,14 +151,14 @@ export default function MusterilerPage() {
       </div>
 
       {yukleniyor ? (
-        <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+        <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
       ) : filtrelenmis.length === 0 ? (
         <BosDurum
           baslik={copKutusu ? 'Çöp kutusu boş' : musteriler.length === 0 ? 'Henüz müşteri eklenmedi' : 'Aramanızla eşleşen müşteri yok'}
           aciklama={!copKutusu && musteriler.length === 0 ? 'İlk müşteriyi eklemek için yukarıdaki butonu kullanın.' : undefined}
         />
       ) : (
-        <div className="divide-y divide-bakery-cream-100 overflow-hidden rounded-2xl bg-white shadow-soft">
+        <div className="divide-y divide-bakery-cream-100 overflow-hidden rounded-2xl bg-bakery-surface shadow-soft">
           {filtrelenmis.map((m) => {
             const unMusterisi = unHesabiAktifMi(m)
             return (
@@ -168,10 +168,10 @@ export default function MusterilerPage() {
                   className="flex min-w-0 flex-1 items-center gap-2 text-left"
                   aria-label={`${m.ad} detayını göster`}
                 >
-                  <span className="min-w-0 truncate font-medium text-bakery-coffee-900 underline decoration-bakery-cream-200 decoration-2 underline-offset-2">
+                  <span className="min-w-0 truncate font-medium text-bakery-ink-900 underline decoration-bakery-cream-200 decoration-2 underline-offset-2">
                     {m.ad}
                   </span>
-                  {!m.aktif && <span className="shrink-0 text-xs text-bakery-coffee-400">Pasif</span>}
+                  {!m.aktif && <span className="shrink-0 text-xs text-bakery-ink-400">Pasif</span>}
                   {m.gecici && !copKutusu && <span className="shrink-0 text-xs text-bakery-amber-600">Geçici</span>}
                 </button>
 
@@ -196,7 +196,7 @@ export default function MusterilerPage() {
                     <>
                       <button
                         onClick={() => handleGeriYukle(m)}
-                        className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
+                        className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
                         aria-label="Geri yükle"
                         title="Geri yükle"
                       >
@@ -228,7 +228,7 @@ export default function MusterilerPage() {
                           setDuzenlenen(m)
                           setFormAcik(true)
                         }}
-                        className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
+                        className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
                         aria-label="Düzenle"
                         title="Düzenle"
                       >

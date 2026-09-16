@@ -47,16 +47,16 @@ export default function MusteriSecici({
         onClick={() => setAcik((v) => !v)}
         className="flex w-full items-center justify-between rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 text-left outline-none focus:border-bakery-amber-500"
       >
-        <span className={secili || (seciliMusteriId === null && hepsiSecenegi) ? 'text-bakery-coffee-900' : 'text-bakery-coffee-400'}>
+        <span className={secili || (seciliMusteriId === null && hepsiSecenegi) ? 'text-bakery-ink-900' : 'text-bakery-ink-400'}>
           {gosterilenMetin}
         </span>
-        <ChevronDown size={16} className="text-bakery-coffee-400" />
+        <ChevronDown size={16} className="text-bakery-ink-400" />
       </button>
 
       {acik && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setAcik(false)} />
-          <div className="absolute z-40 mt-1 w-full rounded-lg border border-bakery-cream-200 bg-white shadow-lg">
+          <div className="absolute z-40 mt-1 w-full rounded-lg border border-bakery-cream-200 bg-bakery-surface shadow-lg">
             <input
               type="text"
               autoFocus
@@ -81,7 +81,7 @@ export default function MusteriSecici({
                 </button>
               )}
               {filtrelenmis.length === 0 ? (
-                <p className="px-3 py-3 text-sm text-bakery-coffee-400">Müşteri bulunamadı.</p>
+                <p className="px-3 py-3 text-sm text-bakery-ink-400">Müşteri bulunamadı.</p>
               ) : (
                 filtrelenmis.map((m) => (
                   <button
@@ -96,7 +96,7 @@ export default function MusteriSecici({
                   >
                     <span>
                       {m.ad}
-                      {m.telefon && <span className="ml-1.5 text-bakery-coffee-400">{m.telefon}</span>}
+                      {m.telefon && <span className="ml-1.5 text-bakery-ink-400">{m.telefon}</span>}
                     </span>
                     {m.id === seciliMusteriId && <Check size={14} className="text-bakery-amber-600" />}
                   </button>

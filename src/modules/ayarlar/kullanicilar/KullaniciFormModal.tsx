@@ -60,19 +60,19 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:items-center">
       <form
         onSubmit={handleSubmit}
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl md:rounded-2xl"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-bakery-surface p-5 shadow-xl md:rounded-2xl"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-bakery-coffee-900">
+          <h3 className="text-base font-semibold text-bakery-ink-900">
             {mevcut ? 'Kullanıcıyı Düzenle' : 'Yeni Kullanıcı Profili'}
           </h3>
-          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-coffee-400 hover:bg-bakery-cream-100">
+          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-ink-400 hover:bg-bakery-cream-100">
             <X size={20} />
           </button>
         </div>
 
         {!mevcut && (
-          <p className="mb-4 rounded-lg bg-bakery-cream-50 px-3 py-2 text-xs text-bakery-coffee-600">
+          <p className="mb-4 rounded-lg bg-bakery-cream-50 px-3 py-2 text-xs text-bakery-ink-600">
             Önce Firebase Console → Authentication'dan e-posta/şifre ile kullanıcıyı oluşturun, oradaki
             UID'yi aşağıya yapıştırın. Bu form yalnızca yetki profilini (bu <code>users</code> dokümanını)
             oluşturur.
@@ -82,7 +82,7 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
         <div className="space-y-4">
           {!mevcut && (
             <div>
-              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Firebase Auth UID *</label>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Firebase Auth UID *</label>
               <input
                 value={uid}
                 onChange={(e) => setUid(e.target.value)}
@@ -93,7 +93,7 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Ad Soyad *</label>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Ad Soyad *</label>
               <input
                 type="text"
                 value={profil.ad}
@@ -103,7 +103,7 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">E-posta</label>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">E-posta</label>
               <input
                 type="email"
                 value={profil.eposta}
@@ -114,7 +114,7 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Rol</label>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Rol</label>
             <select
               value={profil.rol}
               onChange={(e) => alanGuncelle('rol', e.target.value as Rol)}
@@ -128,10 +128,10 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
           {profil.rol === 'personel' && (
             <div className="space-y-3 rounded-lg bg-bakery-cream-50 p-3">
               <div>
-                <p className="mb-1.5 text-sm font-medium text-bakery-coffee-800">Görebileceği modüller</p>
+                <p className="mb-1.5 text-sm font-medium text-bakery-ink-800">Görebileceği modüller</p>
                 <div className="flex flex-wrap gap-2">
                   {(['siparis', 'veresiye', 'okul'] as const).map((m) => (
-                    <label key={m} className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm">
+                    <label key={m} className="flex items-center gap-1.5 rounded-full bg-bakery-surface px-3 py-1.5 text-sm">
                       <input
                         type="checkbox"
                         checked={profil.modules[m]}
@@ -144,7 +144,7 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
               </div>
 
               <div>
-                <p className="mb-1.5 text-sm font-medium text-bakery-coffee-800">Sipariş yetkileri</p>
+                <p className="mb-1.5 text-sm font-medium text-bakery-ink-800">Sipariş yetkileri</p>
                 <div className="flex flex-wrap gap-2">
                   {(
                     [
@@ -153,7 +153,7 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
                       ['products', 'Ürünleri yönetebilir']
                     ] as const
                   ).map(([key, etiket]) => (
-                    <label key={key} className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm">
+                    <label key={key} className="flex items-center gap-1.5 rounded-full bg-bakery-surface px-3 py-1.5 text-sm">
                       <input
                         type="checkbox"
                         checked={profil.permissions.siparis[key]}
@@ -171,8 +171,8 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
               </div>
 
               <div>
-                <p className="mb-1.5 text-sm font-medium text-bakery-coffee-800">Veresiye görünürlüğü</p>
-                <label className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm">
+                <p className="mb-1.5 text-sm font-medium text-bakery-ink-800">Veresiye görünürlüğü</p>
+                <label className="flex items-center gap-1.5 rounded-full bg-bakery-surface px-3 py-1.5 text-sm">
                   <input
                     type="checkbox"
                     checked={profil.permissions.veresiye.gorebilecegiMusteriler === 'all'}
@@ -188,14 +188,14 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
 
                 {atanmisMusteriler !== 'all' && (
                   <div className="mt-2">
-                    <p className="mb-1.5 text-xs text-bakery-coffee-500">
+                    <p className="mb-1.5 text-xs text-bakery-ink-500">
                       Kapalıysa yalnızca aşağıda işaretlediğiniz müşterileri görebilir/işlem yapabilir
                       ({atanmisMusteriler.length} seçili):
                     </p>
                     {veresiyeMusterileri.length === 0 ? (
-                      <p className="text-xs text-bakery-coffee-400">Henüz Veresiye modülünde müşteri yok.</p>
+                      <p className="text-xs text-bakery-ink-400">Henüz Veresiye modülünde müşteri yok.</p>
                     ) : (
-                      <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto rounded-lg bg-white p-2">
+                      <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto rounded-lg bg-bakery-surface p-2">
                         {veresiyeMusterileri.map((m) => (
                           <button
                             type="button"
@@ -204,7 +204,7 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
                             className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
                               atanmisMusteriler.includes(m.id)
                                 ? 'bg-bakery-amber-600 text-white'
-                                : 'bg-bakery-cream-100 text-bakery-coffee-600 hover:bg-bakery-cream-200'
+                                : 'bg-bakery-cream-100 text-bakery-ink-600 hover:bg-bakery-cream-200'
                             }`}
                           >
                             {m.ad}
@@ -217,7 +217,7 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
               </div>
 
               <div>
-                <p className="mb-1.5 text-sm font-medium text-bakery-coffee-800">Okul yetkileri</p>
+                <p className="mb-1.5 text-sm font-medium text-bakery-ink-800">Okul yetkileri</p>
                 <div className="flex flex-wrap gap-2">
                   {(
                     [
@@ -228,7 +228,7 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
                       ['mesaj', 'Mesaj gönderebilir']
                     ] as const
                   ).map(([key, etiket]) => (
-                    <label key={key} className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm">
+                    <label key={key} className="flex items-center gap-1.5 rounded-full bg-bakery-surface px-3 py-1.5 text-sm">
                       <input
                         type="checkbox"
                         checked={profil.permissions.okul[key]}
@@ -248,11 +248,11 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
           )}
 
           <div className="space-y-2 rounded-lg bg-bakery-cream-50 p-3">
-            <p className="text-sm font-medium text-bakery-coffee-800">Push Bildirimleri</p>
-            <p className="text-xs text-bakery-coffee-500">
+            <p className="text-sm font-medium text-bakery-ink-800">Push Bildirimleri</p>
+            <p className="text-xs text-bakery-ink-500">
               Bildirimin gerçekten telefona düşmesi için kişinin kendisinin uygulamada "Bildirimleri Aç"a basmış olması gerekir.
             </p>
-            <label className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm">
+            <label className="flex items-center gap-1.5 rounded-full bg-bakery-surface px-3 py-1.5 text-sm">
               <input
                 type="checkbox"
                 checked={profil.bildirimler.yeniSiparis}
@@ -260,7 +260,7 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
               />
               Yeni sipariş girildiğinde anlık bildirim al
             </label>
-            <label className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm">
+            <label className="flex items-center gap-1.5 rounded-full bg-bakery-surface px-3 py-1.5 text-sm">
               <input
                 type="checkbox"
                 checked={profil.bildirimler.gunlukHatirlatma}
@@ -270,7 +270,7 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
             </label>
           </div>
 
-          <label className="flex items-center gap-2 text-sm font-medium text-bakery-coffee-800">
+          <label className="flex items-center gap-2 text-sm font-medium text-bakery-ink-800">
             <input type="checkbox" checked={profil.aktif} onChange={(e) => alanGuncelle('aktif', e.target.checked)} />
             Aktif (giriş yapabilir)
           </label>
@@ -279,7 +279,7 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-coffee-600 hover:bg-bakery-cream-100">
+          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-ink-600 hover:bg-bakery-cream-100">
             Vazgeç
           </button>
           <button

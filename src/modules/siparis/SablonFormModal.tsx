@@ -81,18 +81,18 @@ export default function SablonFormModal({ mevcut, onKaydet, onKapat }: Props) {
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:items-center">
       <form
         onSubmit={handleSubmit}
-        className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl md:rounded-2xl"
+        className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-bakery-surface p-5 shadow-xl md:rounded-2xl"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-bakery-coffee-900">{mevcut ? 'Şablonu Düzenle' : 'Yeni Şablon'}</h3>
-          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-coffee-400 hover:bg-bakery-cream-100">
+          <h3 className="text-base font-semibold text-bakery-ink-900">{mevcut ? 'Şablonu Düzenle' : 'Yeni Şablon'}</h3>
+          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-ink-400 hover:bg-bakery-cream-100">
             <X size={20} />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Müşteri *</label>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Müşteri *</label>
             <MusteriSecici
               modul="siparis"
               seciliMusteriId={musteriId || null}
@@ -105,7 +105,7 @@ export default function SablonFormModal({ mevcut, onKaydet, onKapat }: Props) {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Adres</label>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Adres</label>
             <input
               type="text"
               value={adres}
@@ -115,7 +115,7 @@ export default function SablonFormModal({ mevcut, onKaydet, onKapat }: Props) {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-bakery-coffee-800">Hangi günler tekrarlansın? *</label>
+            <label className="mb-1.5 block text-sm font-medium text-bakery-ink-800">Hangi günler tekrarlansın? *</label>
             <div className="flex flex-wrap gap-1.5">
               {GUN_ETIKETLERI.map((etiket, g) => (
                 <button
@@ -123,7 +123,7 @@ export default function SablonFormModal({ mevcut, onKaydet, onKapat }: Props) {
                   key={g}
                   onClick={() => gunToggle(g)}
                   className={`h-9 w-12 rounded-lg text-sm font-medium transition ${
-                    gunler.includes(g) ? 'bg-bakery-amber-600 text-white' : 'bg-bakery-cream-100 text-bakery-coffee-600 hover:bg-bakery-cream-200'
+                    gunler.includes(g) ? 'bg-bakery-amber-600 text-white' : 'bg-bakery-cream-100 text-bakery-ink-600 hover:bg-bakery-cream-200'
                   }`}
                 >
                   {etiket}
@@ -133,7 +133,7 @@ export default function SablonFormModal({ mevcut, onKaydet, onKapat }: Props) {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-bakery-coffee-800">Ürünler *</label>
+            <label className="mb-1.5 block text-sm font-medium text-bakery-ink-800">Ürünler *</label>
             <div className="space-y-2">
               {items.map((it, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -174,7 +174,7 @@ export default function SablonFormModal({ mevcut, onKaydet, onKapat }: Props) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Bitiş Tarihi</label>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Bitiş Tarihi</label>
               <input
                 type="date"
                 value={bitisTarihi}
@@ -182,13 +182,13 @@ export default function SablonFormModal({ mevcut, onKaydet, onKapat }: Props) {
                 className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 outline-none focus:border-bakery-amber-500"
               />
               {bitisTarihi && (
-                <button type="button" onClick={() => setBitisTarihi('')} className="mt-1 text-xs text-bakery-coffee-400 hover:text-bakery-coffee-600">
+                <button type="button" onClick={() => setBitisTarihi('')} className="mt-1 text-xs text-bakery-ink-400 hover:text-bakery-ink-600">
                   Temizle
                 </button>
               )}
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Not</label>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Not</label>
               <input
                 type="text"
                 value={not}
@@ -198,7 +198,7 @@ export default function SablonFormModal({ mevcut, onKaydet, onKapat }: Props) {
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-sm font-medium text-bakery-coffee-800">
+          <label className="flex items-center gap-2 text-sm font-medium text-bakery-ink-800">
             <input type="checkbox" checked={aktif} onChange={(e) => setAktif(e.target.checked)} />
             Aktif
           </label>
@@ -207,7 +207,7 @@ export default function SablonFormModal({ mevcut, onKaydet, onKapat }: Props) {
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-coffee-600 hover:bg-bakery-cream-100">
+          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-ink-600 hover:bg-bakery-cream-100">
             Vazgeç
           </button>
           <button

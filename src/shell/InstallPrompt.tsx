@@ -63,7 +63,7 @@ export default function InstallPrompt() {
         <Download size={14} />
         Yükle
       </button>
-      <button onClick={kapat} className="rounded-full p-1 text-white/70 hover:bg-white/10" aria-label="Kapat">
+      <button onClick={kapat} className="rounded-full p-1 text-white/70 hover:bg-bakery-surface/10" aria-label="Kapat">
         <X size={16} />
       </button>
     </div>

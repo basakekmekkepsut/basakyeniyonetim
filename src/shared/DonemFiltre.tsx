@@ -90,7 +90,7 @@ export default function DonemFiltre({
             type="button"
             onClick={() => onSeciliDegis(s.key)}
             className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition ${
-              secili === s.key ? 'bg-white text-bakery-coffee-900 shadow-sm' : 'text-bakery-coffee-500 hover:text-bakery-coffee-700'
+              secili === s.key ? 'bg-bakery-surface text-bakery-ink-900 shadow-sm' : 'text-bakery-ink-500 hover:text-bakery-ink-700'
             }`}
           >
             {s.etiket}
@@ -99,14 +99,15 @@ export default function DonemFiltre({
       </div>
 
       {tekTarihSecici && (
-        <label className="flex items-center gap-1.5 rounded-lg border border-bakery-cream-200 bg-white px-2 py-1.5">
-          <CalendarDays size={15} className="text-bakery-coffee-400" />
+        <label className="flex items-center gap-1.5 rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1.5">
+          <CalendarDays size={15} className="shrink-0 text-bakery-ink-400" />
+          {!tekTarihDegeri && <span className="whitespace-nowrap text-sm text-bakery-ink-400">Güne git</span>}
           <input
             type="date"
             value={tekTarihDegeri}
             onChange={(e) => tekTarihSec(e.target.value)}
             aria-label="Belirli bir tarihe git"
-            className="text-sm outline-none"
+            className="w-full min-w-0 bg-transparent text-sm text-bakery-ink-800 outline-none"
           />
         </label>
       )}
@@ -117,14 +118,14 @@ export default function DonemFiltre({
             type="date"
             value={ozelBaslangic}
             onChange={(e) => onOzelBaslangicDegis(e.target.value)}
-            className="rounded-lg border border-bakery-cream-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-bakery-amber-500"
+            className="rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1.5 text-sm outline-none focus:border-bakery-amber-500"
           />
-          <span className="text-bakery-coffee-400">–</span>
+          <span className="text-bakery-ink-400">–</span>
           <input
             type="date"
             value={ozelBitis}
             onChange={(e) => onOzelBitisDegis(e.target.value)}
-            className="rounded-lg border border-bakery-cream-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-bakery-amber-500"
+            className="rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1.5 text-sm outline-none focus:border-bakery-amber-500"
           />
         </div>
       )}

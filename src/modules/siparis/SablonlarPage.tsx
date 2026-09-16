@@ -92,7 +92,7 @@ export default function SablonlarPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-bakery-coffee-900">Şablonlar</h2>
+        <h2 className="text-lg font-semibold text-bakery-ink-900">Şablonlar</h2>
         <button
           onClick={() => {
             setDuzenlenen(undefined)
@@ -115,7 +115,7 @@ export default function SablonlarPage() {
               <button
                 key={s.id}
                 onClick={() => handleOlustur(s)}
-                className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-bakery-coffee-700 shadow-sm hover:bg-bakery-cream-50"
+                className="flex items-center gap-1.5 rounded-full bg-bakery-surface px-3 py-1.5 text-sm font-medium text-bakery-ink-700 shadow-sm hover:bg-bakery-cream-50"
               >
                 <Zap size={14} className="text-bakery-amber-500" />
                 {s.musteriAdi}
@@ -126,30 +126,30 @@ export default function SablonlarPage() {
       )}
 
       {yukleniyor ? (
-        <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+        <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
       ) : sablonlar.length === 0 ? (
         <BosDurum baslik="Henüz şablon eklenmedi" aciklama="Düzenli sipariş veren müşteriler için şablon oluşturursanız, sipariş girişi tek tıkla yapılabilir." />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {sablonlar.map((s) => (
-            <div key={s.id} className="rounded-xl bg-white p-4 shadow-sm shadow-bakery-coffee-900/5">
+            <div key={s.id} className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
               <div className="mb-2 flex items-start justify-between gap-2">
-                <p className="font-medium text-bakery-coffee-900">{s.musteriAdi}</p>
-                {!s.aktif && <span className="rounded-full bg-bakery-cream-100 px-2 py-0.5 text-xs text-bakery-coffee-500">Pasif</span>}
+                <p className="font-medium text-bakery-ink-900">{s.musteriAdi}</p>
+                {!s.aktif && <span className="rounded-full bg-bakery-cream-100 px-2 py-0.5 text-xs text-bakery-ink-500">Pasif</span>}
               </div>
               <div className="mb-2 flex flex-wrap gap-1">
                 {GUN_ETIKETLERI.map((etiket, g) => (
                   <span
                     key={g}
                     className={`rounded px-1.5 py-0.5 text-xs ${
-                      s.gunler.includes(g) ? 'bg-bakery-amber-500/15 text-bakery-amber-600' : 'text-bakery-coffee-300'
+                      s.gunler.includes(g) ? 'bg-bakery-amber-500/15 text-bakery-amber-600' : 'text-bakery-ink-300'
                     }`}
                   >
                     {etiket}
                   </span>
                 ))}
               </div>
-              <ul className="mb-3 space-y-0.5 text-sm text-bakery-coffee-600">
+              <ul className="mb-3 space-y-0.5 text-sm text-bakery-ink-600">
                 {s.items.map((it, i) => {
                   const urun = urunler.find((u) => u.id === it.productId)
                   return (
@@ -159,9 +159,9 @@ export default function SablonlarPage() {
                   )
                 })}
               </ul>
-              {s.bitisTarihi && <p className="mb-1 text-xs text-bakery-coffee-400">Bitiş: {s.bitisTarihi}</p>}
+              {s.bitisTarihi && <p className="mb-1 text-xs text-bakery-ink-400">Bitiş: {s.bitisTarihi}</p>}
               {s.planlananSonTarih && (
-                <p className="mb-2 text-xs text-bakery-coffee-400">Planlanan siparişler: {s.planlananSonTarih}'e kadar üretildi</p>
+                <p className="mb-2 text-xs text-bakery-ink-400">Planlanan siparişler: {s.planlananSonTarih}'e kadar üretildi</p>
               )}
               <div className="flex items-center justify-between border-t border-bakery-cream-100 pt-2">
                 <button
@@ -178,7 +178,7 @@ export default function SablonlarPage() {
                       setDuzenlenen(s)
                       setFormAcik(true)
                     }}
-                    className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
+                    className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
                     aria-label="Düzenle"
                   >
                     <Pencil size={16} />

@@ -1,10 +1,16 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // NOT: Karanlık mod Tailwind'in dark: varyantı yerine CSS custom property
+  // devralımıyla uygulanıyor (bkz. index.css :root[data-tema='koyu']) — bu
+  // yüzden burada 'class' stratejisine gerek yok, hiçbir yerde dark: öneki
+  // kullanılmıyor.
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
         bakery: {
+          // Marka rengi — butonlar/başlık çubuğu/overlay'ler için, KASITLI olarak
+          // temadan bağımsız (her iki temada da aynı kahverengi tonlar).
           coffee: {
             900: '#3b2317',
             800: '#4a2c1c',
@@ -12,11 +18,23 @@ export default {
             600: '#7c4a2d',
             500: '#96603f'
           },
-          cream: {
-            50: '#fdf6ec',
-            100: '#f8ecd8',
-            200: '#f0ddbc'
+          // Metin rengi — koyu/açık temaya göre değişir (bkz. index.css :root / .dark).
+          ink: {
+            900: 'rgb(var(--ink-900) / <alpha-value>)',
+            800: 'rgb(var(--ink-800) / <alpha-value>)',
+            700: 'rgb(var(--ink-700) / <alpha-value>)',
+            600: 'rgb(var(--ink-600) / <alpha-value>)',
+            500: 'rgb(var(--ink-500) / <alpha-value>)',
+            400: 'rgb(var(--ink-400) / <alpha-value>)',
+            300: 'rgb(var(--ink-300) / <alpha-value>)'
           },
+          // Sayfa/kart zemin renkleri — koyu/açık temaya göre değişir.
+          cream: {
+            50: 'rgb(var(--cream-50) / <alpha-value>)',
+            100: 'rgb(var(--cream-100) / <alpha-value>)',
+            200: 'rgb(var(--cream-200) / <alpha-value>)'
+          },
+          surface: 'rgb(var(--surface) / <alpha-value>)',
           amber: {
             600: '#c9711f',
             500: '#e08a2e',

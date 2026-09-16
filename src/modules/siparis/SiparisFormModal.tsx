@@ -164,13 +164,13 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:items-center">
       <form
         onSubmit={handleSubmit}
-        className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl md:rounded-2xl"
+        className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-bakery-surface p-5 shadow-xl md:rounded-2xl"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-bakery-coffee-900">
+          <h3 className="text-base font-semibold text-bakery-ink-900">
             {baslik ?? (mevcut ? 'Siparişi Düzenle' : 'Yeni Sipariş')}
           </h3>
-          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-coffee-400 hover:bg-bakery-cream-100">
+          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-ink-400 hover:bg-bakery-cream-100">
             <X size={20} />
           </button>
         </div>
@@ -178,7 +178,7 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
         <div className="space-y-4">
           <div>
             <div className="mb-1.5 flex items-center justify-between">
-              <label className="text-sm font-medium text-bakery-coffee-800">Müşteri *</label>
+              <label className="text-sm font-medium text-bakery-ink-800">Müşteri *</label>
               {!mevcut && (
                 <div className="flex gap-1">
                   {(
@@ -192,7 +192,7 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
                       key={key}
                       onClick={() => setGirisModu(key)}
                       className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                        girisModu === key ? 'bg-bakery-amber-600 text-white' : 'bg-bakery-cream-100 text-bakery-coffee-600 hover:bg-bakery-cream-200'
+                        girisModu === key ? 'bg-bakery-amber-600 text-white' : 'bg-bakery-cream-100 text-bakery-ink-600 hover:bg-bakery-cream-200'
                       }`}
                     >
                       {etiket}
@@ -222,7 +222,7 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
                   placeholder="Örn. Yoldan geçen müşteri, Ahmet Usta'nın çırağı…"
                   className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
                 />
-                <p className="mt-1 text-xs text-bakery-coffee-500">
+                <p className="mt-1 text-xs text-bakery-ink-500">
                   Kayıtlı olmayan/tek seferlik bir isim — "Geçici Müşteri" olarak kaydedilir. Aynı isimle sık sipariş
                   alınırsa sistem kalıcı müşteri yapmayı önerecektir.
                 </p>
@@ -232,7 +232,7 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Teslimat Tarihi *</label>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Teslimat Tarihi *</label>
               <input
                 type="date"
                 value={teslimatTarihi}
@@ -242,7 +242,7 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Telefon</label>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Telefon</label>
               <input
                 type="tel"
                 value={telefon}
@@ -253,7 +253,7 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Teslimat Adresi</label>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Teslimat Adresi</label>
             <input
               type="text"
               value={adres}
@@ -263,7 +263,7 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-bakery-coffee-800">Ürünler *</label>
+            <label className="mb-1.5 block text-sm font-medium text-bakery-ink-800">Ürünler *</label>
             <div className="space-y-2">
               {items.map((kalem, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -316,7 +316,7 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Not</label>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Not</label>
             <input
               type="text"
               value={not}
@@ -331,7 +331,7 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
             </p>
           ) : (
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-bakery-coffee-800">Ödeme Şekli</label>
+              <label className="mb-1.5 block text-sm font-medium text-bakery-ink-800">Ödeme Şekli</label>
               <div className="flex gap-2">
                 {(
                   [
@@ -344,29 +344,29 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
                     key={key}
                     onClick={() => setOdemeSekli(key)}
                     className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
-                      odemeSekli === key ? 'bg-bakery-amber-600 text-white' : 'bg-bakery-cream-100 text-bakery-coffee-600 hover:bg-bakery-cream-200'
+                      odemeSekli === key ? 'bg-bakery-amber-600 text-white' : 'bg-bakery-cream-100 text-bakery-ink-600 hover:bg-bakery-cream-200'
                     }`}
                   >
                     {etiket}
                   </button>
                 ))}
               </div>
-              <p className="mt-1 text-xs text-bakery-coffee-500">
+              <p className="mt-1 text-xs text-bakery-ink-500">
                 Bu sipariş otomatik olarak müşterinin Veresiye/Cari hesabına yansır.
               </p>
             </div>
           )}
 
           <div className="flex items-center justify-between rounded-lg bg-bakery-cream-50 px-3 py-2.5">
-            <span className="text-sm font-medium text-bakery-coffee-700">Toplam</span>
-            <span className="text-lg font-semibold text-bakery-coffee-900">{formatTutar(toplam)}</span>
+            <span className="text-sm font-medium text-bakery-ink-700">Toplam</span>
+            <span className="text-lg font-semibold text-bakery-ink-900">{formatTutar(toplam)}</span>
           </div>
 
           {hata && <p className="rounded-lg bg-bakery-danger/10 px-3 py-2 text-sm text-bakery-danger">{hata}</p>}
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-coffee-600 hover:bg-bakery-cream-100">
+          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-ink-600 hover:bg-bakery-cream-100">
             Vazgeç
           </button>
           <button

@@ -61,17 +61,17 @@ export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Pr
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:items-center">
-      <form onSubmit={handleSubmit} className="w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl md:rounded-2xl">
+      <form onSubmit={handleSubmit} className="w-full max-w-md overflow-y-auto rounded-t-2xl bg-bakery-surface p-5 shadow-xl md:rounded-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-bakery-coffee-900">{mevcut ? 'Kaydı Düzenle' : 'Yeni Kayıt'}</h3>
-          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-coffee-400 hover:bg-bakery-cream-100">
+          <h3 className="text-base font-semibold text-bakery-ink-900">{mevcut ? 'Kaydı Düzenle' : 'Yeni Kayıt'}</h3>
+          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-ink-400 hover:bg-bakery-cream-100">
             <X size={20} />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Müşteri *</label>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Müşteri *</label>
             <MusteriSecici
               modul="veresiye"
               seciliMusteriId={musteriId || null}
@@ -84,7 +84,7 @@ export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Pr
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Ürün (Tür) *</label>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Ürün (Tür) *</label>
               <select
                 value={productId}
                 onChange={(e) => urunSec(e.target.value)}
@@ -99,7 +99,7 @@ export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Pr
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Tarih *</label>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Tarih *</label>
               <input
                 type="date"
                 value={tarih}
@@ -111,7 +111,7 @@ export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Pr
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Adet *</label>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Adet *</label>
               <input
                 type="number"
                 min={1}
@@ -121,7 +121,7 @@ export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Pr
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Birim Fiyat (₺)</label>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Birim Fiyat (₺)</label>
               <input
                 type="number"
                 min={0}
@@ -139,7 +139,7 @@ export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Pr
             </p>
           ) : (
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-bakery-coffee-800">Durum</label>
+              <label className="mb-1.5 block text-sm font-medium text-bakery-ink-800">Durum</label>
               <div className="flex gap-2">
                 {(
                   [
@@ -153,7 +153,7 @@ export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Pr
                     key={key}
                     onClick={() => setDurum(key)}
                     className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
-                      durum === key ? 'bg-bakery-amber-600 text-white' : 'bg-bakery-cream-100 text-bakery-coffee-600 hover:bg-bakery-cream-200'
+                      durum === key ? 'bg-bakery-amber-600 text-white' : 'bg-bakery-cream-100 text-bakery-ink-600 hover:bg-bakery-cream-200'
                     }`}
                   >
                     {etiket}
@@ -167,7 +167,7 @@ export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Pr
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-coffee-600 hover:bg-bakery-cream-100">
+          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-ink-600 hover:bg-bakery-cream-100">
             Vazgeç
           </button>
           <button

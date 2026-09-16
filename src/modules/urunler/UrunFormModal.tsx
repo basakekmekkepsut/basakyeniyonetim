@@ -53,18 +53,18 @@ export default function UrunFormModal({ mevcut, onKaydet, onKapat }: Props) {
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:items-center">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl md:rounded-2xl"
+        className="w-full max-w-md overflow-y-auto rounded-t-2xl bg-bakery-surface p-5 shadow-xl md:rounded-2xl"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-bakery-coffee-900">{mevcut ? 'Ürünü Düzenle' : 'Yeni Ürün'}</h3>
-          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-coffee-400 hover:bg-bakery-cream-100">
+          <h3 className="text-base font-semibold text-bakery-ink-900">{mevcut ? 'Ürünü Düzenle' : 'Yeni Ürün'}</h3>
+          <button type="button" onClick={onKapat} className="rounded-full p-1 text-bakery-ink-400 hover:bg-bakery-cream-100">
             <X size={20} />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Ürün Adı *</label>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Ürün Adı *</label>
             <input
               type="text"
               value={ad}
@@ -75,7 +75,7 @@ export default function UrunFormModal({ mevcut, onKaydet, onKapat }: Props) {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Fiyat (₺) *</label>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Fiyat (₺) *</label>
             <input
               type="number"
               min={0}
@@ -88,7 +88,7 @@ export default function UrunFormModal({ mevcut, onKaydet, onKapat }: Props) {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-bakery-coffee-800">Hangi modüllerde satışa açık?</label>
+            <label className="mb-1.5 block text-sm font-medium text-bakery-ink-800">Hangi modüllerde satışa açık?</label>
             <div className="flex flex-wrap gap-2">
               {MODUL_ETIKETLERI.map(({ key, etiket }) => (
                 <button
@@ -98,7 +98,7 @@ export default function UrunFormModal({ mevcut, onKaydet, onKapat }: Props) {
                   className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
                     modules.includes(key)
                       ? 'bg-bakery-amber-600 text-white'
-                      : 'bg-bakery-cream-100 text-bakery-coffee-600 hover:bg-bakery-cream-200'
+                      : 'bg-bakery-cream-100 text-bakery-ink-600 hover:bg-bakery-cream-200'
                   }`}
                 >
                   {etiket}
@@ -108,7 +108,7 @@ export default function UrunFormModal({ mevcut, onKaydet, onKapat }: Props) {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Un Eşdeğer Katsayısı</label>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Un Eşdeğer Katsayısı</label>
             <input
               type="number"
               min={0.1}
@@ -117,12 +117,12 @@ export default function UrunFormModal({ mevcut, onKaydet, onKapat }: Props) {
               onChange={(e) => setUnKatsayisi(Number(e.target.value))}
               className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 outline-none focus:border-bakery-amber-500"
             />
-            <p className="mt-1 text-xs text-bakery-coffee-500">
+            <p className="mt-1 text-xs text-bakery-ink-500">
               Un Hesabı olan müşteriler için: bu üründen 1 adet, referans üründen kaç adete eşdeğer? (Varsayılan: 1)
             </p>
           </div>
 
-          <label className="flex items-center gap-2 text-sm font-medium text-bakery-coffee-800">
+          <label className="flex items-center gap-2 text-sm font-medium text-bakery-ink-800">
             <input type="checkbox" checked={aktif} onChange={(e) => setAktif(e.target.checked)} />
             Aktif (seçim listelerinde görünsün)
           </label>
@@ -131,7 +131,7 @@ export default function UrunFormModal({ mevcut, onKaydet, onKapat }: Props) {
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-coffee-600 hover:bg-bakery-cream-100">
+          <button type="button" onClick={onKapat} className="rounded-lg px-4 py-2 text-sm font-medium text-bakery-ink-600 hover:bg-bakery-cream-100">
             Vazgeç
           </button>
           <button

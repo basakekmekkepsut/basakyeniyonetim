@@ -92,7 +92,7 @@ export default function FirmalarPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-bakery-coffee-900">Firmalar</h2>
+        <h2 className="text-lg font-semibold text-bakery-ink-900">Firmalar</h2>
         <button
           onClick={() => {
             setDuzenlenen(undefined)
@@ -106,7 +106,7 @@ export default function FirmalarPage() {
       </div>
 
       {yukleniyor ? (
-        <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
+        <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
       ) : firmalar.length === 0 ? (
         <BosDurum baslik="Henüz firma eklenmedi" />
       ) : (
@@ -117,14 +117,14 @@ export default function FirmalarPage() {
             const firmaOdemeleri = payments.filter((p) => p.hedefTipi === 'firma' && p.hedefId === f.id)
 
             return (
-              <div key={f.id} className="rounded-xl bg-white shadow-sm shadow-bakery-coffee-900/5">
+              <div key={f.id} className="rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
                 <button onClick={() => setAcikId(acik ? null : f.id)} className="flex w-full items-center justify-between px-4 py-3 text-left">
-                  <p className="font-medium text-bakery-coffee-900">{f.ad}</p>
+                  <p className="font-medium text-bakery-ink-900">{f.ad}</p>
                   <div className="flex items-center gap-3">
                     <span className={`text-sm font-semibold ${bakiye > 0 ? 'text-bakery-danger' : 'text-bakery-success'}`}>
                       <TutarGoster tutar={bakiye} />
                     </span>
-                    <ChevronDown size={18} className={`text-bakery-coffee-400 transition ${acik ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={18} className={`text-bakery-ink-400 transition ${acik ? 'rotate-180' : ''}`} />
                   </div>
                 </button>
 
@@ -142,7 +142,7 @@ export default function FirmalarPage() {
                           setDuzenlenen(f)
                           setFormAcik(true)
                         }}
-                        className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
+                        className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
                         aria-label="Düzenle"
                       >
                         <Pencil size={16} />
@@ -153,19 +153,19 @@ export default function FirmalarPage() {
                     </div>
 
                     {firmaOdemeleri.length === 0 ? (
-                      <p className="text-sm text-bakery-coffee-400">Henüz ödeme yok.</p>
+                      <p className="text-sm text-bakery-ink-400">Henüz ödeme yok.</p>
                     ) : (
                       <ul className="space-y-1.5 text-sm">
                         {firmaOdemeleri.map((p) => (
                           <li key={p.id} className="flex items-center justify-between rounded-lg bg-bakery-cream-50 px-3 py-2">
-                            <span className="text-bakery-coffee-600">
+                            <span className="text-bakery-ink-600">
                               {p.tarih} {p.not && `— ${p.not}`}
                             </span>
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-bakery-success">
                                 <TutarGoster tutar={p.tutar} />
                               </span>
-                              <button onClick={() => setDuzenlenenOdeme(p)} className="text-bakery-coffee-400 hover:text-bakery-coffee-600" aria-label="Düzenle">
+                              <button onClick={() => setDuzenlenenOdeme(p)} className="text-bakery-ink-400 hover:text-bakery-ink-600" aria-label="Düzenle">
                                 <Pencil size={14} />
                               </button>
                               <button onClick={() => setSilinecekOdeme(p)} className="text-bakery-danger hover:text-red-700" aria-label="Sil">

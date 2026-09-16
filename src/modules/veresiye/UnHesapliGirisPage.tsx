@@ -61,14 +61,14 @@ export default function UnHesapliGirisPage() {
 
   return (
     <div className="max-w-md space-y-4">
-      <h2 className="text-lg font-semibold text-bakery-coffee-900">Un Ödemesi</h2>
-      <p className="text-sm text-bakery-coffee-500">
+      <h2 className="text-lg font-semibold text-bakery-ink-900">Un Ödemesi</h2>
+      <p className="text-sm text-bakery-ink-500">
         Bu müşterilerde ekmek ücretsizdir — ödeme yalnızca getirdikleri un (çuval) ile yapılır.
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl bg-white p-4 shadow-sm shadow-bakery-coffee-900/5">
+      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
         <div>
-          <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Müşteri *</label>
+          <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Müşteri *</label>
           <MusteriSecici
             modul="veresiye"
             seciliMusteriId={musteri?.id ?? null}
@@ -78,7 +78,7 @@ export default function UnHesapliGirisPage() {
         </div>
 
         {musteri?.unHesabi && (
-          <div className="rounded-lg bg-bakery-cream-50 px-3 py-2.5 text-sm text-bakery-coffee-600">
+          <div className="rounded-lg bg-bakery-cream-50 px-3 py-2.5 text-sm text-bakery-ink-600">
             <p>
               Referans ürün: <strong>{referansUrun?.ad ?? '—'}</strong> · 1 çuval ={' '}
               <strong>{musteri.unHesabi.adetPerCuval ?? '—'} adet</strong>
@@ -94,7 +94,7 @@ export default function UnHesapliGirisPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Çuval Sayısı *</label>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Çuval Sayısı *</label>
             <input
               type="number"
               min={0.1}
@@ -105,7 +105,7 @@ export default function UnHesapliGirisPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Tarih *</label>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Tarih *</label>
             <input
               type="date"
               value={tarih}
@@ -125,9 +125,9 @@ export default function UnHesapliGirisPage() {
       </form>
 
       {musteri && girisler.length > 0 && (
-        <div className="rounded-xl bg-white p-4 shadow-sm shadow-bakery-coffee-900/5">
-          <h3 className="mb-2 text-sm font-semibold text-bakery-coffee-800">Geçmiş Un Ödemeleri</h3>
-          <ul className="space-y-1 text-sm text-bakery-coffee-600">
+        <div className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
+          <h3 className="mb-2 text-sm font-semibold text-bakery-ink-800">Geçmiş Un Ödemeleri</h3>
+          <ul className="space-y-1 text-sm text-bakery-ink-600">
             {girisler.map((g) => (
               <li key={g.id} className="flex justify-between">
                 <span>{g.tarih}</span>
