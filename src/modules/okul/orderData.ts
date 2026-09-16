@@ -94,16 +94,17 @@ export async function okulSiparisMiktariGuncelle(
     query(collection(db, ORDERS), where('tarih', '==', tarih), where('lineId', '==', lineId), limit(1))
   )
   const mevcutRef = mevcutSnap.docs[0]?.ref
+  const guvenliAdet = Math.max(0, adet)
 
-  if (adet <= 0) {
-    if (mevcutRef) await deleteDoc(mevcutRef)
-    return
-  }
-
+  // NOT: adet 0 olduğunda kaydı SİLMİYORUZ — sildiğimizde bu tarih için o hatta
+  // hiç sipariş kaydı kalmıyor, bu da SiparisPage'in "kayıt yoksa okulun
+  // varsayılan/şablon adedini göster" mantığını tetikleyip 0'ı anında varsayılan
+  // adede geri döndürüyordu. 0'ı da gerçek bir kayıt olarak saklamak, "bugün bu
+  // ürünü istemiyorlar" ile "hiç girilmedi" durumunu birbirinden ayırt ediyor.
   if (mevcutRef) {
-    await updateDoc(mevcutRef, { adet, productId })
+    await updateDoc(mevcutRef, { adet: guvenliAdet, productId })
   } else {
-    await addDoc(collection(db, ORDERS), { tarih, schoolId, lineId, productId, adet, kapandiMi: false })
+    await addDoc(collection(db, ORDERS), { tarih, schoolId, lineId, productId, adet: guvenliAdet, kapandiMi: false })
   }
 }
 
@@ -202,6 +203,12 @@ export async function gunuKapat(
 
   ordersSnap.docs.forEach((d) => {
     const order = d.data() as OkulOrder
+    // adet 0 ise (okul o gün istemediyse) fatura satırı oluşturmadan sadece
+    // kapat — boş/₺0 teslimat kaydı ile ekstreyi kirletmeye gerek yok.
+    if (order.adet <= 0) {
+      batch.update(d.ref, { kapandiMi: true })
+      return
+    }
     const okul = okullar.find((o) => o.id === order.schoolId)
     const hat = okul?.lines.find((l) => l.id === order.lineId)
     const urun = urunler.find((u) => u.id === order.productId)
