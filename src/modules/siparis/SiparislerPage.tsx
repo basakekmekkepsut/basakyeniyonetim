@@ -56,7 +56,7 @@ export default function SiparislerPage() {
   const [ozelBaslangic, setOzelBaslangic] = useState(bugunStr())
   const [ozelBitis, setOzelBitis] = useState(yarinStr())
   const [arama, setArama] = useState('')
-  const [durumFiltre, setDurumFiltre] = useState<SiparisDurumu | 'hepsi'>('hepsi')
+  const [urunFiltre, setUrunFiltre] = useState<string>('hepsi')
   const [copKutusu, setCopKutusu] = useState(false)
   const [formAcik, setFormAcik] = useState(false)
   const [duzenlenen, setDuzenlenen] = useState<Siparis | undefined>()
@@ -74,6 +74,7 @@ export default function SiparislerPage() {
     sadeceKendi: signedIn && !canViewAll ? session.user.uid : null
   })
   const { urunler } = useUrunler()
+  const siparisUrunleri = useMemo(() => urunler.filter((u) => u.aktif && u.modules.includes('siparis')), [urunler])
   const planlananlar = usePlanlananSiparisler(canViewAll)
 
   // Teslimat günü gelmiş (veya geçmiş) 'planlandi' siparişleri otomatik olarak
@@ -108,11 +109,11 @@ export default function SiparislerPage() {
 
   const filtrelenmis = useMemo(() => {
     let liste = siparisler
-    if (durumFiltre !== 'hepsi') liste = liste.filter((s) => s.durum === durumFiltre)
+    if (urunFiltre !== 'hepsi') liste = liste.filter((s) => s.items.some((it) => it.productId === urunFiltre))
     const q = arama.trim().toLocaleLowerCase('tr-TR')
     if (q) liste = liste.filter((s) => s.musteriAdi.toLocaleLowerCase('tr-TR').includes(q))
     return liste
-  }, [siparisler, durumFiltre, arama])
+  }, [siparisler, urunFiltre, arama])
 
   async function handleKaydet(veri: SiparisFormVerisi) {
     if (duzenlenen) {
@@ -180,14 +181,14 @@ export default function SiparislerPage() {
             />
           </div>
           <select
-            value={durumFiltre}
-            onChange={(e) => setDurumFiltre(e.target.value as SiparisDurumu | 'hepsi')}
+            value={urunFiltre}
+            onChange={(e) => setUrunFiltre(e.target.value)}
             className="rounded-lg border border-bakery-cream-200 bg-white px-2.5 py-2 text-sm outline-none focus:border-bakery-amber-500"
           >
-            <option value="hepsi">Tüm Durumlar</option>
-            {(Object.keys(DURUM_ETIKETI) as SiparisDurumu[]).map((d) => (
-              <option key={d} value={d}>
-                {DURUM_ETIKETI[d]}
+            <option value="hepsi">Tüm Ürünler</option>
+            {siparisUrunleri.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.ad}
               </option>
             ))}
           </select>
