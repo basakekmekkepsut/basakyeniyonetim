@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Minus, Plus, Zap } from 'lucide-react'
+import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { Minus, Plus } from 'lucide-react'
 import { useMusteriler } from '../musteriler/data'
 import { useUrunler } from '../urunler/data'
 import { useVeresiyeSablonlar } from './sablonData'
@@ -36,8 +36,38 @@ export default function GunlukGirisPage() {
   const [ekstraUrunler, setEkstraUrunler] = useState<Record<string, string[]>>({})
   const [kaydediliyor, setKaydediliyor] = useState(false)
 
+  // Enter tuşuyla bir sonraki miktar kutusuna geçiş için — render sırasına göre
+  // doldurulan düz bir referans listesi (bkz. girisRefineEkle / entereGec).
+  const girisRefleri = useRef<HTMLInputElement[]>([])
+  girisRefleri.current = []
+  function girisRefineEkle(el: HTMLInputElement | null) {
+    if (el) girisRefleri.current.push(el)
+  }
+  function entereGec(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    const index = girisRefleri.current.indexOf(e.currentTarget)
+    const sonraki = girisRefleri.current[index + 1]
+    if (sonraki) {
+      sonraki.focus()
+      sonraki.select()
+    } else {
+      e.currentTarget.blur()
+    }
+  }
+
+  // Eski kayıtlarda kalem başına "aktif" alanı olmayabilir — belirtilmemişse
+  // açık kabul edilir (bkz. sablonData.ts sablonSatirlariniCikar).
+  function musterininAktifKalemleri(musteriId: string) {
+    return sablonlar.find((s) => s.musteriId === musteriId)?.kalemler.filter((k) => k.aktif !== false) ?? []
+  }
+
   const veresiyeMusterileri = useMemo(() => {
-    const siraGetir = (m: Musteri) => sablonlar.find((s) => s.musteriId === m.id && s.aktif)?.sira
+    const siraGetir = (m: Musteri) => {
+      const kalemler = musterininAktifKalemleri(m.id)
+      if (kalemler.length === 0) return undefined
+      return Math.min(...kalemler.map((k) => k.sira ?? 0))
+    }
     return musteriler
       .filter((m) => m.aktif && m.moduller.includes('veresiye') && musteriFiltresi(m))
       .sort((a, b) => {
@@ -48,6 +78,7 @@ export default function GunlukGirisPage() {
         if (sb != null) return 1
         return a.ad.localeCompare(b.ad, 'tr-TR')
       })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [musteriler, musteriFiltresi, sablonlar])
   const veresiyeUrunleri = useMemo(() => urunler.filter((u) => u.aktif && u.modules.includes('veresiye')), [urunler])
 
@@ -74,15 +105,11 @@ export default function GunlukGirisPage() {
     setSatirlar((prev) => ({ ...prev, [musteriId]: { ...satirGetir(musteriId), odendi: deger } }))
   }
 
-  function musteriSablonu(musteriId: string) {
-    return sablonlar.find((s) => s.musteriId === musteriId && s.aktif)
-  }
-
-  // Öncelik: müşterinin aktif Giriş Şablonu'ndaki ürünler. Şablon yoksa müşteri
-  // kartındaki "sık ürünler" seçimi, o da yoksa tüm veresiye ürünleri gösterilir.
+  // Öncelik: müşterinin aktif Giriş Şablonu satırlarındaki ürünler. Şablon yoksa
+  // müşteri kartındaki "sık ürünler" seçimi, o da yoksa tüm veresiye ürünleri gösterilir.
   function gorunurUrunler(m: Musteri) {
-    const sablon = musteriSablonu(m.id)
-    const tabanIdler = sablon ? sablon.kalemler.map((k) => k.productId) : m.sikUrunler?.length ? m.sikUrunler : null
+    const aktifKalemler = musterininAktifKalemleri(m.id)
+    const tabanIdler = aktifKalemler.length > 0 ? aktifKalemler.map((k) => k.productId) : m.sikUrunler?.length ? m.sikUrunler : null
     const taban = tabanIdler ? veresiyeUrunleri.filter((u) => tabanIdler.includes(u.id)) : veresiyeUrunleri
     const ekstraIdler = ekstraUrunler[m.id] ?? []
     const ekstra = veresiyeUrunleri.filter((u) => ekstraIdler.includes(u.id) && !taban.some((t) => t.id === u.id))
@@ -92,21 +119,6 @@ export default function GunlukGirisPage() {
   function urunEkle(musteriId: string, productId: string) {
     if (!productId) return
     setEkstraUrunler((prev) => ({ ...prev, [musteriId]: [...(prev[musteriId] ?? []), productId] }))
-  }
-
-  function sablonYukle(musteriId: string) {
-    const sablon = sablonlar.find((s) => s.musteriId === musteriId && s.aktif)
-    if (!sablon) return
-    setSatirlar((prev) => {
-      const satir = satirGetir(musteriId)
-      const miktarlar = { ...satir.miktarlar }
-      for (const k of sablon.kalemler) miktarlar[k.productId] = k.adet
-      return { ...prev, [musteriId]: { ...satir, miktarlar } }
-    })
-    setEkstraUrunler((prev) => ({
-      ...prev,
-      [musteriId]: [...new Set([...(prev[musteriId] ?? []), ...sablon.kalemler.map((k) => k.productId)])]
-    }))
   }
 
   const doluSatirSayisi =
@@ -192,29 +204,16 @@ export default function GunlukGirisPage() {
               const urun = veresiyeUrunleri.find((u) => u.id === productId)
               return s + adet * (m.ozelFiyatlar[productId] ?? urun?.fiyat ?? 0)
             }, 0)
-            const sablonVarMi = !!musteriSablonu(m.id)
             const unMusterisi = unHesabiAktifMi(m)
 
             return (
               <div key={m.id} className="rounded-lg bg-white p-2 shadow-sm shadow-bakery-coffee-900/5">
-                <div className="mb-1 flex items-center justify-between gap-1.5">
-                  <div className="flex min-w-0 items-center gap-1">
-                    <p className="truncate text-sm font-medium text-bakery-coffee-900">{m.ad}</p>
-                    {unMusterisi && (
-                      <span className="shrink-0 rounded-full bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
-                        Un
-                      </span>
-                    )}
-                  </div>
-                  {sablonVarMi && (
-                    <button
-                      onClick={() => sablonYukle(m.id)}
-                      tabIndex={-1}
-                      className="flex shrink-0 items-center gap-0.5 rounded-full bg-bakery-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-bakery-amber-600 hover:bg-bakery-amber-500/20"
-                    >
-                      <Zap size={10} />
-                      Şablon
-                    </button>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <p className="truncate text-sm font-medium text-bakery-coffee-900">{m.ad}</p>
+                  {unMusterisi && (
+                    <span className="shrink-0 rounded-full bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
+                      Un
+                    </span>
                   )}
                 </div>
 
@@ -233,6 +232,7 @@ export default function GunlukGirisPage() {
                           <Minus size={11} />
                         </button>
                         <input
+                          ref={girisRefineEkle}
                           type="number"
                           inputMode="numeric"
                           min={0}
@@ -240,6 +240,7 @@ export default function GunlukGirisPage() {
                           value={satir.miktarlar[u.id] ?? 0}
                           onChange={(e) => miktarAyarla(m.id, u.id, Math.round(Number(e.target.value)) || 0)}
                           onFocus={(e) => e.target.select()}
+                          onKeyDown={entereGec}
                           className="w-9 rounded-md border border-bakery-cream-200 bg-bakery-cream-50 px-0.5 py-0.5 text-center text-xs font-medium text-bakery-coffee-900 outline-none focus:border-bakery-amber-500 focus:ring-1 focus:ring-bakery-amber-500/30"
                         />
                         <button
@@ -259,6 +260,7 @@ export default function GunlukGirisPage() {
                     <div className="flex items-center justify-between gap-1 border-t border-dashed border-bakery-cream-200 pt-1">
                       <span className="truncate text-xs text-bakery-coffee-600">Çuval</span>
                       <input
+                        ref={girisRefineEkle}
                         type="number"
                         inputMode="numeric"
                         min={0}
@@ -267,6 +269,7 @@ export default function GunlukGirisPage() {
                         value={cuvalGirisleri[m.id] ?? 0}
                         onChange={(e) => setCuvalGirisleri((prev) => ({ ...prev, [m.id]: Math.max(0, Number(e.target.value) || 0) }))}
                         onFocus={(e) => e.target.select()}
+                        onKeyDown={entereGec}
                         className="w-12 rounded-md border border-bakery-cream-200 bg-bakery-cream-50 px-0.5 py-0.5 text-center text-xs font-medium text-bakery-coffee-900 outline-none focus:border-bakery-amber-500 focus:ring-1 focus:ring-bakery-amber-500/30"
                       />
                     </div>

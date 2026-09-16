@@ -180,7 +180,8 @@ export type VeresiyeOdemeFormVerisi = Omit<VeresiyeOdeme, 'id' | 'olusturanUid'>
 export interface VeresiyeSablonKalemi {
   productId: string
   urunAdi: string
-  adet: number
+  aktif: boolean // false = satır geçici olarak duraklatıldı (pasif), Günlük Giriş'te gösterilmez
+  sira: number // Giriş Şablonu listesindeki ve Günlük Giriş'teki satır sırası (küçük önce) — eski sistemdeki "sıra" alanının karşılığı
 }
 
 export interface VeresiyeSablon {
@@ -188,8 +189,6 @@ export interface VeresiyeSablon {
   musteriId: string
   musteriAdi: string
   kalemler: VeresiyeSablonKalemi[]
-  aktif: boolean
-  sira: number // Günlük Giriş'te müşterilerin gösterilme sırası (küçük önce) — eski sistemdeki "sıra" alanının karşılığı
 }
 
 export type VeresiyeSablonFormVerisi = Omit<VeresiyeSablon, 'id'>

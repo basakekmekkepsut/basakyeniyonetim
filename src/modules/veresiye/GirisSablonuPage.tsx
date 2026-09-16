@@ -1,50 +1,71 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useVeresiyeSablonlar, veresiyeSablonEkle, veresiyeSablonGuncelle, veresiyeSablonSil } from './sablonData'
-import VeresiyeSablonFormModal from './VeresiyeSablonFormModal'
+import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
+import {
+  sablonSatirlariniCikar,
+  sablonSatiriAktifDegistir,
+  sablonSatiriEkle,
+  sablonSatiriSil,
+  sablonSatiriSiraDegistir,
+  useSonrakiSira,
+  useVeresiyeSablonlar,
+  type SablonSatiri
+} from './sablonData'
+import { useUrunler } from '../urunler/data'
 import BosDurum from '../../shared/BosDurum'
 import ConfirmModal from '../../shared/ConfirmModal'
+import MusteriSecici from '../../shared/MusteriSecici'
 import { useToast } from '../../shared/Toast'
 import { useVeresiyeMusteriFiltresi } from '../../shared/veresiyeErisim'
-import type { VeresiyeSablon, VeresiyeSablonFormVerisi } from '../../lib/types'
 
 export default function GirisSablonuPage() {
-  const { sablonlar: tumSablonlar, yukleniyor, hata } = useVeresiyeSablonlar()
+  const { sablonlar, yukleniyor, hata } = useVeresiyeSablonlar()
+  const { urunler } = useUrunler()
   const musteriFiltresi = useVeresiyeMusteriFiltresi()
-  const sablonlar = useMemo(
-    () =>
-      tumSablonlar
-        .filter((s) => musteriFiltresi({ id: s.musteriId }))
-        .sort((a, b) => (a.sira ?? 0) - (b.sira ?? 0)),
-    [tumSablonlar, musteriFiltresi]
-  )
-  const sonrakiSira = useMemo(() => tumSablonlar.reduce((max, s) => Math.max(max, s.sira ?? 0), 0) + 1, [tumSablonlar])
   const toast = useToast()
-  const [formAcik, setFormAcik] = useState(false)
-  const [duzenlenen, setDuzenlenen] = useState<VeresiyeSablon | undefined>()
-  const [silinecek, setSilinecek] = useState<VeresiyeSablon | undefined>()
 
-  async function handleKaydet(veri: VeresiyeSablonFormVerisi) {
-    if (duzenlenen) {
-      await veresiyeSablonGuncelle(duzenlenen.id, veri)
-      toast.basari('Şablon güncellendi.')
-    } else {
-      await veresiyeSablonEkle(veri)
-      toast.basari('Şablon eklendi.')
+  const satirlar = useMemo(
+    () => sablonSatirlariniCikar(sablonlar).filter((s) => musteriFiltresi({ id: s.musteriId })),
+    [sablonlar, musteriFiltresi]
+  )
+  const sonrakiSira = useSonrakiSira(sablonlar)
+  const veresiyeUrunleri = useMemo(() => urunler.filter((u) => u.aktif && u.modules.includes('veresiye')), [urunler])
+
+  const [yeniMusteriId, setYeniMusteriId] = useState('')
+  const [yeniMusteriAdi, setYeniMusteriAdi] = useState('')
+  const [yeniProductId, setYeniProductId] = useState('')
+  const [ekleniyor, setEkleniyor] = useState(false)
+  const [silinecek, setSilinecek] = useState<SablonSatiri | undefined>()
+
+  async function handleEkle() {
+    if (!yeniMusteriId) return toast.hata('Müşteri seçmelisiniz.')
+    if (!yeniProductId) return toast.hata('Ekmek türü seçmelisiniz.')
+    const urun = veresiyeUrunleri.find((u) => u.id === yeniProductId)
+    if (!urun) return
+    setEkleniyor(true)
+    try {
+      await sablonSatiriEkle(sablonlar, yeniMusteriId, yeniMusteriAdi, urun.id, urun.ad, sonrakiSira)
+      toast.basari('Satır eklendi.')
+      setYeniProductId('')
+    } catch (err) {
+      toast.hata(err instanceof Error ? err.message : 'Eklenemedi.')
+    } finally {
+      setEkleniyor(false)
     }
   }
 
-  async function siraDegistir(index: number, yon: -1 | 1) {
-    const digeri = sablonlar[index + yon]
-    if (!digeri) return
-    const bu = sablonlar[index]
-    const { id: buId, ...buVeri } = bu
-    const { id: digeriId, ...digeriVeri } = digeri
+  async function handleAktifDegistir(satir: SablonSatiri, aktif: boolean) {
     try {
-      await Promise.all([
-        veresiyeSablonGuncelle(buId, { ...buVeri, sira: digeri.sira ?? 0 }),
-        veresiyeSablonGuncelle(digeriId, { ...digeriVeri, sira: bu.sira ?? 0 })
-      ])
+      await sablonSatiriAktifDegistir(sablonlar, satir.sablonId, satir.kalemIndex, aktif)
+    } catch (err) {
+      toast.hata(err instanceof Error ? err.message : 'Güncellenemedi.')
+    }
+  }
+
+  async function handleSiraDegistir(index: number, yon: -1 | 1) {
+    const digeri = satirlar[index + yon]
+    if (!digeri) return
+    try {
+      await sablonSatiriSiraDegistir(sablonlar, satirlar[index], digeri)
     } catch (err) {
       toast.hata(err instanceof Error ? err.message : 'Sıra değiştirilemedi.')
     }
@@ -53,8 +74,8 @@ export default function GirisSablonuPage() {
   async function handleSil() {
     if (!silinecek) return
     try {
-      await veresiyeSablonSil(silinecek.id)
-      toast.basari('Şablon silindi.')
+      await sablonSatiriSil(sablonlar, silinecek.sablonId, silinecek.kalemIndex)
+      toast.basari('Satır silindi.')
     } catch (err) {
       toast.hata(err instanceof Error ? err.message : 'Silinemedi.')
     } finally {
@@ -66,52 +87,45 @@ export default function GirisSablonuPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div>
         <h2 className="text-lg font-semibold text-bakery-coffee-900">Giriş Şablonu</h2>
-        <button
-          onClick={() => {
-            setDuzenlenen(undefined)
-            setFormAcik(true)
-          }}
-          className="flex items-center gap-1.5 rounded-lg bg-bakery-amber-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-bakery-amber-500"
-        >
-          <Plus size={16} />
-          Yeni Şablon
-        </button>
+        <p className="mt-1 text-sm text-bakery-coffee-500">
+          Hangi müşterinin hangi ekmeği düzenli aldığını burada bir kere ayarla — Günlük Giriş ekranında her gün sadece adetleri
+          gireceksin, müşteri/ürün seçmene gerek kalmayacak. Bir müşteri geçici olarak almıyorsa satırı silmeye gerek yok, tikini
+          kaldır (pasif yap), tekrar aldığında tekrar işaretlersin.
+        </p>
       </div>
-
-      <p className="text-sm text-bakery-coffee-500">
-        Buradaki şablonlar, Günlük Giriş ekranındaki müşteri kartlarında "Şablon" butonuyla tek tıkla yüklenir.
-      </p>
 
       {yukleniyor ? (
         <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
-      ) : sablonlar.length === 0 ? (
-        <BosDurum baslik="Henüz giriş şablonu yok" aciklama="Düzenli veresiye müşterileri için şablon oluşturursanız Günlük Giriş çok daha hızlanır." />
+      ) : satirlar.length === 0 ? (
+        <BosDurum baslik="Henüz giriş şablonu yok" aciklama="Aşağıdaki formdan bir satır ekleyerek başlayın." />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {sablonlar.map((s, i) => (
-            <div key={s.id} className="rounded-xl bg-white p-4 shadow-sm shadow-bakery-coffee-900/5">
-              <div className="mb-2 flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-bakery-cream-100 px-2 py-0.5 text-xs font-medium text-bakery-coffee-500">
-                    Sıra {s.sira ?? 0}
+        <div className="overflow-hidden rounded-2xl bg-white shadow-soft">
+          <div className="hidden items-center gap-3 border-b border-bakery-cream-100 px-4 py-2 text-xs font-medium uppercase tracking-wide text-bakery-coffee-400 sm:flex">
+            <span className="w-14 shrink-0">Durum</span>
+            <span className="flex-1">Müşteri</span>
+            <span className="flex-1">Ekmek Türü</span>
+            <span className="w-24 shrink-0 text-right">İşlem</span>
+          </div>
+          <div className="divide-y divide-bakery-cream-100">
+            {satirlar.map((s, i) => (
+              <div key={`${s.sablonId}-${s.kalemIndex}`} className="flex items-center gap-3 px-4 py-2">
+                <label className="flex w-14 shrink-0 items-center gap-1.5">
+                  <input type="checkbox" checked={s.aktif} onChange={(e) => handleAktifDegistir(s, e.target.checked)} />
+                  <span className={`hidden text-xs sm:inline ${s.aktif ? 'text-bakery-success' : 'text-bakery-coffee-400'}`}>
+                    {s.aktif ? 'Aktif' : 'Pasif'}
                   </span>
-                  <p className="font-medium text-bakery-coffee-900">{s.musteriAdi}</p>
-                </div>
-                {!s.aktif && <span className="rounded-full bg-bakery-cream-100 px-2 py-0.5 text-xs text-bakery-coffee-500">Pasif</span>}
-              </div>
-              <ul className="mb-3 space-y-0.5 text-sm text-bakery-coffee-600">
-                {s.kalemler.map((k, i) => (
-                  <li key={i}>
-                    {k.adet}× {k.urunAdi}
-                  </li>
-                ))}
-              </ul>
-              <div className="flex items-center justify-between border-t border-bakery-cream-100 pt-2">
-                <div className="flex gap-1">
+                </label>
+                <span className={`flex-1 truncate text-sm font-medium ${s.aktif ? 'text-bakery-coffee-900' : 'text-bakery-coffee-400'}`}>
+                  {s.musteriAdi}
+                </span>
+                <span className={`flex-1 truncate text-sm ${s.aktif ? 'text-bakery-coffee-600' : 'text-bakery-coffee-300'}`}>
+                  {s.urunAdi}
+                </span>
+                <div className="flex w-24 shrink-0 items-center justify-end gap-0.5">
                   <button
-                    onClick={() => siraDegistir(i, -1)}
+                    onClick={() => handleSiraDegistir(i, -1)}
                     disabled={i === 0}
                     className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100 disabled:opacity-30"
                     aria-label="Yukarı taşı"
@@ -119,52 +133,72 @@ export default function GirisSablonuPage() {
                     <ChevronUp size={16} />
                   </button>
                   <button
-                    onClick={() => siraDegistir(i, 1)}
-                    disabled={i === sablonlar.length - 1}
+                    onClick={() => handleSiraDegistir(i, 1)}
+                    disabled={i === satirlar.length - 1}
                     className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100 disabled:opacity-30"
                     aria-label="Aşağı taşı"
                   >
                     <ChevronDown size={16} />
                   </button>
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => {
-                      setDuzenlenen(s)
-                      setFormAcik(true)
-                    }}
-                    className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
-                    aria-label="Düzenle"
-                  >
-                    <Pencil size={16} />
-                  </button>
                   <button
                     onClick={() => setSilinecek(s)}
                     className="rounded-lg p-1.5 text-bakery-danger hover:bg-bakery-danger/10"
-                    aria-label="Sil"
+                    aria-label="Satırı sil"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
-      {formAcik && (
-        <VeresiyeSablonFormModal
-          mevcut={duzenlenen}
-          varsayilanSira={sonrakiSira}
-          onKaydet={handleKaydet}
-          onKapat={() => setFormAcik(false)}
-        />
-      )}
+      <div className="rounded-2xl bg-white p-4 shadow-soft">
+        <h3 className="mb-3 text-sm font-semibold text-bakery-coffee-900">Satır Ekle</h3>
+        <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-bakery-coffee-500">Müşteri</label>
+            <MusteriSecici
+              modul="veresiye"
+              seciliMusteriId={yeniMusteriId || null}
+              filtre={musteriFiltresi}
+              onSec={(m) => {
+                setYeniMusteriId(m.id)
+                setYeniMusteriAdi(m.ad)
+              }}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-bakery-coffee-500">Ekmek Türü</label>
+            <select
+              value={yeniProductId}
+              onChange={(e) => setYeniProductId(e.target.value)}
+              className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 text-sm outline-none focus:border-bakery-amber-500"
+            >
+              <option value="">Ürün seçin…</option>
+              {veresiyeUrunleri.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.ad}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={handleEkle}
+            disabled={ekleniyor}
+            className="flex items-center justify-center gap-1.5 rounded-lg bg-bakery-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-bakery-amber-500 disabled:opacity-60 sm:mt-5"
+          >
+            <Plus size={16} />
+            Ekle
+          </button>
+        </div>
+      </div>
 
       {silinecek && (
         <ConfirmModal
-          baslik="Şablonu sil"
-          mesaj={`"${silinecek.musteriAdi}" giriş şablonunu silmek istediğinize emin misiniz?`}
+          baslik="Satırı sil"
+          mesaj={`"${silinecek.musteriAdi} — ${silinecek.urunAdi}" satırını silmek istediğinize emin misiniz?`}
           onayEtiketi="Sil"
           tehlikeli
           onOnayla={handleSil}
