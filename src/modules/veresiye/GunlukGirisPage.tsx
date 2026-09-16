@@ -194,7 +194,7 @@ export default function GunlukGirisPage() {
       ) : veresiyeUrunleri.length === 0 ? (
         <BosDurum baslik="Veresiye ürünü yok" aciklama="Ayarlar > Ürünler'den bir ürünü Veresiye modülüne ekleyin." />
       ) : (
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 sm:gap-2 lg:grid-cols-5 xl:grid-cols-6">
           {veresiyeMusterileri.map((m) => {
             const satir = satirGetir(m.id)
             const gosterilenUrunler = gorunurUrunler(m)
@@ -207,29 +207,25 @@ export default function GunlukGirisPage() {
             const unMusterisi = unHesabiAktifMi(m)
 
             return (
-              <div key={m.id} className="rounded-lg bg-white p-2 shadow-sm shadow-bakery-coffee-900/5">
-                <div className="mb-1 flex items-center gap-1.5">
-                  <p className="truncate text-sm font-medium text-bakery-coffee-900">{m.ad}</p>
-                  {unMusterisi && (
-                    <span className="shrink-0 rounded-full bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
-                      Un
-                    </span>
-                  )}
+              <div key={m.id} className="rounded-lg bg-white p-1.5 shadow-sm shadow-bakery-coffee-900/5">
+                <div className="mb-1 flex items-center gap-1">
+                  <p className="truncate text-[11px] font-medium leading-tight text-bakery-coffee-900">{m.ad}</p>
+                  {unMusterisi && <span className="shrink-0 text-[9px] font-medium text-blue-600">Un</span>}
                 </div>
 
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   {gosterilenUrunler.map((u) => (
-                    <div key={u.id} className="flex items-center justify-between gap-1">
-                      <span className="truncate text-xs text-bakery-coffee-600">{u.ad}</span>
-                      <div className="flex shrink-0 items-center gap-1">
+                    <div key={u.id}>
+                      <p className="truncate text-[9px] leading-tight text-bakery-coffee-500">{u.ad}</p>
+                      <div className="flex items-center justify-center gap-0.5">
                         <button
                           type="button"
                           tabIndex={-1}
                           aria-label={`${m.ad} ${u.ad} azalt`}
                           onClick={() => miktarDegistir(m.id, u.id, -1)}
-                          className="flex h-5 w-5 items-center justify-center rounded-full bg-bakery-cream-100 text-bakery-coffee-600 hover:bg-bakery-cream-200"
+                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-bakery-cream-100 text-bakery-coffee-600 hover:bg-bakery-cream-200"
                         >
-                          <Minus size={11} />
+                          <Minus size={10} />
                         </button>
                         <input
                           ref={girisRefineEkle}
@@ -241,24 +237,24 @@ export default function GunlukGirisPage() {
                           onChange={(e) => miktarAyarla(m.id, u.id, Math.round(Number(e.target.value)) || 0)}
                           onFocus={(e) => e.target.select()}
                           onKeyDown={entereGec}
-                          className="w-9 rounded-md border border-bakery-cream-200 bg-bakery-cream-50 px-0.5 py-0.5 text-center text-xs font-medium text-bakery-coffee-900 outline-none focus:border-bakery-amber-500 focus:ring-1 focus:ring-bakery-amber-500/30"
+                          className="w-6 min-w-0 rounded border border-bakery-cream-200 bg-bakery-cream-50 px-0 py-0.5 text-center text-[11px] font-medium text-bakery-coffee-900 outline-none focus:border-bakery-amber-500 focus:ring-1 focus:ring-bakery-amber-500/30"
                         />
                         <button
                           type="button"
                           tabIndex={-1}
                           aria-label={`${m.ad} ${u.ad} artır`}
                           onClick={() => miktarDegistir(m.id, u.id, 1)}
-                          className="flex h-5 w-5 items-center justify-center rounded-full bg-bakery-amber-500/15 text-bakery-amber-600 hover:bg-bakery-amber-500/25"
+                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-bakery-amber-500/15 text-bakery-amber-600 hover:bg-bakery-amber-500/25"
                         >
-                          <Plus size={11} />
+                          <Plus size={10} />
                         </button>
                       </div>
                     </div>
                   ))}
 
                   {unMusterisi && m.unHesabi?.adetPerCuval && (
-                    <div className="flex items-center justify-between gap-1 border-t border-dashed border-bakery-cream-200 pt-1">
-                      <span className="truncate text-xs text-bakery-coffee-600">Çuval</span>
+                    <div className="border-t border-dashed border-bakery-cream-200 pt-1">
+                      <p className="truncate text-[9px] leading-tight text-bakery-coffee-500">Çuval</p>
                       <input
                         ref={girisRefineEkle}
                         type="number"
@@ -270,7 +266,7 @@ export default function GunlukGirisPage() {
                         onChange={(e) => setCuvalGirisleri((prev) => ({ ...prev, [m.id]: Math.max(0, Number(e.target.value) || 0) }))}
                         onFocus={(e) => e.target.select()}
                         onKeyDown={entereGec}
-                        className="w-12 rounded-md border border-bakery-cream-200 bg-bakery-cream-50 px-0.5 py-0.5 text-center text-xs font-medium text-bakery-coffee-900 outline-none focus:border-bakery-amber-500 focus:ring-1 focus:ring-bakery-amber-500/30"
+                        className="w-full rounded border border-bakery-cream-200 bg-bakery-cream-50 px-0 py-0.5 text-center text-[11px] font-medium text-bakery-coffee-900 outline-none focus:border-bakery-amber-500 focus:ring-1 focus:ring-bakery-amber-500/30"
                       />
                     </div>
                   )}
@@ -281,9 +277,9 @@ export default function GunlukGirisPage() {
                     value=""
                     tabIndex={-1}
                     onChange={(e) => urunEkle(m.id, e.target.value)}
-                    className="mt-1 w-full rounded-md border border-dashed border-bakery-cream-300 bg-transparent px-1 py-0.5 text-[10px] text-bakery-coffee-500 outline-none focus:border-bakery-amber-500"
+                    className="mt-1 w-full rounded border border-dashed border-bakery-cream-300 bg-transparent px-0.5 py-0.5 text-[8px] text-bakery-coffee-500 outline-none focus:border-bakery-amber-500"
                   >
-                    <option value="">+ Ürün Ekle</option>
+                    <option value="">+ Ürün</option>
                     {eklenebilirUrunler.map((u) => (
                       <option key={u.id} value={u.id}>
                         {u.ad}
@@ -292,16 +288,19 @@ export default function GunlukGirisPage() {
                   </select>
                 )}
 
-                <div className="mt-1.5 flex items-center justify-between border-t border-bakery-cream-100 pt-1">
+                <div className="mt-1 flex items-center justify-between gap-0.5 border-t border-bakery-cream-100 pt-1">
                   {unMusterisi ? (
-                    <span className="text-[10px] text-bakery-coffee-500">Ücretsiz — un hesabına</span>
+                    <span className="text-[8px] leading-tight text-bakery-coffee-500">Ücretsiz</span>
                   ) : (
-                    <label className="flex items-center gap-1 text-xs text-bakery-coffee-600">
-                      <input type="checkbox" checked={satir.odendi} onChange={(e) => odendiDegistir(m.id, e.target.checked)} />
-                      Ödendi
-                    </label>
+                    <input
+                      type="checkbox"
+                      title="Ödendi"
+                      checked={satir.odendi}
+                      onChange={(e) => odendiDegistir(m.id, e.target.checked)}
+                      className="h-3 w-3 shrink-0"
+                    />
                   )}
-                  <span className="text-xs font-semibold text-bakery-coffee-900">
+                  <span className="truncate text-[10px] font-semibold text-bakery-coffee-900">
                     {unMusterisi ? '' : formatTutar(toplam)}
                   </span>
                 </div>
