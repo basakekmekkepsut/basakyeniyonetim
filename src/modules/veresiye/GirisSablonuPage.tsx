@@ -15,18 +15,17 @@ import BosDurum from '../../shared/BosDurum'
 import ConfirmModal from '../../shared/ConfirmModal'
 import MusteriSecici from '../../shared/MusteriSecici'
 import { useToast } from '../../shared/Toast'
-import { useVeresiyeMusteriFiltresi } from '../../shared/veresiyeErisim'
 
 export default function GirisSablonuPage() {
   const { sablonlar, yukleniyor, hata } = useVeresiyeSablonlar()
   const { urunler } = useUrunler()
-  const musteriFiltresi = useVeresiyeMusteriFiltresi()
   const toast = useToast()
 
-  const satirlar = useMemo(
-    () => sablonSatirlariniCikar(sablonlar).filter((s) => musteriFiltresi({ id: s.musteriId })),
-    [sablonlar, musteriFiltresi]
-  )
+  // NOT: Giriş Şablonu ve Günlük Giriş bilerek kişi bazlı müşteri kısıtlamasına
+  // TABİ DEĞİL — personel ekmek girişini hangi müşteri için olursa olsun
+  // yapabilmeli. Kısıtlama yalnızca Özet'teki geçmiş/bakiye görünümünde uygulanıyor
+  // (bkz. OzetPage.tsx) — "girebilme" ile "bilgiye erişebilme" kasıtlı olarak ayrıldı.
+  const satirlar = useMemo(() => sablonSatirlariniCikar(sablonlar), [sablonlar])
   const sonrakiSira = useSonrakiSira(sablonlar)
   const veresiyeUrunleri = useMemo(() => urunler.filter((u) => u.aktif && u.modules.includes('veresiye')), [urunler])
 
@@ -162,7 +161,6 @@ export default function GirisSablonuPage() {
             <MusteriSecici
               modul="veresiye"
               seciliMusteriId={yeniMusteriId || null}
-              filtre={musteriFiltresi}
               onSec={(m) => {
                 setYeniMusteriId(m.id)
                 setYeniMusteriAdi(m.ad)

@@ -13,7 +13,9 @@ interface Props {
 export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props) {
   const { musteriler } = useMusteriler()
   const [uid, setUid] = useState(mevcut?.uid ?? '')
-  const [profil, setProfil] = useState<KullaniciProfili>(mevcut ?? BOS_PROFIL)
+  const [profil, setProfil] = useState<KullaniciProfili>(() =>
+    mevcut ? { ...mevcut, bildirimler: mevcut.bildirimler ?? BOS_PROFIL.bildirimler } : BOS_PROFIL
+  )
   const [gonderiliyor, setGonderiliyor] = useState(false)
   const [hata, setHata] = useState<string | null>(null)
 
@@ -244,6 +246,29 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
               </div>
             </div>
           )}
+
+          <div className="space-y-2 rounded-lg bg-bakery-cream-50 p-3">
+            <p className="text-sm font-medium text-bakery-coffee-800">Push Bildirimleri</p>
+            <p className="text-xs text-bakery-coffee-500">
+              Bildirimin gerçekten telefona düşmesi için kişinin kendisinin uygulamada "Bildirimleri Aç"a basmış olması gerekir.
+            </p>
+            <label className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm">
+              <input
+                type="checkbox"
+                checked={profil.bildirimler.yeniSiparis}
+                onChange={(e) => alanGuncelle('bildirimler', { ...profil.bildirimler, yeniSiparis: e.target.checked })}
+              />
+              Yeni sipariş girildiğinde anlık bildirim al
+            </label>
+            <label className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm">
+              <input
+                type="checkbox"
+                checked={profil.bildirimler.gunlukHatirlatma}
+                onChange={(e) => alanGuncelle('bildirimler', { ...profil.bildirimler, gunlukHatirlatma: e.target.checked })}
+              />
+              Her sabah "yarın için sipariş var" hatırlatması al
+            </label>
+          </div>
 
           <label className="flex items-center gap-2 text-sm font-medium text-bakery-coffee-800">
             <input type="checkbox" checked={profil.aktif} onChange={(e) => alanGuncelle('aktif', e.target.checked)} />

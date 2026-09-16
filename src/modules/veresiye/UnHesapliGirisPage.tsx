@@ -5,7 +5,6 @@ import { unOdemesiEkle, useUnGirisleri } from './unHesabiData'
 import MusteriSecici from '../../shared/MusteriSecici'
 import BosDurum from '../../shared/BosDurum'
 import { cuvalGoster } from '../../shared/unHesabi'
-import { useVeresiyeMusteriFiltresi } from '../../shared/veresiyeErisim'
 import { useToast } from '../../shared/Toast'
 import { useSession } from '../../lib/session'
 import type { Musteri } from '../../lib/types'
@@ -19,7 +18,6 @@ export default function UnHesapliGirisPage() {
   const toast = useToast()
   const { musteriler } = useMusteriler()
   const { urunler } = useUrunler()
-  const musteriFiltresi = useVeresiyeMusteriFiltresi()
 
   const [musteri, setMusteri] = useState<Musteri | null>(null)
   const { girisler } = useUnGirisleri(musteri?.id ?? null)
@@ -27,7 +25,7 @@ export default function UnHesapliGirisPage() {
   const [tarih, setTarih] = useState(bugunStr())
   const [gonderiliyor, setGonderiliyor] = useState(false)
 
-  const unMusterisiVarMi = musteriler.some((m) => m.aktif && m.unHesabi?.aktif && musteriFiltresi(m))
+  const unMusterisiVarMi = musteriler.some((m) => m.aktif && m.unHesabi?.aktif)
   const referansUrun = musteri?.unHesabi?.referansUrunId
     ? urunler.find((u) => u.id === musteri.unHesabi!.referansUrunId)
     : undefined
@@ -75,7 +73,7 @@ export default function UnHesapliGirisPage() {
             modul="veresiye"
             seciliMusteriId={musteri?.id ?? null}
             onSec={(m) => setMusteri(m)}
-            filtre={(m) => Boolean(m.unHesabi?.aktif) && musteriFiltresi(m)}
+            filtre={(m) => Boolean(m.unHesabi?.aktif)}
           />
         </div>
 

@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { useSiparisler } from './data'
 import BosDurum from '../../shared/BosDurum'
-import { formatTutar } from '../../shared/TutarGoster'
 import TelegramGonderButonu from '../../shared/TelegramGonderButonu'
 import type { Siparis } from '../../lib/types'
 
@@ -21,10 +20,9 @@ function siparisMesajOlustur(tarih: string, siparisler: Siparis[]): string {
   if (gecerliSiparisler.length === 0) return ''
   const satirlar = gecerliSiparisler.map((s) => {
     const urunler = s.items.map((it) => `${it.adet}x ${it.urunAdi}`).join(', ')
-    return `• ${s.musteriAdi} — ${urunler} (${formatTutar(s.toplamTutar)})`
+    return `• ${s.musteriAdi} — ${urunler}`
   })
-  const toplam = gecerliSiparisler.reduce((sum, s) => sum + s.toplamTutar, 0)
-  return `📋 ${tarih} Sipariş Listesi\n\n${satirlar.join('\n')}\n\nToplam: ${formatTutar(toplam)}`
+  return `📋 ${tarih} Sipariş Listesi\n\n${satirlar.join('\n')}`
 }
 
 function waAc(mesaj: string) {

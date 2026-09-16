@@ -10,7 +10,6 @@ import { formatTutar } from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
 import { useSession } from '../../lib/session'
 import { unHesabiAktifMi } from '../../shared/unHesabi'
-import { useVeresiyeMusteriFiltresi } from '../../shared/veresiyeErisim'
 import type { Musteri } from '../../lib/types'
 
 function bugunStr() {
@@ -28,7 +27,6 @@ export default function GunlukGirisPage() {
   const { musteriler, yukleniyor: musteriYukleniyor } = useMusteriler()
   const { urunler } = useUrunler()
   const { sablonlar } = useVeresiyeSablonlar()
-  const musteriFiltresi = useVeresiyeMusteriFiltresi()
 
   const [tarih, setTarih] = useState(bugunStr())
   const [satirlar, setSatirlar] = useState<Record<string, SatirState>>({})
@@ -69,7 +67,7 @@ export default function GunlukGirisPage() {
       return Math.min(...kalemler.map((k) => k.sira ?? 0))
     }
     return musteriler
-      .filter((m) => m.aktif && m.moduller.includes('veresiye') && musteriFiltresi(m))
+      .filter((m) => m.aktif && m.moduller.includes('veresiye'))
       .sort((a, b) => {
         const sa = siraGetir(a)
         const sb = siraGetir(b)
@@ -79,7 +77,7 @@ export default function GunlukGirisPage() {
         return a.ad.localeCompare(b.ad, 'tr-TR')
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [musteriler, musteriFiltresi, sablonlar])
+  }, [musteriler, sablonlar])
   const veresiyeUrunleri = useMemo(() => urunler.filter((u) => u.aktif && u.modules.includes('veresiye')), [urunler])
 
   function satirGetir(musteriId: string): SatirState {
