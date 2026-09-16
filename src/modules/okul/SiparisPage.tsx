@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useOkullar, useOkulFirmalari } from './data'
+import { useOkullar, useOkulFirmalari, okulGuncelle, yeniHatId } from './data'
 import { useOkulOrders, useOkulKapanis, okulSiparisMiktariGuncelle, varsayilanSiparisleriHazirla } from './orderData'
+import { useUrunler } from '../urunler/data'
 import BosDurum from '../../shared/BosDurum'
+import { useToast } from '../../shared/Toast'
+import type { OkulSchool } from '../../lib/types'
 
 function yarinStr() {
   const d = new Date()
@@ -12,11 +15,34 @@ function yarinStr() {
 export default function SiparisPage() {
   const { okullar, yukleniyor: okulYukleniyor } = useOkullar()
   const { firmalar } = useOkulFirmalari()
+  const { urunler } = useUrunler()
+  const toast = useToast()
   const [tarih, setTarih] = useState(yarinStr())
   const { orders, yukleniyor: ordersYukleniyor } = useOkulOrders(tarih)
   const { kapanis, yukleniyor: kapanisYukleniyor } = useOkulKapanis(tarih)
 
   const [degerler, setDegerler] = useState<Record<string, number>>({})
+  const okulUrunleri = urunler.filter((u) => u.aktif && u.modules.includes('okul'))
+
+  // "+ Ürün Ekle": okulun sabit hat listesinde olmayan bir ürünü o okula, adet 0
+  // ile kalıcı bir hat olarak ekler (Okullar sayfasına gitmeye gerek kalmadan) —
+  // günlük miktar zaten aşağıdaki inputtan girilir, gelecek günlerde bu hat 0
+  // adetle sessiz kalır, tekrar sipariş edilirse aynı şekilde miktar girilir.
+  async function urunEkle(okul: OkulSchool, productId: string) {
+    if (!productId) return
+    const urun = okulUrunleri.find((u) => u.id === productId)
+    if (!urun) return
+    try {
+      await okulGuncelle(okul.id, {
+        ad: okul.ad,
+        firmaId: okul.firmaId,
+        musteriId: okul.musteriId,
+        lines: [...okul.lines, { id: yeniHatId(), productId, urunAdi: urun.ad, adet: 0, aktif: true, faturaHedefiId: null }]
+      })
+    } catch (err) {
+      toast.hata(err instanceof Error ? err.message : 'Ürün eklenemedi.')
+    }
+  }
 
   useEffect(() => {
     // Bu tarih için henüz sipariş girilmemiş hatlarda, okulun standart günlük
@@ -88,39 +114,58 @@ export default function SiparisPage() {
                   {firma ? firma.ad : 'Doğrudan Okullar'}
                 </h3>
                 <div className="space-y-3">
-                  {okullarGrup.map((okul) => (
-                    <div key={okul.id}>
-                      <p className="mb-1.5 text-sm font-medium text-bakery-coffee-900">{okul.ad}</p>
-                      <div className="space-y-1.5 pl-2">
-                        {okul.lines
-                          .filter((l) => l.aktif)
-                          .map((l) => {
-                            const order = lineOrder(l.id)
-                            const kapali = order?.kapandiMi ?? false
-                            return (
-                              <div key={l.id} className="flex items-center justify-between gap-3 text-sm">
-                                <span className="text-bakery-coffee-600">{l.urunAdi}</span>
-                                <div className="flex items-center gap-2">
-                                  {kapali && <span className="text-xs text-bakery-coffee-400">Kapandı</span>}
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    disabled={kapali}
-                                    value={degerler[l.id] ?? ''}
-                                    placeholder="0"
-                                    onChange={(e) =>
-                                      setDegerler((prev) => ({ ...prev, [l.id]: Number(e.target.value) }))
-                                    }
-                                    onBlur={(e) => commit(okul.id, l.id, l.productId, Number(e.target.value) || 0)}
-                                    className="w-20 rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-2 py-1.5 text-center outline-none focus:border-bakery-amber-500 disabled:bg-bakery-cream-100 disabled:text-bakery-coffee-400"
-                                  />
+                  {okullarGrup.map((okul) => {
+                    const eklenebilirUrunler = okulUrunleri.filter(
+                      (u) => !okul.lines.some((l) => l.productId === u.id)
+                    )
+                    return (
+                      <div key={okul.id}>
+                        <p className="mb-1.5 text-sm font-medium text-bakery-coffee-900">{okul.ad}</p>
+                        <div className="space-y-1.5 pl-2">
+                          {okul.lines
+                            .filter((l) => l.aktif)
+                            .map((l) => {
+                              const order = lineOrder(l.id)
+                              const kapali = order?.kapandiMi ?? false
+                              return (
+                                <div key={l.id} className="flex items-center justify-between gap-3 text-sm">
+                                  <span className="text-bakery-coffee-600">{l.urunAdi}</span>
+                                  <div className="flex items-center gap-2">
+                                    {kapali && <span className="text-xs text-bakery-coffee-400">Kapandı</span>}
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      disabled={kapali}
+                                      value={degerler[l.id] ?? ''}
+                                      placeholder="0"
+                                      onChange={(e) =>
+                                        setDegerler((prev) => ({ ...prev, [l.id]: Number(e.target.value) }))
+                                      }
+                                      onBlur={(e) => commit(okul.id, l.id, l.productId, Number(e.target.value) || 0)}
+                                      className="w-20 rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-2 py-1.5 text-center outline-none focus:border-bakery-amber-500 disabled:bg-bakery-cream-100 disabled:text-bakery-coffee-400"
+                                    />
+                                  </div>
                                 </div>
-                              </div>
-                            )
-                          })}
+                              )
+                            })}
+                          {!kapanis?.kapandi && eklenebilirUrunler.length > 0 && (
+                            <select
+                              value=""
+                              onChange={(e) => urunEkle(okul, e.target.value)}
+                              className="w-full rounded-lg border border-dashed border-bakery-cream-300 bg-transparent px-2 py-1 text-xs text-bakery-coffee-500 outline-none focus:border-bakery-amber-500"
+                            >
+                              <option value="">+ Ürün Ekle</option>
+                              {eklenebilirUrunler.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.ad}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )

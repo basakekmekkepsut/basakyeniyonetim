@@ -47,7 +47,10 @@ export const telegramNotify = onCall<TelegramNotifyData>(
     const sonuc = (await response.json()) as { ok: boolean; description?: string }
 
     if (!response.ok || !sonuc.ok) {
-      throw new HttpsError('internal', `Telegram gönderimi başarısız: ${sonuc.description ?? response.statusText}`)
+      // GEÇİCİ TEŞHİS BİLGİSİ — token'ın TAMAMI değil, yalnızca uzunluğu ve uç
+      // karakterleri (kullanıcının kendi token'ıyla karşılaştırması için).
+      const tani = `chatId=${chatId}, tokenUzunluk=${token.length}, tokenBaşı=${token.slice(0, 12)}, tokenSonu=${token.slice(-4)}, status=${response.status}`
+      throw new HttpsError('internal', `Telegram gönderimi başarısız: ${sonuc.description ?? response.statusText} [${tani}]`)
     }
 
     return { basarili: true }
