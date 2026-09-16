@@ -16,7 +16,9 @@ const MODUL_ETIKETI: Record<string, string> = { siparis: 'Sipariş', veresiye: '
 
 interface Props {
   musteri: Musteri
-  onDuzenle: () => void
+  // Personel için salt-okunur açılır (bkz. veresiye/VeresiyeMusterilerPage) —
+  // bu durumda düzenleme butonu gösterilmez.
+  onDuzenle?: () => void
   onKapat: () => void
 }
 
@@ -207,13 +209,15 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
           <button onClick={onKapat} className="rounded-xl px-4 py-2 text-sm font-medium text-bakery-ink-600 hover:bg-bakery-cream-100">
             Kapat
           </button>
-          <button
-            onClick={onDuzenle}
-            className="flex items-center gap-1.5 rounded-xl bg-bakery-amber-600 px-4 py-2 text-sm font-medium text-white shadow-soft hover:bg-bakery-amber-500"
-          >
-            <Pencil size={14} />
-            Düzenle
-          </button>
+          {admin && onDuzenle && (
+            <button
+              onClick={onDuzenle}
+              className="flex items-center gap-1.5 rounded-xl bg-bakery-amber-600 px-4 py-2 text-sm font-medium text-white shadow-soft hover:bg-bakery-amber-500"
+            >
+              <Pencil size={14} />
+              Düzenle
+            </button>
+          )}
         </div>
       </div>
     </div>

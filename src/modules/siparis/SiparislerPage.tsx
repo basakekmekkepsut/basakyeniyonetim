@@ -201,126 +201,98 @@ export default function SiparislerPage() {
           aciklama={!copKutusu && canAdd ? 'Yeni bir sipariş eklemek için yukarıdaki butonu kullanın.' : undefined}
         />
       ) : (
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {filtrelenmis.map((s) => (
-            <div key={s.id} className="rounded-xl bg-bakery-surface p-3 shadow-sm shadow-bakery-coffee-900/5">
-              <div className="mb-1.5 flex items-start justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <p className="font-medium text-bakery-ink-900">{s.musteriAdi}</p>
-                    {s.musteriGecici && (
-                      <span className="rounded-full bg-bakery-coffee-100 px-2 py-0.5 text-xs font-medium text-bakery-ink-500">
-                        Geçici Müşteri
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-bakery-ink-500">{s.teslimatTarihi}</p>
-                </div>
-                {s.durum === 'planlandi' && (
-                  <span className="shrink-0 rounded-full bg-bakery-coffee-100 px-2 py-0.5 text-xs font-medium text-bakery-ink-500">
-                    Planlandı
-                  </span>
-                )}
-              </div>
-
-              <ul className="mb-1.5 space-y-0.5 text-sm text-bakery-ink-600">
-                {s.items.map((it, i) => (
-                  <li key={i} className="flex justify-between">
-                    <span>
-                      {it.adet}× {it.urunAdi}
-                    </span>
-                    <span>{formatCurrencyShort(it.adet * it.birimFiyat)}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {s.adres && <p className="mb-1 text-xs text-bakery-ink-400">{s.adres}</p>}
-              {s.not && <p className="mb-1.5 text-xs italic text-bakery-ink-400">"{s.not}"</p>}
-
-              <div className="mb-1.5 flex items-center justify-between border-t border-bakery-cream-100 pt-1.5">
-                <span className="text-sm font-semibold text-bakery-ink-900">
+        <div className="divide-y divide-bakery-cream-100 overflow-hidden rounded-2xl bg-bakery-surface shadow-soft">
+          {filtrelenmis.map((s) => {
+            const itemsOzeti = s.items.map((it) => `${it.adet}× ${it.urunAdi}`).join(', ')
+            return (
+              <div key={s.id} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-3.5 py-2 text-sm">
+                <span className="truncate font-medium text-bakery-ink-900">{s.musteriAdi}</span>
+                {s.musteriGecici && <span className="shrink-0 text-xs text-bakery-amber-600">Geçici</span>}
+                {s.durum === 'planlandi' && <span className="shrink-0 text-xs text-bakery-ink-400">Planlandı</span>}
+                <span className="min-w-0 flex-1 truncate text-bakery-ink-600">{itemsOzeti}</span>
+                <span className="shrink-0 font-medium text-bakery-ink-900">
                   <TutarGoster tutar={s.toplamTutar} />
                 </span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    s.odemeSekli === 'nakit'
-                      ? 'bg-blue-500/10 text-blue-600'
-                      : s.odemeDurumu === 'odendi'
-                        ? 'bg-bakery-success/10 text-bakery-success'
-                        : 'bg-bakery-danger/10 text-bakery-danger'
-                  }`}
-                >
-                  {s.odemeSekli === 'nakit' ? 'Nakit' : s.odemeDurumu === 'odendi' ? 'Ödendi' : 'Veresiye'}
-                </span>
+                <span className="shrink-0 text-xs text-bakery-ink-400">{s.teslimatTarihi}</span>
+
+                <div className="flex w-full items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate text-xs text-bakery-ink-400">{s.not || s.adres || '—'}</span>
+
+                  {copKutusu ? (
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        onClick={() => siparisGeriYukle(s, kullanici).then(() => toast.basari('Sipariş geri yüklendi.'))}
+                        className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
+                        aria-label="Geri yükle"
+                        title="Geri yükle"
+                      >
+                        <RotateCcw size={15} />
+                      </button>
+                      {admin && (
+                        <button
+                          onClick={() => setKaliciSilinecek(s)}
+                          className="rounded-lg p-1.5 text-bakery-danger hover:bg-bakery-danger/10"
+                          aria-label="Kalıcı sil"
+                          title="Kalıcı sil"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {s.odemeSekli === 'nakit' ? (
+                        <span className="text-xs font-medium text-blue-600">Nakit</span>
+                      ) : (
+                        <label className="flex items-center gap-1.5 text-xs font-medium text-bakery-ink-500">
+                          <input
+                            type="checkbox"
+                            checked={s.odemeDurumu === 'odendi'}
+                            onChange={() =>
+                              siparisOdemeDurumuGuncelle(s, s.odemeDurumu === 'odendi' ? 'odenmedi' : 'odendi', kullanici)
+                            }
+                            className="h-3.5 w-3.5 accent-bakery-success"
+                          />
+                          <span className={s.odemeDurumu === 'odendi' ? 'text-bakery-success' : ''}>
+                            {s.odemeDurumu === 'odendi' ? 'Ödendi' : 'Ödeme bekliyor'}
+                          </span>
+                        </label>
+                      )}
+                      <button
+                        onClick={() => {
+                          setKopyaKaynagi(s)
+                          setDuzenlenen(undefined)
+                          setFormAcik(true)
+                        }}
+                        className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
+                        aria-label="Kopyala"
+                      >
+                        <Copy size={15} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDuzenlenen(s)
+                          setKopyaKaynagi(undefined)
+                          setFormAcik(true)
+                        }}
+                        className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
+                        aria-label="Düzenle"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        onClick={() => siparisCopeTasi(s, kullanici).then(() => toast.basari('Sipariş çöp kutusuna taşındı.'))}
+                        className="rounded-lg p-1.5 text-bakery-danger hover:bg-bakery-danger/10"
+                        aria-label="Sil"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-
-              {copKutusu ? (
-                <div className="flex justify-end gap-1">
-                  <button
-                    onClick={() => siparisGeriYukle(s, kullanici).then(() => toast.basari('Sipariş geri yüklendi.'))}
-                    className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-bakery-ink-600 hover:bg-bakery-cream-100"
-                  >
-                    <RotateCcw size={14} />
-                    Geri Yükle
-                  </button>
-                  {admin && (
-                    <button
-                      onClick={() => setKaliciSilinecek(s)}
-                      className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-bakery-danger hover:bg-bakery-danger/10"
-                    >
-                      <Trash2 size={14} />
-                      Kalıcı Sil
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-center justify-between gap-1.5">
-                  {s.odemeSekli === 'veresiye' && (
-                    <button
-                      onClick={() =>
-                        siparisOdemeDurumuGuncelle(s, s.odemeDurumu === 'odendi' ? 'odenmedi' : 'odendi', kullanici)
-                      }
-                      className="rounded-lg px-2 py-1 text-xs font-medium text-bakery-ink-500 hover:bg-bakery-cream-100"
-                    >
-                      {s.odemeDurumu === 'odendi' ? 'Ödenmedi işaretle' : 'Ödendi işaretle'}
-                    </button>
-                  )}
-
-                  <div className="ml-auto flex gap-1">
-                    <button
-                      onClick={() => {
-                        setKopyaKaynagi(s)
-                        setDuzenlenen(undefined)
-                        setFormAcik(true)
-                      }}
-                      className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
-                      aria-label="Kopyala"
-                    >
-                      <Copy size={16} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setDuzenlenen(s)
-                        setKopyaKaynagi(undefined)
-                        setFormAcik(true)
-                      }}
-                      className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
-                      aria-label="Düzenle"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      onClick={() => siparisCopeTasi(s, kullanici).then(() => toast.basari('Sipariş çöp kutusuna taşındı.'))}
-                      className="rounded-lg p-1.5 text-bakery-danger hover:bg-bakery-danger/10"
-                      aria-label="Sil"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -355,8 +327,4 @@ export default function SiparislerPage() {
       )}
     </div>
   )
-}
-
-function formatCurrencyShort(n: number) {
-  return `₺${n.toFixed(2).replace('.', ',')}`
 }

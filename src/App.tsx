@@ -19,6 +19,7 @@ const SiparisMesajPage = lazy(() => import('./modules/siparis/MesajPage'))
 
 const VeresiyeLayout = lazy(() => import('./modules/veresiye/VeresiyeLayout'))
 const OzetPage = lazy(() => import('./modules/veresiye/OzetPage'))
+const VeresiyeMusterilerPage = lazy(() => import('./modules/veresiye/VeresiyeMusterilerPage'))
 const GunlukGirisPage = lazy(() => import('./modules/veresiye/GunlukGirisPage'))
 const UnHesapliGirisPage = lazy(() => import('./modules/veresiye/UnHesapliGirisPage'))
 const GirisSablonuPage = lazy(() => import('./modules/veresiye/GirisSablonuPage'))
@@ -91,6 +92,7 @@ function SessionGate() {
               </Route>
               <Route path="/veresiye" element={<VeresiyeLayout />}>
                 <Route index element={<OzetPage />} />
+                <Route path="musteriler" element={<VeresiyeMusterilerPage />} />
                 <Route path="gunluk-giris" element={<GunlukGirisPage />} />
                 <Route path="un-hesapli-giris" element={<UnHesapliGirisPage />} />
                 <Route path="giris-sablonu" element={<GirisSablonuPage />} />
