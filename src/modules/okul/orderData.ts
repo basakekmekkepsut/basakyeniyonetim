@@ -107,6 +107,13 @@ export async function okulSiparisMiktariGuncelle(
   }
 }
 
+// Ekstre > "Beklemede" bölümünden yanlış/gereksiz bir satırı doğrudan silmek için
+// (Günü Kapat'tan ÖNCE — kesinleşmiş bir teslimatı değil, henüz kapanmamış bir
+// okul_orders satırını siler).
+export async function okulSiparisSil(orderId: string): Promise<void> {
+  await deleteDoc(doc(requireDb(), ORDERS, orderId))
+}
+
 // Ekstre > "Beklemede" bölümü için: tüm tarihlerdeki henüz kapanmamış siparişler.
 export function useAcikOkulOrders() {
   const [orders, setOrders] = useState<OkulOrder[]>([])

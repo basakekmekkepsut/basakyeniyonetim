@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown, Lock } from 'lucide-react'
+import { ChevronDown, Lock, Trash2 } from 'lucide-react'
 import { useOkullar } from './data'
 import { useUrunler } from '../urunler/data'
-import { useAcikOkulOrders, useOkulTeslimatlar, gunuKapat } from './orderData'
+import { useAcikOkulOrders, useOkulTeslimatlar, gunuKapat, okulSiparisSil } from './orderData'
 import { useOkulPayments, okulOdemeEkle, okulOdemeGuncelle, okulOdemeSil } from './paymentData'
 import OkulOdemeFormModal from './OkulOdemeFormModal'
 import ConfirmModal from '../../shared/ConfirmModal'
@@ -10,7 +10,7 @@ import BosDurum from '../../shared/BosDurum'
 import TutarGoster from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
 import { isAdmin, useSession } from '../../lib/session'
-import type { OkulPayment, OkulPaymentFormVerisi } from '../../lib/types'
+import type { OkulOrder, OkulPayment, OkulPaymentFormVerisi } from '../../lib/types'
 
 export default function EkstrePage() {
   const { okullar } = useOkullar()
@@ -28,6 +28,7 @@ export default function EkstrePage() {
   const [odemeFormOkul, setOdemeFormOkul] = useState<{ id: string; ad: string } | undefined>()
   const [duzenlenenOdeme, setDuzenlenenOdeme] = useState<OkulPayment | undefined>()
   const [silinecekOdeme, setSilinecekOdeme] = useState<OkulPayment | undefined>()
+  const [silinecekSatir, setSilinecekSatir] = useState<OkulOrder | undefined>()
 
   const beklemedeGunler = useMemo(() => {
     const map = new Map<string, { tarih: string; tutar: number; satirlar: typeof acikOrders }>()
@@ -93,6 +94,18 @@ export default function EkstrePage() {
     }
   }
 
+  async function handleSatirSil() {
+    if (!silinecekSatir) return
+    try {
+      await okulSiparisSil(silinecekSatir.id)
+      toast.basari('Satır silindi.')
+    } catch (err) {
+      toast.hata(err instanceof Error ? err.message : 'Silinemedi.')
+    } finally {
+      setSilinecekSatir(undefined)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -127,11 +140,20 @@ export default function EkstrePage() {
                           const okul = okullar.find((o) => o.id === s.schoolId)
                           const urun = urunler.find((u) => u.id === s.productId)
                           return (
-                            <li key={s.id} className="flex justify-between">
+                            <li key={s.id} className="flex items-center justify-between gap-2">
                               <span>
                                 {okul?.ad ?? '—'} — {urun?.ad ?? '—'}
                               </span>
-                              <span>{s.adet} adet</span>
+                              <div className="flex shrink-0 items-center gap-2">
+                                <span>{s.adet} adet</span>
+                                <button
+                                  onClick={() => setSilinecekSatir(s)}
+                                  className="rounded-lg p-1 text-bakery-danger hover:bg-bakery-danger/10"
+                                  aria-label="Satırı sil"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
                             </li>
                           )
                         })}
@@ -262,6 +284,16 @@ export default function EkstrePage() {
           tehlikeli
           onOnayla={handleOdemeSil}
           onVazgec={() => setSilinecekOdeme(undefined)}
+        />
+      )}
+      {silinecekSatir && (
+        <ConfirmModal
+          baslik="Satırı sil"
+          mesaj="Bu bekleyen sipariş satırını silmek istediğinize emin misiniz?"
+          onayEtiketi="Sil"
+          tehlikeli
+          onOnayla={handleSatirSil}
+          onVazgec={() => setSilinecekSatir(undefined)}
         />
       )}
     </div>
