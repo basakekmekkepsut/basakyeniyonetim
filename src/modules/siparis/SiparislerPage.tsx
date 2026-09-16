@@ -4,7 +4,6 @@ import {
   useSiparisler,
   siparisEkle,
   siparisGuncelle,
-  siparisDurumGuncelle,
   siparisOdemeDurumuGuncelle,
   siparisCopeTasi,
   siparisGeriYukle,
@@ -13,30 +12,14 @@ import {
   usePlanlananSiparisler
 } from './data'
 import SiparisFormModal from './SiparisFormModal'
-import DonemFiltre, { donemAraligiHesapla, type DonemAnahtari } from '../../shared/DonemFiltre'
+import DonemFiltre, { donemAraligiHesapla, GuneGit, type DonemAnahtari } from '../../shared/DonemFiltre'
 import BosDurum from '../../shared/BosDurum'
 import ConfirmModal from '../../shared/ConfirmModal'
 import TutarGoster from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
 import { useUrunler } from '../urunler/data'
 import { useSession, isAdmin } from '../../lib/session'
-import type { Siparis, SiparisDurumu, SiparisFormVerisi } from '../../lib/types'
-
-const DURUM_ETIKETI: Record<SiparisDurumu, string> = {
-  planlandi: 'Planlandı',
-  yeni: 'Yeni',
-  hazirlaniyor: 'Hazırlanıyor',
-  teslim_edildi: 'Teslim Edildi',
-  iptal: 'İptal'
-}
-
-const DURUM_RENGI: Record<SiparisDurumu, string> = {
-  planlandi: 'bg-bakery-coffee-100 text-bakery-ink-500',
-  yeni: 'bg-bakery-amber-500/15 text-bakery-amber-600',
-  hazirlaniyor: 'bg-blue-500/15 text-blue-600',
-  teslim_edildi: 'bg-bakery-success/10 text-bakery-success',
-  iptal: 'bg-bakery-danger/10 text-bakery-danger'
-}
+import type { Siparis, SiparisFormVerisi } from '../../lib/types'
 
 function bugunStr() {
   return new Date().toISOString().slice(0, 10)
@@ -144,16 +127,23 @@ export default function SiparislerPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3">
+        <DonemFiltre
+          secili={donem}
+          onSeciliDegis={setDonem}
+          ozelBaslangic={ozelBaslangic}
+          ozelBitis={ozelBitis}
+          onOzelBaslangicDegis={setOzelBaslangic}
+          onOzelBitisDegis={setOzelBitis}
+          tumunuGoster
+        />
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <DonemFiltre
+          <GuneGit
             secili={donem}
             onSeciliDegis={setDonem}
             ozelBaslangic={ozelBaslangic}
             ozelBitis={ozelBitis}
             onOzelBaslangicDegis={setOzelBaslangic}
             onOzelBitisDegis={setOzelBitis}
-            tumunuGoster
-            tekTarihSecici
           />
           {canAdd && !copKutusu && (
             <button
@@ -211,10 +201,10 @@ export default function SiparislerPage() {
           aciklama={!copKutusu && canAdd ? 'Yeni bir sipariş eklemek için yukarıdaki butonu kullanın.' : undefined}
         />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {filtrelenmis.map((s) => (
-            <div key={s.id} className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
-              <div className="mb-2 flex items-start justify-between gap-2">
+            <div key={s.id} className="rounded-xl bg-bakery-surface p-3 shadow-sm shadow-bakery-coffee-900/5">
+              <div className="mb-1.5 flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-1.5">
                     <p className="font-medium text-bakery-ink-900">{s.musteriAdi}</p>
@@ -226,12 +216,14 @@ export default function SiparislerPage() {
                   </div>
                   <p className="text-sm text-bakery-ink-500">{s.teslimatTarihi}</p>
                 </div>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${DURUM_RENGI[s.durum]}`}>
-                  {DURUM_ETIKETI[s.durum]}
-                </span>
+                {s.durum === 'planlandi' && (
+                  <span className="shrink-0 rounded-full bg-bakery-coffee-100 px-2 py-0.5 text-xs font-medium text-bakery-ink-500">
+                    Planlandı
+                  </span>
+                )}
               </div>
 
-              <ul className="mb-2 space-y-0.5 text-sm text-bakery-ink-600">
+              <ul className="mb-1.5 space-y-0.5 text-sm text-bakery-ink-600">
                 {s.items.map((it, i) => (
                   <li key={i} className="flex justify-between">
                     <span>
@@ -243,9 +235,9 @@ export default function SiparislerPage() {
               </ul>
 
               {s.adres && <p className="mb-1 text-xs text-bakery-ink-400">{s.adres}</p>}
-              {s.not && <p className="mb-2 text-xs italic text-bakery-ink-400">"{s.not}"</p>}
+              {s.not && <p className="mb-1.5 text-xs italic text-bakery-ink-400">"{s.not}"</p>}
 
-              <div className="mb-3 flex items-center justify-between border-t border-bakery-cream-100 pt-2">
+              <div className="mb-1.5 flex items-center justify-between border-t border-bakery-cream-100 pt-1.5">
                 <span className="text-sm font-semibold text-bakery-ink-900">
                   <TutarGoster tutar={s.toplamTutar} />
                 </span>
@@ -283,18 +275,6 @@ export default function SiparislerPage() {
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-1.5">
-                  <select
-                    value={s.durum}
-                    onChange={(e) => siparisDurumGuncelle(s, e.target.value as SiparisDurumu, kullanici)}
-                    className="rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1 text-xs outline-none"
-                  >
-                    {(Object.keys(DURUM_ETIKETI) as SiparisDurumu[]).map((d) => (
-                      <option key={d} value={d}>
-                        {DURUM_ETIKETI[d]}
-                      </option>
-                    ))}
-                  </select>
-
                   {s.odemeSekli === 'veresiye' && (
                     <button
                       onClick={() =>

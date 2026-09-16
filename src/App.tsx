@@ -37,6 +37,7 @@ const UrunlerPage = lazy(() => import('./modules/urunler/UrunlerPage'))
 const KullanicilarPage = lazy(() => import('./modules/ayarlar/kullanicilar/KullanicilarPage'))
 const TelegramAyarlariPage = lazy(() => import('./modules/ayarlar/telegram/TelegramAyarlariPage'))
 const HaftalikLogPage = lazy(() => import('./modules/ayarlar/HaftalikLogPage'))
+const YedeklemePage = lazy(() => import('./modules/ayarlar/YedeklemePage'))
 
 const MODUL_SIRASI: Modul[] = ['siparis', 'veresiye', 'okul']
 
@@ -111,6 +112,7 @@ function SessionGate() {
                   <Route path="kullanicilar" element={<KullanicilarPage />} />
                   <Route path="telegram" element={<TelegramAyarlariPage />} />
                   <Route path="log" element={<HaftalikLogPage />} />
+                  <Route path="yedekleme" element={<YedeklemePage />} />
                 </Route>
               )}
               <Route path="*" element={<Navigate to={`/${ilkModul}`} replace />} />

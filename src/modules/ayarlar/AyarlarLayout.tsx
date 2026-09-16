@@ -5,7 +5,8 @@ const SEKMELER = [
   { yol: '/ayarlar/urunler', etiket: 'Ürünler' },
   { yol: '/ayarlar/kullanicilar', etiket: 'Kullanıcılar' },
   { yol: '/ayarlar/telegram', etiket: 'Telegram' },
-  { yol: '/ayarlar/log', etiket: 'Haftalık Log' }
+  { yol: '/ayarlar/log', etiket: 'Haftalık Log' },
+  { yol: '/ayarlar/yedekleme', etiket: 'Yedekleme' }
 ]
 
 export default function AyarlarLayout() {

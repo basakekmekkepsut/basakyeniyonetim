@@ -14,6 +14,7 @@ import ConfirmModal from '../../shared/ConfirmModal'
 import TutarGoster from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
 import { isAdmin, useSession } from '../../lib/session'
+import { useVeresiyeMusteriFiltresi } from '../../shared/veresiyeErisim'
 import type { VeresiyeKaydi, VeresiyeOdeme } from '../../lib/types'
 
 function bugunStr() {
@@ -82,6 +83,7 @@ export default function OzetPage() {
   const [silinecekOdeme, setSilinecekOdeme] = useState<VeresiyeOdeme | undefined>()
 
   const admin = session.status === 'signed-in' && isAdmin(session.profile)
+  const musteriErisimi = useVeresiyeMusteriFiltresi()
   const { baslangic: hesaplananBaslangic, bitis } = donemAraligiHesapla(donem, ozelBaslangic, ozelBitis)
 
   // Personel için Özet geçmişe dönük en fazla son 7 günü kapsar — hangi dönem
@@ -97,9 +99,11 @@ export default function OzetPage() {
 
   const filtre = { baslangic, bitis, musteriId }
 
-  // NOT: Özet artık kişi bazlı müşteri kısıtlamasına TABİ DEĞİL — tek sınır
-  // yukarıdaki 7 günlük zaman aralığı (bkz. enEskiTarihPersonel). Personel tüm
-  // müşterilerin son 1 haftalık veresiye hareketini görebilir.
+  // NOT: Teslimatlar (kayitlar) kişi bazlı müşteri kısıtlamasına TABİ DEĞİL — tek
+  // sınır yukarıdaki 7 günlük zaman aralığı (bkz. enEskiTarihPersonel). Personel
+  // tüm müşterilerin son 1 haftalık teslimat hareketini görebilir. Ödemeler ise
+  // daha hassas kabul edildiği için ayrıca kişi bazlı yetkiye (musteriErisimi)
+  // tabi — personel yalnızca kendisine atanmış müşterilerin ödemesini görür.
   const { kayitlar: tumKayitlar, yukleniyor: kayitYukleniyor, hata: kayitHata } = useVeresiyeKayitlar(filtre)
   const { odemeler: tumOdemeler, yukleniyor: odemeYukleniyor, hata: odemeHata } = useVeresiyeOdemeler(filtre)
   const kayitlar = useMemo(
@@ -111,7 +115,10 @@ export default function OzetPage() {
       }),
     [tumKayitlar, kaynakFiltre]
   )
-  const odemeler = useMemo(() => enSonOnce(tumOdemeler), [tumOdemeler])
+  const odemeler = useMemo(
+    () => enSonOnce(tumOdemeler.filter((o) => musteriErisimi({ id: o.musteriId }))),
+    [tumOdemeler, musteriErisimi]
+  )
   const siraliKayitlar = useMemo(() => enSonOnce(kayitlar), [kayitlar])
   const kayitGruplari = useMemo(() => gruplaByMusteriVeTarih(siraliKayitlar), [siraliKayitlar])
 

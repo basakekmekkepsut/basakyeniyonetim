@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import { defineSecret } from 'firebase-functions/params'
 import { initializeApp } from 'firebase-admin/app'
-import { getFirestore, FieldValue } from 'firebase-admin/firestore'
+import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { getMessaging } from 'firebase-admin/messaging'
 
 initializeApp()
@@ -9,6 +9,11 @@ initializeApp()
 const telegramBotToken = defineSecret('TELEGRAM_BOT_TOKEN')
 
 export * from './scheduled'
+
+async function cagiranAdminMi(uid: string): Promise<boolean> {
+  const snap = await getFirestore().doc(`users/${uid}`).get()
+  return snap.data()?.rol === 'admin'
+}
 
 interface TelegramNotifyData {
   chatId: string
@@ -213,3 +218,93 @@ export const pushTestGonder = onCall<PushTestGonderData>({ region: 'europe-west1
 
   return { basarili: sonuc.successCount, basarisiz: sonuc.failureCount }
 })
+
+// --- Manuel yedekleme / geri yükleme (Ayarlar) ---
+
+/**
+ * Ayarlar > Yedekleme sayfasından tetiklenen manuel tam veritabanı yedeği.
+ * jsonYedekGonder (otomatik günlük Telegram yedeği) ile aynı mantığı kullanır,
+ * ancak dosyayı Telegram'a değil doğrudan admin'in tarayıcısına döner.
+ */
+export const manuelYedekOlustur = onCall({ region: 'europe-west1', memory: '512MiB', timeoutSeconds: 300 }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Bu işlem için giriş yapmış olmanız gerekiyor.')
+  }
+  if (!(await cagiranAdminMi(request.auth.uid))) {
+    throw new HttpsError('permission-denied', 'Bu işlem yalnızca yöneticiler içindir.')
+  }
+
+  const db = getFirestore()
+  const koleksiyonlar = await db.listCollections()
+  const yedek: Record<string, Record<string, FirebaseFirestore.DocumentData>> = {}
+  for (const koleksiyon of koleksiyonlar) {
+    const snap = await koleksiyon.get()
+    const dokumanlar: Record<string, FirebaseFirestore.DocumentData> = {}
+    for (const d of snap.docs) dokumanlar[d.id] = d.data()
+    yedek[koleksiyon.id] = dokumanlar
+  }
+
+  return { yedek, olusturmaTarihi: new Date().toISOString() }
+})
+
+interface ManuelYedekYukleData {
+  yedek: Record<string, Record<string, unknown>>
+}
+
+/** JSON'da Timestamp alanları admin SDK'nın kendi { _seconds, _nanoseconds }
+ * biçiminde dışa aktarılır (bkz. manuelYedekOlustur) — geri yüklerken bu şekle
+ * uyan nesneler gerçek bir Firestore Timestamp'e çevrilir, aksi halde o alanlar
+ * sıralama/orderBy gibi Timestamp bekleyen kullanımlarda bozulur. */
+function timestampGeriYukle(deger: unknown): unknown {
+  if (deger === null || typeof deger !== 'object') return deger
+  if (Array.isArray(deger)) return deger.map(timestampGeriYukle)
+  const obj = deger as Record<string, unknown>
+  const anahtarlar = Object.keys(obj)
+  if (anahtarlar.length === 2 && typeof obj._seconds === 'number' && typeof obj._nanoseconds === 'number') {
+    return Timestamp.fromMillis(obj._seconds * 1000 + obj._nanoseconds / 1e6)
+  }
+  const sonuc: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(obj)) sonuc[k] = timestampGeriYukle(v)
+  return sonuc
+}
+
+/**
+ * Ayarlar > Yedekleme sayfasından bir JSON yedek dosyası yüklenerek tetiklenir.
+ * Yedekteki her koleksiyon/belge kendi kimliğiyle ÜZERİNE YAZILIR (set) —
+ * yedekte olmayan, sonradan eklenmiş belgeler SİLİNMEZ (tam senkron değil,
+ * yalnızca eksik/bozulan veriyi geri yükleme amaçlıdır).
+ */
+export const manuelYedekYukle = onCall<ManuelYedekYukleData>(
+  { region: 'europe-west1', memory: '512MiB', timeoutSeconds: 540 },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Bu işlem için giriş yapmış olmanız gerekiyor.')
+    }
+    if (!(await cagiranAdminMi(request.auth.uid))) {
+      throw new HttpsError('permission-denied', 'Bu işlem yalnızca yöneticiler içindir.')
+    }
+
+    const { yedek } = request.data ?? {}
+    if (!yedek || typeof yedek !== 'object') {
+      throw new HttpsError('invalid-argument', 'Geçerli bir yedek verisi gerekiyor.')
+    }
+
+    const db = getFirestore()
+    let yazilanBelge = 0
+    for (const [koleksiyonId, dokumanlar] of Object.entries(yedek)) {
+      if (!dokumanlar || typeof dokumanlar !== 'object') continue
+      const girdiler = Object.entries(dokumanlar as Record<string, FirebaseFirestore.DocumentData>)
+      for (let i = 0; i < girdiler.length; i += 400) {
+        const parca = girdiler.slice(i, i + 400)
+        const batch = db.batch()
+        for (const [docId, veri] of parca) {
+          batch.set(db.collection(koleksiyonId).doc(docId), timestampGeriYukle(veri) as FirebaseFirestore.DocumentData)
+        }
+        await batch.commit()
+        yazilanBelge += parca.length
+      }
+    }
+
+    return { basarili: true, yazilanBelge }
+  }
+)

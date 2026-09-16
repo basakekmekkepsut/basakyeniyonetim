@@ -73,9 +73,6 @@ interface Props {
   onOzelBaslangicDegis: (deger: string) => void
   onOzelBitisDegis: (deger: string) => void
   tumunuGoster?: boolean
-  // true ise pillerin yanına, tek bir güne hızlıca atlamak için ayrı bir tarih
-  // seçici eklenir (seçilen gün "Özel Aralık" moduna baslangic=bitis olarak yazılır).
-  tekTarihSecici?: boolean
   // true ise "Yarın" yerine "Dün" gösterilir — Veresiye Özet gibi geçmişe dönük
   // sayfalar için.
   gecmisOdakli?: boolean
@@ -89,19 +86,10 @@ export default function DonemFiltre({
   onOzelBaslangicDegis,
   onOzelBitisDegis,
   tumunuGoster = false,
-  tekTarihSecici = false,
   gecmisOdakli = false
 }: Props) {
   const temelSecenekler = gecmisOdakli ? SECENEKLER_GECMIS_ODAKLI : SECENEKLER
   const secenekler = tumunuGoster ? [...temelSecenekler, { key: 'tumu' as const, etiket: 'Tüm Tarihler' }] : temelSecenekler
-  const tekTarihDegeri = secili === 'ozel' && ozelBaslangic && ozelBaslangic === ozelBitis ? ozelBaslangic : ''
-
-  function tekTarihSec(tarih: string) {
-    if (!tarih) return
-    onOzelBaslangicDegis(tarih)
-    onOzelBitisDegis(tarih)
-    onSeciliDegis('ozel')
-  }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -119,20 +107,6 @@ export default function DonemFiltre({
           </button>
         ))}
       </div>
-
-      {tekTarihSecici && (
-        <label className="flex items-center gap-1.5 rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1.5">
-          <CalendarDays size={15} className="shrink-0 text-bakery-ink-400" />
-          {!tekTarihDegeri && <span className="whitespace-nowrap text-sm text-bakery-ink-400">Güne git</span>}
-          <input
-            type="date"
-            value={tekTarihDegeri}
-            onChange={(e) => tekTarihSec(e.target.value)}
-            aria-label="Belirli bir tarihe git"
-            className="w-full min-w-0 bg-transparent text-sm text-bakery-ink-800 outline-none"
-          />
-        </label>
-      )}
 
       {secili === 'ozel' && (
         <div className="flex items-center gap-1.5">
@@ -152,5 +126,43 @@ export default function DonemFiltre({
         </div>
       )}
     </div>
+  )
+}
+
+interface GuneGitProps {
+  secili: DonemAnahtari
+  onSeciliDegis: (donem: DonemAnahtari) => void
+  ozelBaslangic: string
+  ozelBitis: string
+  onOzelBaslangicDegis: (deger: string) => void
+  onOzelBitisDegis: (deger: string) => void
+}
+
+/** Tek bir güne hızlıca atlamak için ayrı bir tarih seçici — seçilen gün
+ * "Özel Aralık" moduna baslangic=bitis olarak yazılır. DonemFiltre'nin
+ * pillerinden bağımsız, ayrı bir satırda (örn. bir eylem butonuyla yan yana)
+ * konumlandırılabilsin diye kendi başına dışa aktarılır. */
+export function GuneGit({ secili, onSeciliDegis, ozelBaslangic, ozelBitis, onOzelBaslangicDegis, onOzelBitisDegis }: GuneGitProps) {
+  const tekTarihDegeri = secili === 'ozel' && ozelBaslangic && ozelBaslangic === ozelBitis ? ozelBaslangic : ''
+
+  function tekTarihSec(tarih: string) {
+    if (!tarih) return
+    onOzelBaslangicDegis(tarih)
+    onOzelBitisDegis(tarih)
+    onSeciliDegis('ozel')
+  }
+
+  return (
+    <label className="flex items-center gap-1.5 rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1.5">
+      <CalendarDays size={15} className="shrink-0 text-bakery-ink-400" />
+      {!tekTarihDegeri && <span className="whitespace-nowrap text-sm text-bakery-ink-400">Güne git</span>}
+      <input
+        type="date"
+        value={tekTarihDegeri}
+        onChange={(e) => tekTarihSec(e.target.value)}
+        aria-label="Belirli bir tarihe git"
+        className="w-full min-w-0 bg-transparent text-sm text-bakery-ink-800 outline-none"
+      />
+    </label>
   )
 }

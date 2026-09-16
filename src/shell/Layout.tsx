@@ -60,9 +60,10 @@ export default function Layout() {
     <div className="flex min-h-screen flex-col bg-bakery-cream-50">
       <header className="sticky top-0 z-20 bg-bakery-coffee-800/95 pt-[env(safe-area-inset-top,0px)] shadow-card backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2.5">
-          <div className="flex items-center gap-2 text-white">
+          <Link to={hasModule(profile, 'veresiye') ? '/veresiye' : '/'} className="flex items-end gap-1.5 text-white">
             <img src="/logo-mark.webp" alt="Başak Ekmek" className="logo-on-dark h-9 w-28 object-contain object-center" />
-          </div>
+            <span className="mb-0.5 text-[10px] font-medium text-white/50">v{__APP_VERSION__}</span>
+          </Link>
 
           <nav className="hidden gap-1 md:flex">
             {gorunurModuller.map(({ key, yol, etiket, Icon }) => (
