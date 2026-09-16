@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useVeresiyeSablonlar, veresiyeSablonEkle, veresiyeSablonGuncelle, veresiyeSablonSil } from './sablonData'
 import VeresiyeSablonFormModal from './VeresiyeSablonFormModal'
 import BosDurum from '../../shared/BosDurum'
@@ -12,9 +12,13 @@ export default function GirisSablonuPage() {
   const { sablonlar: tumSablonlar, yukleniyor, hata } = useVeresiyeSablonlar()
   const musteriFiltresi = useVeresiyeMusteriFiltresi()
   const sablonlar = useMemo(
-    () => tumSablonlar.filter((s) => musteriFiltresi({ id: s.musteriId })),
+    () =>
+      tumSablonlar
+        .filter((s) => musteriFiltresi({ id: s.musteriId }))
+        .sort((a, b) => (a.sira ?? 0) - (b.sira ?? 0)),
     [tumSablonlar, musteriFiltresi]
   )
+  const sonrakiSira = useMemo(() => tumSablonlar.reduce((max, s) => Math.max(max, s.sira ?? 0), 0) + 1, [tumSablonlar])
   const toast = useToast()
   const [formAcik, setFormAcik] = useState(false)
   const [duzenlenen, setDuzenlenen] = useState<VeresiyeSablon | undefined>()
@@ -27,6 +31,22 @@ export default function GirisSablonuPage() {
     } else {
       await veresiyeSablonEkle(veri)
       toast.basari('Şablon eklendi.')
+    }
+  }
+
+  async function siraDegistir(index: number, yon: -1 | 1) {
+    const digeri = sablonlar[index + yon]
+    if (!digeri) return
+    const bu = sablonlar[index]
+    const { id: buId, ...buVeri } = bu
+    const { id: digeriId, ...digeriVeri } = digeri
+    try {
+      await Promise.all([
+        veresiyeSablonGuncelle(buId, { ...buVeri, sira: digeri.sira ?? 0 }),
+        veresiyeSablonGuncelle(digeriId, { ...digeriVeri, sira: bu.sira ?? 0 })
+      ])
+    } catch (err) {
+      toast.hata(err instanceof Error ? err.message : 'Sıra değiştirilemedi.')
     }
   }
 
@@ -70,10 +90,15 @@ export default function GirisSablonuPage() {
         <BosDurum baslik="Henüz giriş şablonu yok" aciklama="Düzenli veresiye müşterileri için şablon oluşturursanız Günlük Giriş çok daha hızlanır." />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {sablonlar.map((s) => (
+          {sablonlar.map((s, i) => (
             <div key={s.id} className="rounded-xl bg-white p-4 shadow-sm shadow-bakery-coffee-900/5">
               <div className="mb-2 flex items-start justify-between gap-2">
-                <p className="font-medium text-bakery-coffee-900">{s.musteriAdi}</p>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-bakery-cream-100 px-2 py-0.5 text-xs font-medium text-bakery-coffee-500">
+                    Sıra {s.sira ?? 0}
+                  </span>
+                  <p className="font-medium text-bakery-coffee-900">{s.musteriAdi}</p>
+                </div>
                 {!s.aktif && <span className="rounded-full bg-bakery-cream-100 px-2 py-0.5 text-xs text-bakery-coffee-500">Pasif</span>}
               </div>
               <ul className="mb-3 space-y-0.5 text-sm text-bakery-coffee-600">
@@ -83,31 +108,58 @@ export default function GirisSablonuPage() {
                   </li>
                 ))}
               </ul>
-              <div className="flex justify-end gap-1 border-t border-bakery-cream-100 pt-2">
-                <button
-                  onClick={() => {
-                    setDuzenlenen(s)
-                    setFormAcik(true)
-                  }}
-                  className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
-                  aria-label="Düzenle"
-                >
-                  <Pencil size={16} />
-                </button>
-                <button
-                  onClick={() => setSilinecek(s)}
-                  className="rounded-lg p-1.5 text-bakery-danger hover:bg-bakery-danger/10"
-                  aria-label="Sil"
-                >
-                  <Trash2 size={16} />
-                </button>
+              <div className="flex items-center justify-between border-t border-bakery-cream-100 pt-2">
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => siraDegistir(i, -1)}
+                    disabled={i === 0}
+                    className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100 disabled:opacity-30"
+                    aria-label="Yukarı taşı"
+                  >
+                    <ChevronUp size={16} />
+                  </button>
+                  <button
+                    onClick={() => siraDegistir(i, 1)}
+                    disabled={i === sablonlar.length - 1}
+                    className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100 disabled:opacity-30"
+                    aria-label="Aşağı taşı"
+                  >
+                    <ChevronDown size={16} />
+                  </button>
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => {
+                      setDuzenlenen(s)
+                      setFormAcik(true)
+                    }}
+                    className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
+                    aria-label="Düzenle"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    onClick={() => setSilinecek(s)}
+                    className="rounded-lg p-1.5 text-bakery-danger hover:bg-bakery-danger/10"
+                    aria-label="Sil"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {formAcik && <VeresiyeSablonFormModal mevcut={duzenlenen} onKaydet={handleKaydet} onKapat={() => setFormAcik(false)} />}
+      {formAcik && (
+        <VeresiyeSablonFormModal
+          mevcut={duzenlenen}
+          varsayilanSira={sonrakiSira}
+          onKaydet={handleKaydet}
+          onKapat={() => setFormAcik(false)}
+        />
+      )}
 
       {silinecek && (
         <ConfirmModal

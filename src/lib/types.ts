@@ -189,6 +189,7 @@ export interface VeresiyeSablon {
   musteriAdi: string
   kalemler: VeresiyeSablonKalemi[]
   aktif: boolean
+  sira: number // Günlük Giriş'te müşterilerin gösterilme sırası (küçük önce) — eski sistemdeki "sıra" alanının karşılığı
 }
 
 export type VeresiyeSablonFormVerisi = Omit<VeresiyeSablon, 'id'>

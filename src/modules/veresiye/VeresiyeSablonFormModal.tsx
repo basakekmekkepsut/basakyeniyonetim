@@ -7,11 +7,12 @@ import type { VeresiyeSablon, VeresiyeSablonFormVerisi, VeresiyeSablonKalemi } f
 
 interface Props {
   mevcut?: VeresiyeSablon
+  varsayilanSira?: number
   onKaydet: (veri: VeresiyeSablonFormVerisi) => Promise<void>
   onKapat: () => void
 }
 
-export default function VeresiyeSablonFormModal({ mevcut, onKaydet, onKapat }: Props) {
+export default function VeresiyeSablonFormModal({ mevcut, varsayilanSira, onKaydet, onKapat }: Props) {
   const { urunler } = useUrunler()
   const musteriFiltresi = useVeresiyeMusteriFiltresi()
   const [musteriId, setMusteriId] = useState(mevcut?.musteriId ?? '')
@@ -19,6 +20,7 @@ export default function VeresiyeSablonFormModal({ mevcut, onKaydet, onKapat }: P
   const [kalemler, setKalemler] = useState<VeresiyeSablonKalemi[]>(
     mevcut?.kalemler ?? [{ productId: '', urunAdi: '', adet: 1 }]
   )
+  const [sira, setSira] = useState(mevcut?.sira ?? varsayilanSira ?? 0)
   const [aktif, setAktif] = useState(mevcut?.aktif ?? true)
   const [gonderiliyor, setGonderiliyor] = useState(false)
   const [hata, setHata] = useState<string | null>(null)
@@ -46,7 +48,7 @@ export default function VeresiyeSablonFormModal({ mevcut, onKaydet, onKapat }: P
     setHata(null)
     setGonderiliyor(true)
     try {
-      await onKaydet({ musteriId, musteriAdi, kalemler: gecerli, aktif })
+      await onKaydet({ musteriId, musteriAdi, kalemler: gecerli, aktif, sira: Number(sira) || 0 })
       onKapat()
     } catch (err) {
       setHata(err instanceof Error ? err.message : 'Kaydedilemedi.')
@@ -117,10 +119,22 @@ export default function VeresiyeSablonFormModal({ mevcut, onKaydet, onKapat }: P
             </button>
           </div>
 
-          <label className="flex items-center gap-2 text-sm font-medium text-bakery-coffee-800">
-            <input type="checkbox" checked={aktif} onChange={(e) => setAktif(e.target.checked)} />
-            Aktif (Günlük Giriş'te önerilsin)
-          </label>
+          <div className="grid grid-cols-2 items-end gap-3">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-bakery-coffee-800">Sıra</label>
+              <input
+                type="number"
+                value={sira}
+                onChange={(e) => setSira(Number(e.target.value))}
+                className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 text-sm outline-none focus:border-bakery-amber-500"
+              />
+              <p className="mt-1 text-xs text-bakery-coffee-500">Günlük Giriş'te küçük sıra numarası önce gösterilir.</p>
+            </div>
+            <label className="mb-2.5 flex items-center gap-2 text-sm font-medium text-bakery-coffee-800">
+              <input type="checkbox" checked={aktif} onChange={(e) => setAktif(e.target.checked)} />
+              Aktif
+            </label>
+          </div>
 
           {hata && <p className="rounded-lg bg-bakery-danger/10 px-3 py-2 text-sm text-bakery-danger">{hata}</p>}
         </div>
