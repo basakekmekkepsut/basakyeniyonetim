@@ -33,7 +33,9 @@ export const telegramNotify = onCall<TelegramNotifyData>(
       throw new HttpsError('invalid-argument', 'Gönderilecek mesaj boş olamaz.')
     }
 
-    const token = telegramBotToken.value()
+    // Sırrı interaktif komut satırından girerken sona kaçabilen boşluk/satır
+    // sonu karakterleri URL'yi bozup Telegram'dan "Not Found" döndürebiliyor.
+    const token = telegramBotToken.value().trim()
     const url = `https://api.telegram.org/bot${token}/sendMessage`
 
     const response = await fetch(url, {
