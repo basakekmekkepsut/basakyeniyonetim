@@ -71,6 +71,7 @@ export default function OzetPage() {
   const [ozelBitis, setOzelBitis] = useState(bugunStr())
   const [musteriId, setMusteriId] = useState<string | null>(null)
   const [gorunum, setGorunum] = useState<'teslimatlar' | 'odemeler'>('teslimatlar')
+  const [kaynakFiltre, setKaynakFiltre] = useState<'tumu' | 'siparis' | 'veresiye'>('tumu')
   const [grafikAcik, setGrafikAcik] = useState(false)
 
   const [kayitFormAcik, setKayitFormAcik] = useState(false)
@@ -88,8 +89,14 @@ export default function OzetPage() {
   const { kayitlar: tumKayitlar, yukleniyor: kayitYukleniyor, hata: kayitHata } = useVeresiyeKayitlar(filtre)
   const { odemeler: tumOdemeler, yukleniyor: odemeYukleniyor, hata: odemeHata } = useVeresiyeOdemeler(filtre)
   const kayitlar = useMemo(
-    () => tumKayitlar.filter((k) => musteriFiltresi({ id: k.musteriId })),
-    [tumKayitlar, musteriFiltresi]
+    () =>
+      tumKayitlar.filter((k) => {
+        if (!musteriFiltresi({ id: k.musteriId })) return false
+        if (kaynakFiltre === 'siparis') return k.girisYontemi === 'siparis'
+        if (kaynakFiltre === 'veresiye') return k.girisYontemi !== 'siparis'
+        return true
+      }),
+    [tumKayitlar, musteriFiltresi, kaynakFiltre]
   )
   const odemeler = useMemo(
     () => enSonOnce(tumOdemeler.filter((o) => musteriFiltresi({ id: o.musteriId }))),
@@ -235,6 +242,35 @@ export default function OzetPage() {
             </button>
           </div>
         </div>
+
+        {gorunum === 'teslimatlar' && (
+          <div className="flex rounded-lg bg-bakery-cream-100 p-1 w-fit">
+            <button
+              onClick={() => setKaynakFiltre('tumu')}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                kaynakFiltre === 'tumu' ? 'bg-white text-bakery-coffee-900 shadow-sm' : 'text-bakery-coffee-500'
+              }`}
+            >
+              Tümü
+            </button>
+            <button
+              onClick={() => setKaynakFiltre('siparis')}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                kaynakFiltre === 'siparis' ? 'bg-white text-bakery-coffee-900 shadow-sm' : 'text-bakery-coffee-500'
+              }`}
+            >
+              Siparişten Gelen
+            </button>
+            <button
+              onClick={() => setKaynakFiltre('veresiye')}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                kaynakFiltre === 'veresiye' ? 'bg-white text-bakery-coffee-900 shadow-sm' : 'text-bakery-coffee-500'
+              }`}
+            >
+              Doğrudan Veresiye
+            </button>
+          </div>
+        )}
       </div>
 
       {grafikAcik && (
@@ -276,8 +312,13 @@ export default function OzetPage() {
                   <div className="divide-y divide-bakery-cream-100">
                     {grup.kayitlar.map((k) => (
                       <div key={k.id} className="flex items-center justify-between gap-2 py-1 text-sm">
-                        <span className="min-w-0 truncate text-bakery-coffee-600">
+                        <span className="flex min-w-0 items-center gap-1.5 truncate text-bakery-coffee-600">
                           {k.adet}× {k.urunAdi}
+                          {k.girisYontemi === 'siparis' && (
+                            <span className="shrink-0 rounded-full bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
+                              Sipariş
+                            </span>
+                          )}
                         </span>
                         <div className="flex shrink-0 items-center gap-1.5">
                           <DurumRozeti durum={k.durum} />
@@ -320,6 +361,7 @@ export default function OzetPage() {
                     <th className="px-4 py-3 font-medium">Adet</th>
                     <th className="px-4 py-3 font-medium">Tutar</th>
                     <th className="px-4 py-3 font-medium">Durum</th>
+                    <th className="px-4 py-3 font-medium">Kaynak</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -335,6 +377,13 @@ export default function OzetPage() {
                       </td>
                       <td className="px-4 py-3">
                         <DurumRozeti durum={k.durum} />
+                      </td>
+                      <td className="px-4 py-3">
+                        {k.girisYontemi === 'siparis' ? (
+                          <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600">Sipariş</span>
+                        ) : (
+                          <span className="text-xs text-bakery-coffee-400">Veresiye</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-1">
