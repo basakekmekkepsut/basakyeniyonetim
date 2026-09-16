@@ -192,6 +192,7 @@ export default function OzetPage() {
             ozelBitis={ozelBitis}
             onOzelBaslangicDegis={setOzelBaslangic}
             onOzelBitisDegis={setOzelBitis}
+            gecmisOdakli
           />
           <div className="flex gap-2">
             <button

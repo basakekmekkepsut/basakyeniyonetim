@@ -1,7 +1,7 @@
 import { CalendarDays } from 'lucide-react'
 import { endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from 'date-fns'
 
-export type DonemAnahtari = 'yaklasan' | 'bugun' | 'yarin' | 'bu_hafta' | 'bu_ay' | 'ozel' | 'tumu'
+export type DonemAnahtari = 'yaklasan' | 'bugun' | 'yarin' | 'dun' | 'bu_hafta' | 'bu_ay' | 'ozel' | 'tumu'
 
 export interface DonemAraligi {
   baslangic: string | null
@@ -23,6 +23,11 @@ export function donemAraligiHesapla(donem: DonemAnahtari, ozelBaslangic?: string
       const yarin = new Date(bugun)
       yarin.setDate(yarin.getDate() + 1)
       return { baslangic: gunStr(yarin), bitis: gunStr(yarin) }
+    }
+    case 'dun': {
+      const dun = new Date(bugun)
+      dun.setDate(dun.getDate() - 1)
+      return { baslangic: gunStr(dun), bitis: gunStr(dun) }
     }
     case 'bu_hafta':
       return {
@@ -48,6 +53,18 @@ const SECENEKLER: { key: DonemAnahtari; etiket: string }[] = [
   { key: 'ozel', etiket: 'Özel Aralık' }
 ]
 
+// Veresiye Özet gibi geriye dönük (geçmiş kayıtları inceleme) sayfalarda "Yarın"
+// anlamsız — onun yerine "Dün" gösterilir. Sipariş/Okul'un ileri tarihli
+// kullanımı (SECENEKLER) etkilenmez.
+const SECENEKLER_GECMIS_ODAKLI: { key: DonemAnahtari; etiket: string }[] = [
+  { key: 'yaklasan', etiket: 'Yaklaşan' },
+  { key: 'bugun', etiket: 'Bugün' },
+  { key: 'dun', etiket: 'Dün' },
+  { key: 'bu_hafta', etiket: 'Bu Hafta' },
+  { key: 'bu_ay', etiket: 'Bu Ay' },
+  { key: 'ozel', etiket: 'Özel Aralık' }
+]
+
 interface Props {
   secili: DonemAnahtari
   onSeciliDegis: (donem: DonemAnahtari) => void
@@ -59,6 +76,9 @@ interface Props {
   // true ise pillerin yanına, tek bir güne hızlıca atlamak için ayrı bir tarih
   // seçici eklenir (seçilen gün "Özel Aralık" moduna baslangic=bitis olarak yazılır).
   tekTarihSecici?: boolean
+  // true ise "Yarın" yerine "Dün" gösterilir — Veresiye Özet gibi geçmişe dönük
+  // sayfalar için.
+  gecmisOdakli?: boolean
 }
 
 export default function DonemFiltre({
@@ -69,9 +89,11 @@ export default function DonemFiltre({
   onOzelBaslangicDegis,
   onOzelBitisDegis,
   tumunuGoster = false,
-  tekTarihSecici = false
+  tekTarihSecici = false,
+  gecmisOdakli = false
 }: Props) {
-  const secenekler = tumunuGoster ? [...SECENEKLER, { key: 'tumu' as const, etiket: 'Tüm Tarihler' }] : SECENEKLER
+  const temelSecenekler = gecmisOdakli ? SECENEKLER_GECMIS_ODAKLI : SECENEKLER
+  const secenekler = tumunuGoster ? [...temelSecenekler, { key: 'tumu' as const, etiket: 'Tüm Tarihler' }] : temelSecenekler
   const tekTarihDegeri = secili === 'ozel' && ozelBaslangic && ozelBaslangic === ozelBitis ? ozelBaslangic : ''
 
   function tekTarihSec(tarih: string) {
