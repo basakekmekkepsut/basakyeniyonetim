@@ -15,7 +15,7 @@ import ConfirmModal from '../../shared/ConfirmModal'
 import { formatTutar } from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
 import { musteriHitabi } from '../../shared/musteriYardimci'
-import { unHesabiAktifMi, cuvalGoster } from '../../shared/unHesabi'
+import { unHesabiAktifMi, cuvalKisaGoster } from '../../shared/unHesabi'
 import { useSession, isAdmin } from '../../lib/session'
 import type { Musteri, MusteriGirisi } from '../../lib/types'
 
@@ -187,7 +187,7 @@ export default function MusterilerPage() {
                           : 'text-bakery-success'
                     }`}
                   >
-                    {unMusterisi ? cuvalGoster(m.unHesabi!.birikenEsdegerAdet, m.unHesabi!.adetPerCuval) : formatTutar(m.veresiyeBakiye)}
+                    {unMusterisi ? cuvalKisaGoster(m.unHesabi!.birikenEsdegerAdet, m.unHesabi!.adetPerCuval) : formatTutar(m.veresiyeBakiye)}
                   </span>
                 )}
 

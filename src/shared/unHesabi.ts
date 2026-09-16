@@ -38,3 +38,11 @@ export function cuvalGoster(birikenEsdegerAdet: number, adetPerCuval: number | n
   const cuval = birikenEsdegerAdet / adetPerCuval
   return `≈ ${cuval.toLocaleString('tr-TR', { maximumFractionDigits: 2 })} çuval (${birikenEsdegerAdet} adet eşdeğer)`
 }
+
+// Dar liste satırları için kısa gösterim — yalnızca tam çuval sayısı, ondalık ve
+// "adet eşdeğer" ayrıntısı olmadan (bkz. MusterilerPage müşteri satırı).
+export function cuvalKisaGoster(birikenEsdegerAdet: number, adetPerCuval: number | null): string {
+  if (!adetPerCuval || adetPerCuval <= 0) return `${birikenEsdegerAdet} adet`
+  const cuval = Math.floor(birikenEsdegerAdet / adetPerCuval)
+  return `${cuval} çuval`
+}

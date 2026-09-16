@@ -22,7 +22,14 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webp}']
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webp}'],
+        // Service worker kaydı hem ana uygulamadan hem de portal.html'den erişilebilen
+        // TEK bir origin'i kapsar. Bu denylist olmadan, ana uygulamayı bir kez ziyaret
+        // eden herhangi bir cihaz (personel ya da müşteri), sonradan portal.html'e
+        // gitmeye çalıştığında da servis çalışanı isteği index.html'e (personel giriş
+        // ekranı) yönlendirir — müşteri portalı hiç açılmaz.
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/portal\.html/]
       }
     })
   ],

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { BarChart2, Pencil, Plus, Trash2 } from 'lucide-react'
+import type { Timestamp } from 'firebase/firestore'
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useVeresiyeKayitlar, veresiyeKaydiEkle, veresiyeKaydiGuncelle, veresiyeKaydiSil } from './data'
 import { useVeresiyeOdemeler, odemeEkle, odemeGuncelle, odemeSil } from './odemeData'
@@ -18,6 +19,47 @@ import type { VeresiyeKaydi, VeresiyeOdeme } from '../../lib/types'
 
 function bugunStr() {
   return new Date().toISOString().slice(0, 10)
+}
+
+// veresiye_kayitlar/veresiye_odemeler her zaman olusturmaTarihi (serverTimestamp) ile
+// yazılır, ama bu özellikten önce oluşturulmuş eski kayıtlarda bu alan yoktur — bu
+// yüzden VeresiyeKaydi/VeresiyeOdeme tiplerine eklenmez, yalnızca sıralama için
+// gevşek tipli olarak okunur (eksikse en eski kabul edilir).
+type ZamanDamgali = { tarih: string; olusturmaTarihi?: Timestamp | null }
+
+function enSonOnce<T extends ZamanDamgali>(liste: T[]): T[] {
+  return [...liste].sort((a, b) => {
+    if (a.tarih !== b.tarih) return b.tarih.localeCompare(a.tarih)
+    const am = a.olusturmaTarihi?.toMillis?.() ?? 0
+    const bm = b.olusturmaTarihi?.toMillis?.() ?? 0
+    return bm - am
+  })
+}
+
+interface KayitGrubu {
+  anahtar: string
+  musteriId: string
+  musteriAdi: string
+  tarih: string
+  kayitlar: VeresiyeKaydi[]
+}
+
+// Aynı müşterinin aynı gün aldığı farklı ürünleri tek kartta birleştirir —
+// kart, grubun en son girilen kaydının konumuna yerleşir (bkz. enSonOnce).
+function gruplaByMusteriVeTarih(siraliKayitlar: VeresiyeKaydi[]): KayitGrubu[] {
+  const gruplar: KayitGrubu[] = []
+  const konumlar = new Map<string, number>()
+  for (const k of siraliKayitlar) {
+    const anahtar = `${k.musteriId}__${k.tarih}`
+    let konum = konumlar.get(anahtar)
+    if (konum === undefined) {
+      konum = gruplar.length
+      konumlar.set(anahtar, konum)
+      gruplar.push({ anahtar, musteriId: k.musteriId, musteriAdi: k.musteriAdi, tarih: k.tarih, kayitlar: [] })
+    }
+    gruplar[konum].kayitlar.push(k)
+  }
+  return gruplar
 }
 
 export default function OzetPage() {
@@ -50,9 +92,11 @@ export default function OzetPage() {
     [tumKayitlar, musteriFiltresi]
   )
   const odemeler = useMemo(
-    () => tumOdemeler.filter((o) => musteriFiltresi({ id: o.musteriId })),
+    () => enSonOnce(tumOdemeler.filter((o) => musteriFiltresi({ id: o.musteriId }))),
     [tumOdemeler, musteriFiltresi]
   )
+  const siraliKayitlar = useMemo(() => enSonOnce(kayitlar), [kayitlar])
+  const kayitGruplari = useMemo(() => gruplaByMusteriVeTarih(siraliKayitlar), [siraliKayitlar])
 
   const grafikVerisi = useMemo(() => {
     const gunlukMap = new Map<string, { tarih: string; borc: number; tahsilat: number }>()
@@ -221,43 +265,45 @@ export default function OzetPage() {
           <BosDurum baslik="Bu aralıkta kayıt yok" />
         ) : (
           <>
-            {/* Mobil: kart görünümü */}
+            {/* Mobil: kart görünümü — aynı müşterinin aynı gün aldığı ürünler tek kartta */}
             <div className="space-y-2 md:hidden">
-              {kayitlar.map((k) => (
-                <div key={k.id} className="rounded-xl bg-white p-3.5 shadow-sm shadow-bakery-coffee-900/5">
-                  <div className="mb-1.5 flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-medium text-bakery-coffee-900">{k.musteriAdi}</p>
-                      <p className="text-xs text-bakery-coffee-500">{k.tarih}</p>
-                    </div>
-                    <DurumRozeti durum={k.durum} />
+              {kayitGruplari.map((grup) => (
+                <div key={grup.anahtar} className="rounded-xl bg-white p-3 shadow-sm shadow-bakery-coffee-900/5">
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <p className="truncate text-sm font-medium text-bakery-coffee-900">{grup.musteriAdi}</p>
+                    <span className="shrink-0 text-xs text-bakery-coffee-400">{grup.tarih}</span>
                   </div>
-                  <div className="mb-2 flex items-center justify-between text-sm text-bakery-coffee-600">
-                    <span>
-                      {k.adet}× {k.urunAdi}
-                    </span>
-                    <span className="font-semibold text-bakery-coffee-900">
-                      <TutarGoster tutar={k.tutar} />
-                    </span>
-                  </div>
-                  <div className="flex justify-end gap-1 border-t border-bakery-cream-100 pt-2">
-                    <button
-                      onClick={() => {
-                        setDuzenlenenKayit(k)
-                        setKayitFormAcik(true)
-                      }}
-                      className="rounded-lg p-1.5 text-bakery-coffee-500 hover:bg-bakery-cream-100"
-                      aria-label="Düzenle"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      onClick={() => setSilinecekKayit(k)}
-                      className="rounded-lg p-1.5 text-bakery-danger hover:bg-bakery-danger/10"
-                      aria-label="Sil"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                  <div className="divide-y divide-bakery-cream-100">
+                    {grup.kayitlar.map((k) => (
+                      <div key={k.id} className="flex items-center justify-between gap-2 py-1 text-sm">
+                        <span className="min-w-0 truncate text-bakery-coffee-600">
+                          {k.adet}× {k.urunAdi}
+                        </span>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <DurumRozeti durum={k.durum} />
+                          <span className="font-semibold text-bakery-coffee-900">
+                            <TutarGoster tutar={k.tutar} />
+                          </span>
+                          <button
+                            onClick={() => {
+                              setDuzenlenenKayit(k)
+                              setKayitFormAcik(true)
+                            }}
+                            className="rounded p-1 text-bakery-coffee-400 hover:bg-bakery-cream-100"
+                            aria-label="Düzenle"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                          <button
+                            onClick={() => setSilinecekKayit(k)}
+                            className="rounded p-1 text-bakery-danger hover:bg-bakery-danger/10"
+                            aria-label="Sil"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
@@ -278,7 +324,7 @@ export default function OzetPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {kayitlar.map((k) => (
+                  {siraliKayitlar.map((k) => (
                     <tr key={k.id} className="border-b border-bakery-cream-100 last:border-0">
                       <td className="px-4 py-3 text-bakery-coffee-600">{k.tarih}</td>
                       <td className="px-4 py-3 font-medium text-bakery-coffee-900">{k.musteriAdi}</td>
