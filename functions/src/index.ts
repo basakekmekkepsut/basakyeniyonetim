@@ -8,6 +8,8 @@ initializeApp()
 
 const telegramBotToken = defineSecret('TELEGRAM_BOT_TOKEN')
 
+export * from './scheduled'
+
 interface TelegramNotifyData {
   chatId: string
   message: string
