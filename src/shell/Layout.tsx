@@ -61,7 +61,7 @@ export default function Layout() {
       <header className="sticky top-0 z-20 bg-bakery-coffee-800/95 pt-[env(safe-area-inset-top,0px)] shadow-card backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2.5">
           <div className="flex items-center gap-2 text-white">
-            <img src="/logo.webp" alt="Başak Ekmek" className="h-9 w-28 rounded-lg object-cover object-center" />
+            <img src="/logo-mark.webp" alt="Başak Ekmek" className="logo-on-dark h-9 w-28 object-contain object-center" />
           </div>
 
           <nav className="hidden gap-1 md:flex">

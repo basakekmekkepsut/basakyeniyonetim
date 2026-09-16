@@ -13,7 +13,7 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      includeAssets: ['logo.webp', 'icon-192.png', 'icon-512.png'],
+      includeAssets: ['logo.webp', 'logo-mark.webp', 'icon-192.png', 'icon-512.png'],
       manifest: {
         name: 'Başak Ekmek Yönetim',
         short_name: 'Başak Ekmek',

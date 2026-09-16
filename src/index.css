@@ -84,3 +84,20 @@ button:active:not(:disabled) {
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgb(var(--ink-400));
 }
+
+/* Logo tek renkli (siyah çizgi, şeffaf zemin) çizildiği için karanlık modda
+   ters çevrilip beyaza dönüyor — ayrı bir koyu logo dosyası tutmaya gerek yok.
+   .logo-adaptive: tema ile birlikte değişen (bg-bakery-surface gibi) zeminlerde
+   kullanılır — açık modda siyah, karanlık modda beyaz olur.
+   .logo-on-dark: temadan bağımsız hep koyu kalan zeminlerde (üst bar gibi,
+   bg-bakery-coffee-800 sabit marka rengi) kullanılır — her zaman beyaz kalır. */
+.logo-adaptive {
+  filter: invert(0);
+  transition: filter 200ms ease;
+}
+:root[data-tema='koyu'] .logo-adaptive {
+  filter: invert(1);
+}
+.logo-on-dark {
+  filter: invert(1);
+}

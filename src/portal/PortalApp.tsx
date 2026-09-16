@@ -100,7 +100,7 @@ export default function PortalApp() {
     <div className="flex min-h-screen items-center justify-center bg-bakery-cream-50 px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <img src="/logo.webp" alt="Başak Ekmek" className="mx-auto mb-3 h-16 w-44 rounded-lg object-cover object-center" />
+          <img src="/logo-mark.webp" alt="Başak Ekmek" className="logo-adaptive mx-auto mb-3 h-16 w-44 object-contain object-center" />
           <h1 className="text-xl font-semibold text-bakery-ink-900">Başak Ekmek</h1>
           <p className="mt-1 text-sm text-bakery-ink-600">Hesap Ekstresi</p>
         </div>
