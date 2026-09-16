@@ -4,6 +4,7 @@ import { useOkullar } from './data'
 import { useOkulOrders } from './orderData'
 import BosDurum from '../../shared/BosDurum'
 import TelegramGonderButonu from '../../shared/TelegramGonderButonu'
+import type { OkulOrder, OkulSchool } from '../../lib/types'
 
 function yarinStr() {
   const d = new Date()
@@ -11,29 +12,63 @@ function yarinStr() {
   return d.toISOString().slice(0, 10)
 }
 
+const AY_ADLARI = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+const GUN_ADLARI = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
+
+function tarihBaslikGoster(tarihStr: string): string {
+  const [y, m, d] = tarihStr.split('-').map(Number)
+  const tarih = new Date(y, m - 1, d)
+  return `${d} ${AY_ADLARI[m - 1]} ${GUN_ADLARI[tarih.getDay()]}`
+}
+
+function okulMesajOlustur(tarih: string, okullar: OkulSchool[], orders: OkulOrder[]): string {
+  if (orders.length === 0) return ''
+
+  const satirlar: string[] = []
+  const urunToplamlari = new Map<string, number>()
+
+  for (const okul of okullar) {
+    for (const o of orders.filter((x) => x.schoolId === okul.id)) {
+      if (o.adet <= 0) continue
+      const hat = okul.lines.find((l) => l.id === o.lineId)
+      const urunAdi = hat?.urunAdi ?? '—'
+      satirlar.push(`${okul.ad}: ${o.adet} adet (${urunAdi})`)
+      urunToplamlari.set(urunAdi, (urunToplamlari.get(urunAdi) ?? 0) + o.adet)
+    }
+  }
+
+  if (satirlar.length === 0) return ''
+
+  const toplamSatirlari = [...urunToplamlari.entries()].map(([urun, adet]) => `${urun}: ${adet} adet`)
+
+  return [
+    `Ekmek Siparişi — ${tarihBaslikGoster(tarih)}`,
+    '',
+    ...satirlar,
+    '',
+    'Ürün bazında toplam:',
+    ...toplamSatirlari
+  ].join('\n')
+}
+
+function waAc(mesaj: string) {
+  window.open(`https://wa.me/?text=${encodeURIComponent(mesaj)}`, '_blank')
+}
+
 export default function MesajPage() {
   const { okullar } = useOkullar()
   const [tarih, setTarih] = useState(yarinStr())
   const { orders, yukleniyor } = useOkulOrders(tarih)
 
-  const mesajMetni = useMemo(() => {
-    if (orders.length === 0) return ''
-    const okulSatirlari = okullar
-      .map((okul) => {
-        const satirlar = orders
-          .filter((o) => o.schoolId === okul.id)
-          .map((o) => {
-            const hat = okul.lines.find((l) => l.id === o.lineId)
-            return `${o.adet}x ${hat?.urunAdi ?? '—'}`
-          })
-        return satirlar.length > 0 ? `• ${okul.ad}: ${satirlar.join(', ')}` : null
-      })
-      .filter((x): x is string => x !== null)
-
-    return `📋 ${tarih} Okul Sipariş Listesi\n\n${okulSatirlari.join('\n')}`
-  }, [orders, okullar, tarih])
-
+  const mesajMetni = useMemo(() => okulMesajOlustur(tarih, okullar, orders), [tarih, okullar, orders])
   const waLink = `https://wa.me/?text=${encodeURIComponent(mesajMetni)}`
+
+  // Seçili tarih zaten varsayılan olarak yarın ama personel önizleme için başka
+  // bir tarihe bakıyor olabilir — bu buton tarih seçiciyi hiç değiştirmeden,
+  // doğrudan yarının listesini WhatsApp'ta açar.
+  const yarin = yarinStr()
+  const { orders: yarinOrders, yukleniyor: yarinYukleniyor } = useOkulOrders(yarin)
+  const yarinMesaj = useMemo(() => okulMesajOlustur(yarin, okullar, yarinOrders), [yarin, okullar, yarinOrders])
 
   return (
     <div className="space-y-4">
@@ -47,9 +82,19 @@ export default function MesajPage() {
         />
       </div>
 
+      <button
+        onClick={() => waAc(yarinMesaj)}
+        disabled={yarinYukleniyor || !yarinMesaj}
+        className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
+        title={!yarinYukleniyor && !yarinMesaj ? 'Yarın için sipariş yok' : undefined}
+      >
+        <MessageCircle size={16} />
+        Yarını Gönder
+      </button>
+
       {yukleniyor ? (
         <p className="text-sm text-bakery-coffee-500">Yükleniyor…</p>
-      ) : orders.length === 0 ? (
+      ) : !mesajMetni ? (
         <BosDurum baslik="Bu tarihte sipariş yok" />
       ) : (
         <div className="rounded-xl bg-white p-4 shadow-sm shadow-bakery-coffee-900/5">
