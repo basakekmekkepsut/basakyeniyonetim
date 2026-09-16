@@ -13,7 +13,7 @@ import BosDurum from '../../shared/BosDurum'
 import ConfirmModal from '../../shared/ConfirmModal'
 import TutarGoster from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
-import { useSession } from '../../lib/session'
+import { isAdmin, useSession } from '../../lib/session'
 import { useVeresiyeMusteriFiltresi } from '../../shared/veresiyeErisim'
 import type { VeresiyeKaydi, VeresiyeOdeme } from '../../lib/types'
 
@@ -82,7 +82,20 @@ export default function OzetPage() {
   const [duzenlenenOdeme, setDuzenlenenOdeme] = useState<VeresiyeOdeme | undefined>()
   const [silinecekOdeme, setSilinecekOdeme] = useState<VeresiyeOdeme | undefined>()
 
-  const { baslangic, bitis } = donemAraligiHesapla(donem, ozelBaslangic, ozelBitis)
+  const admin = session.status === 'signed-in' && isAdmin(session.profile)
+  const { baslangic: hesaplananBaslangic, bitis } = donemAraligiHesapla(donem, ozelBaslangic, ozelBitis)
+
+  // Personel için Özet geçmişe dönük en fazla son 7 günü kapsar — hangi dönem
+  // seçilirse seçilsin (Bu Ay, Tüm Tarihler vb.) sorgu bu tarihten geriye gitmez.
+  const enEskiTarihPersonel = (() => {
+    const d = new Date()
+    d.setDate(d.getDate() - 6)
+    return d.toISOString().slice(0, 10)
+  })()
+  const baslangic =
+    admin || (hesaplananBaslangic && hesaplananBaslangic >= enEskiTarihPersonel) ? hesaplananBaslangic : enEskiTarihPersonel
+  const personelKistlamasiUygulandi = !admin && baslangic !== hesaplananBaslangic
+
   const filtre = { baslangic, bitis, musteriId }
 
   const musteriFiltresi = useVeresiyeMusteriFiltresi()
@@ -210,6 +223,12 @@ export default function OzetPage() {
             </button>
           </div>
         </div>
+
+        {personelKistlamasiUygulandi && (
+          <p className="text-xs text-bakery-coffee-500">
+            Personel görünümü geçmişe dönük en fazla son 7 günü kapsar — daha eski kayıtlar için bir yöneticiye danışın.
+          </p>
+        )}
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="w-full max-w-xs">
