@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
 import MusteriSecici from '../../shared/MusteriSecici'
 import { useUrunler } from '../urunler/data'
@@ -24,7 +24,7 @@ export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Pr
   const [musteriAdi, setMusteriAdi] = useState(mevcut?.musteriAdi ?? '')
   const [productId, setProductId] = useState(mevcut?.productId ?? '')
   const [urunAdi, setUrunAdi] = useState(mevcut?.urunAdi ?? '')
-  const [adet, setAdet] = useState(mevcut?.adet ?? 1)
+  const [adet, setAdet] = useState(mevcut ? String(mevcut.adet) : '')
   const [birimFiyat, setBirimFiyat] = useState(mevcut?.birimFiyat ?? 0)
   const [tarih, setTarih] = useState(mevcut?.tarih ?? bugunStr())
   const [durum, setDurum] = useState<VeresiyeDurumu>(mevcut?.durum ?? 'veresiye')
@@ -42,15 +42,26 @@ export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Pr
     setBirimFiyat(seciliMusteri?.ozelFiyatlar[id] ?? urun?.fiyat ?? 0)
   }
 
+  // Yeni kayıtların büyük çoğunluğu "Baston" ürünü olduğu için, ürünler
+  // yüklendiğinde (ve henüz bir seçim yapılmamışsa) formu bu ürün seçiliyken
+  // açıyoruz — personel/admin çoğu zaman değiştirmeden ilerleyebilir.
+  useEffect(() => {
+    if (mevcut || productId || veresiyeUrunleri.length === 0) return
+    const baston = veresiyeUrunleri.find((u) => u.ad.toLocaleLowerCase('tr-TR').includes('baston'))
+    if (baston) urunSec(baston.id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [veresiyeUrunleri])
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    const adetSayi = Number(adet)
     if (!musteriId) return setHata('Müşteri seçmelisiniz.')
     if (!productId) return setHata('Ürün seçmelisiniz.')
-    if (adet <= 0) return setHata('Adet 0’dan büyük olmalı.')
+    if (!adet || adetSayi <= 0) return setHata('Adet 0’dan büyük olmalı.')
     setHata(null)
     setGonderiliyor(true)
     try {
-      await onKaydet({ musteriId, musteriAdi, productId, urunAdi, adet, birimFiyat, tarih, durum })
+      await onKaydet({ musteriId, musteriAdi, productId, urunAdi, adet: adetSayi, birimFiyat, tarih, durum })
       onKapat()
     } catch (err) {
       setHata(err instanceof Error ? err.message : 'Kaydedilemedi.')
@@ -116,7 +127,8 @@ export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Pr
                 type="number"
                 min={1}
                 value={adet}
-                onChange={(e) => setAdet(Number(e.target.value))}
+                onChange={(e) => setAdet(e.target.value)}
+                placeholder="Adet"
                 className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 outline-none focus:border-bakery-amber-500"
               />
             </div>

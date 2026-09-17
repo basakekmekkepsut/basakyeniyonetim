@@ -26,6 +26,8 @@ export interface KullaniciProfili {
   bildirimler: {
     yeniSiparis: boolean // yeni bir müşteri siparişi girildiğinde anlık push
     gunlukHatirlatma: boolean // her sabah 7:45'te "yarın için sipariş var" özeti
+    yeniVeresiyeKaydi: boolean // Günlük Giriş'te "Tümünü Kaydet" sonrası özet push
+    okulHatirlatma: boolean // her akşam 17:00'de okul siparişlerini gözden geçirme hatırlatması
   }
 }
 
@@ -89,7 +91,7 @@ export interface TelegramAyarlari {
 }
 
 export type VeresiyeDurumu = 'veresiye' | 'odendi' | 'nakit' | 'un_odemeli'
-export type VeresiyeGirisYontemi = 'manuel' | 'un_hesabi' | 'siparis' | 'migrasyon'
+export type VeresiyeGirisYontemi = 'manuel' | 'un_hesabi' | 'siparis' | 'okul' | 'migrasyon'
 
 export interface VeresiyeKaydi {
   id: string
@@ -261,6 +263,10 @@ export interface OkulTeslimat {
   tutar: number
   faturaHedefiId: string | null
   kapatanUid: string
+  // Bu teslimatın yansıdığı veresiye_kayitlar belgesi — hedef (okul/firma) bir
+  // Veresiye müşterisine bağlıysa dolu, değilse null. Günü Yeniden Aç'ta bu
+  // kaydı silip bakiyeyi geri almak için kullanılır (bkz. gununKapanisiniGeriAl).
+  veresiyeKayitId: string | null
 }
 
 export interface OkulKapanis {

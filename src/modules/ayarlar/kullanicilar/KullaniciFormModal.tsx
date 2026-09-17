@@ -14,7 +14,7 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
   const { musteriler } = useMusteriler()
   const [uid, setUid] = useState(mevcut?.uid ?? '')
   const [profil, setProfil] = useState<KullaniciProfili>(() =>
-    mevcut ? { ...mevcut, bildirimler: mevcut.bildirimler ?? BOS_PROFIL.bildirimler } : BOS_PROFIL
+    mevcut ? { ...mevcut, bildirimler: { ...BOS_PROFIL.bildirimler, ...mevcut.bildirimler } } : BOS_PROFIL
   )
   const [gonderiliyor, setGonderiliyor] = useState(false)
   const [hata, setHata] = useState<string | null>(null)
@@ -267,6 +267,22 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
                 onChange={(e) => alanGuncelle('bildirimler', { ...profil.bildirimler, gunlukHatirlatma: e.target.checked })}
               />
               Her sabah "yarın için sipariş var" hatırlatması al
+            </label>
+            <label className="flex items-center gap-1.5 rounded-full bg-bakery-surface px-3 py-1.5 text-sm">
+              <input
+                type="checkbox"
+                checked={profil.bildirimler.yeniVeresiyeKaydi}
+                onChange={(e) => alanGuncelle('bildirimler', { ...profil.bildirimler, yeniVeresiyeKaydi: e.target.checked })}
+              />
+              Günlük Giriş kaydedilince özet bildirim al
+            </label>
+            <label className="flex items-center gap-1.5 rounded-full bg-bakery-surface px-3 py-1.5 text-sm">
+              <input
+                type="checkbox"
+                checked={profil.bildirimler.okulHatirlatma}
+                onChange={(e) => alanGuncelle('bildirimler', { ...profil.bildirimler, okulHatirlatma: e.target.checked })}
+              />
+              Her akşam 17:00'de okul siparişi hatırlatması al
             </label>
           </div>
 

@@ -3,6 +3,7 @@ import { defineSecret } from 'firebase-functions/params'
 import { initializeApp } from 'firebase-admin/app'
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { getMessaging } from 'firebase-admin/messaging'
+import { pushGonderKullanicilara } from './scheduled'
 
 initializeApp()
 
@@ -306,5 +307,31 @@ export const manuelYedekYukle = onCall<ManuelYedekYukleData>(
     }
 
     return { basarili: true, yazilanBelge }
+  }
+)
+
+interface VeresiyeGirisBildirimGonderData {
+  baslik: string
+  govde: string
+}
+
+/**
+ * Veresiye > Günlük Giriş'te "Tümünü Kaydet" başarılı olduktan sonra çağrılır —
+ * bildirimler.yeniVeresiyeKaydi açık kullanıcılara o günkü girişin özetini push
+ * olarak gönderir. telegramNotify ile aynı güven modeli: metni istemci oluşturur,
+ * yalnızca giriş yapmış olmak yeterlidir.
+ */
+export const veresiyeGirisBildirimGonder = onCall<VeresiyeGirisBildirimGonderData>(
+  { region: 'europe-west1' },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Bu işlem için giriş yapmış olmanız gerekiyor.')
+    }
+    const { baslik, govde } = request.data ?? {}
+    if (!baslik || typeof baslik !== 'string' || !govde || typeof govde !== 'string') {
+      throw new HttpsError('invalid-argument', 'Geçerli bir bildirim metni gerekiyor.')
+    }
+    await pushGonderKullanicilara('yeniVeresiyeKaydi', baslik, govde)
+    return { basarili: true }
   }
 )

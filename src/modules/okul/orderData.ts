@@ -4,8 +4,10 @@ import {
   collection,
   deleteDoc,
   doc,
+  documentId,
   getDoc,
   getDocs,
+  increment,
   limit,
   onSnapshot,
   query,
@@ -15,7 +17,7 @@ import {
   writeBatch
 } from 'firebase/firestore'
 import { requireDb } from '../../lib/firebase'
-import type { OkulKapanis, OkulOrder, OkulSchool, Urun } from '../../lib/types'
+import type { OkulFirma, OkulKapanis, OkulOrder, OkulSchool, Urun } from '../../lib/types'
 
 const ORDERS = 'okul_orders'
 const TESLIMATLAR = 'okul_teslimatlar'
@@ -181,12 +183,24 @@ export function useOkulTeslimatlar(schoolId?: string) {
   return { teslimatlar, yukleniyor }
 }
 
+function bugunStr(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
 export async function gunuKapat(
   tarih: string,
   okullar: OkulSchool[],
+  firmalar: OkulFirma[],
   urunler: Urun[],
   kullanici: { uid: string }
-): Promise<number> {
+): Promise<{ satirSayisi: number; veresiyeYansimayan: number }> {
+  // O gün henüz gelmemişse siparişler hâlâ değişebilir — kesinleşmemiş bir günü
+  // kapatmak yanlışlıkla tutarları dondurur (bkz. Ekstre sayfasındaki "Beklemede"
+  // listesinde her zaman ileri tarihler de görünebiliyor olması).
+  if (tarih > bugunStr()) {
+    throw new Error('Henüz gelmemiş bir tarih kapatılamaz — siparişler o gün gelene kadar değişebilir.')
+  }
+
   const db = requireDb()
   const kapanisRef = doc(db, KAPANISLAR, tarih)
   const kapanisSnap = await getDoc(kapanisRef)
@@ -198,39 +212,116 @@ export async function gunuKapat(
     query(collection(db, ORDERS), where('tarih', '==', tarih), where('kapandiMi', '==', false))
   )
 
-  const batch = writeBatch(db)
-  let satirSayisi = 0
+  interface TeslimatTaslak {
+    orderRef: (typeof ordersSnap.docs)[number]['ref']
+    schoolId: string
+    lineId: string
+    productId: string
+    urunAdi: string
+    adet: number
+    birimFiyat: number
+    tutar: number
+    faturaHedefiId: string | null
+    veresiyeMusteriId: string | null
+    okulAdi: string
+    faturaFirmaya: boolean
+  }
 
-  ordersSnap.docs.forEach((d) => {
+  const taslaklar: TeslimatTaslak[] = []
+  let veresiyeYansimayan = 0
+
+  for (const d of ordersSnap.docs) {
     const order = d.data() as OkulOrder
-    // adet 0 ise (okul o gün istemediyse) fatura satırı oluşturmadan sadece
-    // kapat — boş/₺0 teslimat kaydı ile ekstreyi kirletmeye gerek yok.
-    if (order.adet <= 0) {
-      batch.update(d.ref, { kapandiMi: true })
-      return
-    }
+    if (order.adet <= 0) continue // aşağıda ayrıca kapandiMi:true yapılır
     const okul = okullar.find((o) => o.id === order.schoolId)
     const hat = okul?.lines.find((l) => l.id === order.lineId)
     const urun = urunler.find((u) => u.id === order.productId)
-    if (!okul || !hat || !urun) return // silinmiş okul/hat/ürün — atla
+    if (!okul || !hat || !urun) continue // silinmiş okul/hat/ürün — atla
 
-    const tutar = order.adet * urun.fiyat
-    batch.set(doc(collection(db, TESLIMATLAR)), {
-      tarih,
+    const firma = hat.faturaHedefiId ? firmalar.find((f) => f.id === hat.faturaHedefiId) : undefined
+    const veresiyeMusteriId = (firma ? firma.musteriId : okul.musteriId) ?? null
+    if (!veresiyeMusteriId) veresiyeYansimayan += 1
+
+    taslaklar.push({
+      orderRef: d.ref,
       schoolId: order.schoolId,
       lineId: order.lineId,
       productId: order.productId,
       urunAdi: urun.ad,
       adet: order.adet,
       birimFiyat: urun.fiyat,
-      tutar,
+      tutar: order.adet * urun.fiyat,
       faturaHedefiId: hat.faturaHedefiId,
-      kapanisZamani: serverTimestamp(),
-      kapatanUid: kullanici.uid
+      veresiyeMusteriId,
+      okulAdi: okul.ad,
+      faturaFirmaya: Boolean(firma)
     })
-    batch.update(d.ref, { kapandiMi: true })
+  }
+
+  // Hedef müşterilerin GÜNCEL adını çek — Okul/Firma'nın kendi 'ad' alanı,
+  // Veresiye tarafında kayıtlı müşteri adından farklı olabilir.
+  const hedefIdler = [...new Set(taslaklar.map((t) => t.veresiyeMusteriId).filter((id): id is string => !!id))]
+  const musteriAdlari = new Map<string, string>()
+  for (let i = 0; i < hedefIdler.length; i += 30) {
+    const parca = hedefIdler.slice(i, i + 30)
+    const snap = await getDocs(query(collection(db, 'musteriler'), where(documentId(), 'in', parca)))
+    snap.docs.forEach((s) => musteriAdlari.set(s.id, (s.data().ad as string) ?? '—'))
+  }
+
+  const batch = writeBatch(db)
+  let satirSayisi = 0
+  const bakiyeDeltalari = new Map<string, number>()
+
+  for (const d of ordersSnap.docs) {
+    const order = d.data() as OkulOrder
+    if (order.adet <= 0) batch.update(d.ref, { kapandiMi: true })
+  }
+
+  for (const t of taslaklar) {
+    const veresiyeRef = t.veresiyeMusteriId ? doc(collection(db, 'veresiye_kayitlar')) : null
+
+    batch.set(doc(collection(db, TESLIMATLAR)), {
+      tarih,
+      schoolId: t.schoolId,
+      lineId: t.lineId,
+      productId: t.productId,
+      urunAdi: t.urunAdi,
+      adet: t.adet,
+      birimFiyat: t.birimFiyat,
+      tutar: t.tutar,
+      faturaHedefiId: t.faturaHedefiId,
+      kapanisZamani: serverTimestamp(),
+      kapatanUid: kullanici.uid,
+      veresiyeKayitId: veresiyeRef?.id ?? null
+    })
+    batch.update(t.orderRef, { kapandiMi: true })
     satirSayisi += 1
-  })
+
+    if (veresiyeRef && t.veresiyeMusteriId) {
+      batch.set(veresiyeRef, {
+        musteriId: t.veresiyeMusteriId,
+        musteriAdi: musteriAdlari.get(t.veresiyeMusteriId) ?? '—',
+        productId: t.productId,
+        urunAdi: t.faturaFirmaya ? `${t.okulAdi} — ${t.urunAdi}` : t.urunAdi,
+        adet: t.adet,
+        birimFiyat: t.birimFiyat,
+        tutar: t.tutar,
+        tarih,
+        durum: 'veresiye',
+        girisYontemi: 'okul',
+        kaynakSiparisId: null,
+        esdegerAdet: 0,
+        olusturanUid: kullanici.uid,
+        olusturmaTarihi: serverTimestamp(),
+        guncellenmeTarihi: serverTimestamp()
+      })
+      bakiyeDeltalari.set(t.veresiyeMusteriId, (bakiyeDeltalari.get(t.veresiyeMusteriId) ?? 0) + t.tutar)
+    }
+  }
+
+  for (const [musteriId, delta] of bakiyeDeltalari) {
+    batch.update(doc(db, 'musteriler', musteriId), { veresiyeBakiye: increment(delta) })
+  }
 
   batch.set(kapanisRef, {
     tarih,
@@ -241,5 +332,53 @@ export async function gunuKapat(
   })
 
   await batch.commit()
-  return satirSayisi
+  return { satirSayisi, veresiyeYansimayan }
+}
+
+/**
+ * Yanlışlıkla kapatılmış bir günü GERİ ALIR: o tarihe ait teslimatları (ve varsa
+ * bunlara bağlı veresiye_kayitlar + bakiye etkisini) siler, siparişleri tekrar
+ * "kapanmamış" durumuna döndürür ve kapanış kaydını kaldırır — sipariş adetleri
+ * (okul_orders.adet) İSE değişmeden korunur, admin düzeltip tekrar kapatabilir.
+ */
+export async function gununKapanisiniGeriAl(tarih: string): Promise<number> {
+  const db = requireDb()
+  const [ordersSnap, teslimatSnap] = await Promise.all([
+    query(collection(db, ORDERS), where('tarih', '==', tarih)),
+    query(collection(db, TESLIMATLAR), where('tarih', '==', tarih))
+  ].map(getDocs))
+
+  const batch = writeBatch(db)
+  const bakiyeDeltalari = new Map<string, number>()
+
+  const veresiyeKayitIdler: string[] = []
+  teslimatSnap.docs.forEach((d) => {
+    const veresiyeKayitId = (d.data().veresiyeKayitId as string | null) ?? null
+    batch.delete(d.ref)
+    if (veresiyeKayitId) {
+      batch.delete(doc(db, 'veresiye_kayitlar', veresiyeKayitId))
+      veresiyeKayitIdler.push(veresiyeKayitId)
+    }
+  })
+
+  // Teslimat kaydı musteriId taşımıyor — bakiye düzeltmesi için silinen
+  // veresiye_kayitlar belgelerini ayrıca okuyup tutarlarını topluyoruz.
+  for (let i = 0; i < veresiyeKayitIdler.length; i += 30) {
+    const parca = veresiyeKayitIdler.slice(i, i + 30)
+    const snap = await getDocs(query(collection(db, 'veresiye_kayitlar'), where(documentId(), 'in', parca)))
+    snap.docs.forEach((s) => {
+      const v = s.data() as { musteriId: string; tutar: number }
+      bakiyeDeltalari.set(v.musteriId, (bakiyeDeltalari.get(v.musteriId) ?? 0) - v.tutar)
+    })
+  }
+
+  for (const [musteriId, delta] of bakiyeDeltalari) {
+    batch.update(doc(db, 'musteriler', musteriId), { veresiyeBakiye: increment(delta) })
+  }
+
+  ordersSnap.docs.forEach((d) => batch.update(d.ref, { kapandiMi: false }))
+  batch.delete(doc(db, KAPANISLAR, tarih))
+
+  await batch.commit()
+  return teslimatSnap.size
 }

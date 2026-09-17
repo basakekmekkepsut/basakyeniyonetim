@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Minus, Plus } from 'lucide-react'
+import { httpsCallable } from 'firebase/functions'
 import { useMusteriler } from '../musteriler/data'
 import { useUrunler } from '../urunler/data'
 import { useVeresiyeSablonlar } from './sablonData'
@@ -10,10 +11,47 @@ import { formatTutar } from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
 import { useSession } from '../../lib/session'
 import { unHesabiAktifMi } from '../../shared/unHesabi'
+import { requireFunctions } from '../../lib/firebase'
 import type { Musteri } from '../../lib/types'
 
 function bugunStr() {
   return new Date().toISOString().slice(0, 10)
+}
+
+/** "Tümünü Kaydet" başarılı olduktan SONRA çağrılır — kayıt zaten tamamlandığı
+ * için bildirim gönderimi başarısız olursa sessizce yutulur, kullanıcıya hata
+ * gösterilmez (bkz. eski bot davranışı: her günlük giriş sonrası özet bildirimi). */
+async function bildirimGonder(
+  gonderilecek: GunlukGirisSatiri[],
+  cuvalSatirlari: { musteriAdi: string; cuvalSayisi: number }[],
+  tarih: string
+) {
+  const satirlar: string[] = []
+  let toplam = 0
+  for (const s of gonderilecek) {
+    for (const k of s.kalemler) {
+      const tutar = k.adet * k.birimFiyat
+      toplam += tutar
+      satirlar.push(`${s.musteriAdi} — ${k.urunAdi} × ${k.adet} = ${formatTutar(tutar)}`)
+    }
+  }
+  for (const c of cuvalSatirlari) {
+    satirlar.push(`${c.musteriAdi} — ${c.cuvalSayisi} çuval`)
+  }
+  if (satirlar.length === 0) return
+
+  const ozet = `${tarih} — ${satirlar.length} satır, toplam ${formatTutar(toplam)}`
+  const govde = [ozet, '', '📦 Yeni Kayıt', ...satirlar.slice(0, 20)].join('\n')
+
+  try {
+    const cagir = httpsCallable<{ baslik: string; govde: string }, { basarili: boolean }>(
+      requireFunctions(),
+      'veresiyeGirisBildirimGonder'
+    )
+    await cagir({ baslik: '📝 Günlük Giriş Kaydedildi', govde })
+  } catch {
+    // yut — kayıt zaten başarıyla tamamlandı
+  }
 }
 
 interface SatirState {
@@ -163,6 +201,7 @@ export default function GunlukGirisPage() {
       }
       const parcalar = [sayisi > 0 ? `${sayisi} kayıt` : null, cuvalSatirlari.length > 0 ? `${cuvalSatirlari.length} un ödemesi` : null].filter(Boolean)
       toast.basari(`${parcalar.join(' ve ')} oluşturuldu ve hesaplara yansıtıldı.`)
+      bildirimGonder(gonderilecek, cuvalSatirlari, tarih)
       setSatirlar({})
       setCuvalGirisleri({})
       setEkstraUrunler({})

@@ -68,7 +68,11 @@ async function telegramChatIdGetir(modul: 'siparis' | 'veresiye' | 'okul'): Prom
 
 // --- Push bildirimleri (kullanıcı tercihine göre — bkz. KullaniciProfili.bildirimler) ---
 
-async function pushGonderKullanicilara(bildirimTuru: 'yeniSiparis' | 'gunlukHatirlatma', baslik: string, govde: string): Promise<void> {
+export async function pushGonderKullanicilara(
+  bildirimTuru: 'yeniSiparis' | 'gunlukHatirlatma' | 'yeniVeresiyeKaydi' | 'okulHatirlatma',
+  baslik: string,
+  govde: string
+): Promise<void> {
   const db = getFirestore()
   const usersSnap = await db.collection('users').where(`bildirimler.${bildirimTuru}`, '==', true).get()
   const tokenKaynaklari: { uid: string; token: string }[] = []
@@ -195,6 +199,24 @@ export const okulSiparisiAksamGonder = onSchedule(
     await telegramMesajGonder(telegramBotToken.value().trim(), chatId, mesaj)
   }
 )
+
+/** Her akşam 17:00 (İstanbul) — "okul hatırlatma" tercihi açık kullanıcılara, bugünün
+ * okul siparişlerini gözden geçirip günü kapatmayı hatırlatan bir push gönderir.
+ * Bugün için hiç bekleyen (henüz kapanmamış) satır yoksa gönderilmez. */
+export const okulHatirlatmaGonder = onSchedule({ schedule: '0 17 * * *', timeZone: TIME_ZONE, region: REGION }, async () => {
+  const bugun = istanbulTarihStr(new Date())
+  const db = getFirestore()
+  const snap = await db.collection('okul_orders').where('tarih', '==', bugun).where('kapandiMi', '==', false).get()
+  if (snap.empty) {
+    console.log(`[okulHatirlatmaGonder] ${bugun} için bekleyen sipariş yok, atlanıyor.`)
+    return
+  }
+  await pushGonderKullanicilara(
+    'okulHatirlatma',
+    'Okul Siparişlerini Kontrol Edin',
+    'Bugünün okul siparişlerini gözden geçirip günü kapatmayı unutmayın.'
+  )
+})
 
 /** Sipariş modülü için ortak mantık — yarın + öbür günün listelerini ayrı ayrı gönderir. */
 async function siparisListeleriniGonder(): Promise<void> {

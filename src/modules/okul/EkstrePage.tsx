@@ -1,8 +1,15 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown, Lock, Trash2 } from 'lucide-react'
-import { useOkullar } from './data'
+import { ChevronDown, Lock, LockOpen, Trash2 } from 'lucide-react'
+import { useOkullar, useOkulFirmalari } from './data'
 import { useUrunler } from '../urunler/data'
-import { useAcikOkulOrders, useOkulTeslimatlar, gunuKapat, okulSiparisSil } from './orderData'
+import {
+  useAcikOkulOrders,
+  useOkulTeslimatlar,
+  useOkulKapanislar,
+  gunuKapat,
+  gununKapanisiniGeriAl,
+  okulSiparisSil
+} from './orderData'
 import { useOkulPayments, okulOdemeEkle, okulOdemeGuncelle, okulOdemeSil } from './paymentData'
 import OkulOdemeFormModal from './OkulOdemeFormModal'
 import ConfirmModal from '../../shared/ConfirmModal'
@@ -12,12 +19,18 @@ import { useToast } from '../../shared/Toast'
 import { isAdmin, useSession } from '../../lib/session'
 import type { OkulOrder, OkulPayment, OkulPaymentFormVerisi } from '../../lib/types'
 
+function bugunStr() {
+  return new Date().toISOString().slice(0, 10)
+}
+
 export default function EkstrePage() {
   const { okullar } = useOkullar()
+  const { firmalar } = useOkulFirmalari()
   const { urunler } = useUrunler()
   const { orders: acikOrders } = useAcikOkulOrders()
   const { teslimatlar } = useOkulTeslimatlar()
   const { payments } = useOkulPayments()
+  const { kapanislar } = useOkulKapanislar()
   const session = useSession()
   const toast = useToast()
 
@@ -25,6 +38,8 @@ export default function EkstrePage() {
   const [acikOkulId, setAcikOkulId] = useState<string | null>(null)
   const [kapatilacakTarih, setKapatilacakTarih] = useState<string | null>(null)
   const [kapatiliyor, setKapatiliyor] = useState(false)
+  const [acilacakTarih, setAcilacakTarih] = useState<string | null>(null)
+  const [aciliyor, setAciliyor] = useState(false)
   const [odemeFormOkul, setOdemeFormOkul] = useState<{ id: string; ad: string } | undefined>()
   const [duzenlenenOdeme, setDuzenlenenOdeme] = useState<OkulPayment | undefined>()
   const [silinecekOdeme, setSilinecekOdeme] = useState<OkulPayment | undefined>()
@@ -42,6 +57,11 @@ export default function EkstrePage() {
     }
     return [...map.values()].sort((a, b) => a.tarih.localeCompare(b.tarih))
   }, [acikOrders, urunler])
+
+  const sonKapanan = useMemo(
+    () => [...kapanislar].filter((k) => k.kapandi).sort((a, b) => b.tarih.localeCompare(a.tarih)).slice(0, 10),
+    [kapanislar]
+  )
 
   const okulBakiyeleri = useMemo(() => {
     const map = new Map<string, number>()
@@ -62,13 +82,29 @@ export default function EkstrePage() {
   async function handleKapat(tarih: string) {
     setKapatiliyor(true)
     try {
-      const sayisi = await gunuKapat(tarih, okullar, urunler, kullanici)
-      toast.basari(`${tarih} kapatıldı — ${sayisi} satır kesinleşti.`)
+      const { satirSayisi, veresiyeYansimayan } = await gunuKapat(tarih, okullar, firmalar, urunler, kullanici)
+      toast.basari(
+        `${tarih} kapatıldı — ${satirSayisi} satır kesinleşti.` +
+          (veresiyeYansimayan > 0 ? ` ${veresiyeYansimayan} satır için bağlı Veresiye müşterisi yok, yansıtılmadı.` : '')
+      )
     } catch (err) {
       toast.hata(err instanceof Error ? err.message : 'Kapatılamadı.')
     } finally {
       setKapatiliyor(false)
       setKapatilacakTarih(null)
+    }
+  }
+
+  async function handleGeriAl(tarih: string) {
+    setAciliyor(true)
+    try {
+      await gununKapanisiniGeriAl(tarih)
+      toast.basari(`${tarih} yeniden açıldı — sipariş adetlerini düzeltip tekrar kapatabilirsiniz.`)
+    } catch (err) {
+      toast.hata(err instanceof Error ? err.message : 'Yeniden açılamadı.')
+    } finally {
+      setAciliyor(false)
+      setAcilacakTarih(null)
     }
   }
 
@@ -158,15 +194,20 @@ export default function EkstrePage() {
                           )
                         })}
                       </ul>
-                      {admin && (
-                        <button
-                          onClick={() => setKapatilacakTarih(g.tarih)}
-                          className="flex items-center gap-1.5 rounded-lg bg-bakery-coffee-700 px-3.5 py-2 text-sm font-medium text-white hover:bg-bakery-coffee-600"
-                        >
-                          <Lock size={14} />
-                          Günü Kapat
-                        </button>
-                      )}
+                      {admin &&
+                        (g.tarih > bugunStr() ? (
+                          <p className="text-xs text-bakery-ink-400">
+                            Bu tarih henüz gelmedi — siparişler kesinleşmeden kapatılamaz.
+                          </p>
+                        ) : (
+                          <button
+                            onClick={() => setKapatilacakTarih(g.tarih)}
+                            className="flex items-center gap-1.5 rounded-lg bg-bakery-coffee-700 px-3.5 py-2 text-sm font-medium text-white hover:bg-bakery-coffee-600"
+                          >
+                            <Lock size={14} />
+                            Günü Kapat
+                          </button>
+                        ))}
                     </div>
                   )}
                 </div>
@@ -175,6 +216,32 @@ export default function EkstrePage() {
           </div>
         )}
       </div>
+
+      {admin && sonKapanan.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-lg font-semibold text-bakery-ink-900">Son Kapatılan Günler</h2>
+          <div className="space-y-2">
+            {sonKapanan.map((k) => (
+              <div
+                key={k.tarih}
+                className="flex items-center justify-between rounded-xl bg-bakery-surface px-4 py-3 shadow-sm shadow-bakery-coffee-900/5"
+              >
+                <div>
+                  <p className="font-medium text-bakery-ink-900">{k.tarih}</p>
+                  <p className="text-xs text-bakery-ink-500">{k.satirSayisi} satır kesinleşti</p>
+                </div>
+                <button
+                  onClick={() => setAcilacakTarih(k.tarih)}
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-bakery-ink-500 hover:bg-bakery-cream-100"
+                >
+                  <LockOpen size={14} />
+                  Yeniden Aç
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <h2 className="mb-3 text-lg font-semibold text-bakery-ink-900">Kesinleşmiş Bakiyeler</h2>
@@ -260,6 +327,17 @@ export default function EkstrePage() {
           onayEtiketi={kapatiliyor ? 'Kapatılıyor…' : 'Kapat'}
           onOnayla={() => handleKapat(kapatilacakTarih)}
           onVazgec={() => setKapatilacakTarih(null)}
+        />
+      )}
+
+      {acilacakTarih && (
+        <ConfirmModal
+          baslik="Günü yeniden aç"
+          mesaj={`${acilacakTarih} tarihini yeniden açmak istediğinize emin misiniz? O tarihe ait kesinleşmiş teslimatlar (ve varsa Veresiye'ye yansıyan tutar) geri alınır, sipariş adetleri korunur — düzeltip tekrar kapatabilirsiniz.`}
+          onayEtiketi={aciliyor ? 'Açılıyor…' : 'Yeniden Aç'}
+          tehlikeli
+          onOnayla={() => handleGeriAl(acilacakTarih)}
+          onVazgec={() => setAcilacakTarih(null)}
         />
       )}
 
