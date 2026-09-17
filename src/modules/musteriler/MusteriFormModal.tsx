@@ -9,6 +9,12 @@ import { musteriHitabi } from '../../shared/musteriYardimci'
 import ConfirmModal from '../../shared/ConfirmModal'
 import { useToast } from '../../shared/Toast'
 
+// window.location.origin KASITLI OLARAK kullanılmıyor — telefona ana ekran
+// kısayolu (PWA) olarak eklenmiş oturumlar, domain değiştirilse bile kurulum
+// anındaki eski adrese (basakyeniyonetim.netlify.app) sabit kalabiliyor. Portal
+// linki bu yüzden her zaman güncel marka alan adına sabitlenir.
+const PORTAL_SITE_URL = 'https://basakekmekfirini.com'
+
 const MODUL_ETIKETLERI: { key: Modul; etiket: string }[] = [
   { key: 'siparis', etiket: 'Sipariş' },
   { key: 'veresiye', etiket: 'Veresiye' },
@@ -95,7 +101,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
 
   function portalWhatsappGonder() {
     if (!mevcut) return
-    const link = `${window.location.origin}/portal.html?kod=${mevcut.id}`
+    const link = `${PORTAL_SITE_URL}/portal.html?kod=${mevcut.id}`
     const mesaj = `Merhaba ${musteriHitabi(mevcut)}, hesap ekstrenizi görüntülemek için:\n${link}\nŞifreniz: ${portalSifre}`
     const numara = telefon.replace(/\D/g, '')
     const waLink = `https://wa.me/${numara}?text=${encodeURIComponent(mesaj)}`
@@ -390,7 +396,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
                 <div className="space-y-2 rounded-lg bg-bakery-surface p-3">
                   <p className="text-sm font-medium text-bakery-ink-800">Müşteri Portalı</p>
                   <p className="break-all text-xs text-bakery-ink-500">
-                    {window.location.origin}/portal.html?kod={mevcut.id}
+                    {PORTAL_SITE_URL}/portal.html?kod={mevcut.id}
                   </p>
                   <p className="text-sm text-bakery-ink-700">
                     Şifre: <strong className="font-mono">{portalSifre ?? '—'}</strong>
