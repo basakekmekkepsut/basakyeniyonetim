@@ -12,3 +12,18 @@ export function musteriHitabi(musteri: Pick<Musteri, 'ad' | 'adSoyad' | 'hitapSe
 export function altiHaneliParolaUret(): string {
   return String(Math.floor(100000 + Math.random() * 900000))
 }
+
+// window.location.origin KASITLI OLARAK kullanılmıyor — telefona ana ekran
+// kısayolu (PWA) olarak eklenmiş oturumlar, domain değiştirilse bile kurulum
+// anındaki eski adrese sabit kalabiliyor. Portal linki bu yüzden her zaman
+// güncel marka alan adına sabitlenir (bkz. MusteriFormModal.tsx geçmişi).
+export const PORTAL_SITE_URL = 'https://basakekmekfirini.com'
+
+/** Müşteri portalı giriş linki + şifresini içeren, doğrudan WhatsApp'tan
+ * paylaşılabilecek hazır mesaj. Müşterinin portal şifresi yoksa (ör. Veresiye
+ * modülünde değilse) null döner — çağıran taraf bunu ele almalı. */
+export function portalMesajOlustur(musteri: Pick<Musteri, 'id' | 'ad' | 'adSoyad' | 'hitapSekli' | 'portalSifre'>): string | null {
+  if (!musteri.portalSifre) return null
+  const link = `${PORTAL_SITE_URL}/portal.html?kod=${musteri.id}`
+  return `Merhaba ${musteriHitabi(musteri)}, hesap ekstrenizi görüntülemek için:\n${link}\nŞifreniz: ${musteri.portalSifre}\n\nBu bir otomatik program mesajıdır.`
+}

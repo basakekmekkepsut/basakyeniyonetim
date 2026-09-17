@@ -4,7 +4,7 @@ import { httpsCallable } from 'firebase/functions'
 import { useVeresiyeKayitlar } from '../veresiye/data'
 import { useVeresiyeOdemeler } from '../veresiye/odemeData'
 import { unHesabiAktifMi, cuvalGoster } from '../../shared/unHesabi'
-import { musteriHitabi } from '../../shared/musteriYardimci'
+import { musteriHitabi, portalMesajOlustur } from '../../shared/musteriYardimci'
 import DurumRozeti from '../../shared/DurumRozeti'
 import { formatTutar } from '../../shared/TutarGoster'
 import { requireFunctions } from '../../lib/firebase'
@@ -76,7 +76,11 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
   function whatsappGonder() {
     const numara = m.telefon.replace(/\D/g, '')
     if (!numara) return
-    const mesaj = `Merhaba ${musteriHitabi(m)},`
+    const mesaj = portalMesajOlustur(m)
+    if (!mesaj) {
+      toast.hata('Bu müşterinin portal şifresi yok.')
+      return
+    }
     window.open(`https://wa.me/${numara}?text=${encodeURIComponent(mesaj)}`, '_blank')
   }
 
@@ -113,9 +117,10 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
                   <button
                     onClick={whatsappGonder}
                     className="flex items-center gap-1 rounded-full bg-green-600/10 px-2.5 py-1 text-xs font-medium text-green-700 hover:bg-green-600/20"
+                    title="Portal linkini WhatsApp'tan gönder"
                   >
                     <Share2 size={12} />
-                    WhatsApp
+                    Portal Linki
                   </button>
                 </div>
               )}

@@ -14,7 +14,7 @@ import BosDurum from '../../shared/BosDurum'
 import ConfirmModal from '../../shared/ConfirmModal'
 import { formatTutar } from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
-import { musteriHitabi } from '../../shared/musteriYardimci'
+import { portalMesajOlustur } from '../../shared/musteriYardimci'
 import { unHesabiAktifMi, cuvalKisaGoster } from '../../shared/unHesabi'
 import { useSession, isAdmin } from '../../lib/session'
 import type { Musteri, MusteriGirisi } from '../../lib/types'
@@ -92,7 +92,11 @@ export default function MusterilerPage() {
       toast.hata('Bu müşterinin telefon numarası kayıtlı değil.')
       return
     }
-    const mesaj = `Merhaba ${musteriHitabi(m)},`
+    const mesaj = portalMesajOlustur(m)
+    if (!mesaj) {
+      toast.hata('Bu müşterinin portal şifresi yok.')
+      return
+    }
     window.open(`https://wa.me/${numara}?text=${encodeURIComponent(mesaj)}`, '_blank')
   }
 
@@ -218,8 +222,8 @@ export default function MusterilerPage() {
                       <button
                         onClick={() => whatsappGonder(m)}
                         className="rounded-lg p-1.5 text-green-600 hover:bg-green-600/10"
-                        aria-label="WhatsApp'tan gönder"
-                        title="WhatsApp'tan gönder"
+                        aria-label="Portal linkini WhatsApp'tan gönder"
+                        title="Portal linkini WhatsApp'tan gönder"
                       >
                         <Share2 size={16} />
                       </button>

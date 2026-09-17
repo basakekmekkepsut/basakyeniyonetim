@@ -5,15 +5,9 @@ import { useUrunler } from '../urunler/data'
 import { ozelFiyatiGecmiseUygula } from '../veresiye/data'
 import { portalSifreYenile } from './data'
 import { cuvalGoster } from '../../shared/unHesabi'
-import { musteriHitabi } from '../../shared/musteriYardimci'
+import { PORTAL_SITE_URL, portalMesajOlustur } from '../../shared/musteriYardimci'
 import ConfirmModal from '../../shared/ConfirmModal'
 import { useToast } from '../../shared/Toast'
-
-// window.location.origin KASITLI OLARAK kullanılmıyor — telefona ana ekran
-// kısayolu (PWA) olarak eklenmiş oturumlar, domain değiştirilse bile kurulum
-// anındaki eski adrese (basakyeniyonetim.netlify.app) sabit kalabiliyor. Portal
-// linki bu yüzden her zaman güncel marka alan adına sabitlenir.
-const PORTAL_SITE_URL = 'https://basakekmekfirini.com'
 
 const MODUL_ETIKETLERI: { key: Modul; etiket: string }[] = [
   { key: 'siparis', etiket: 'Sipariş' },
@@ -101,8 +95,8 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
 
   function portalWhatsappGonder() {
     if (!mevcut) return
-    const link = `${PORTAL_SITE_URL}/portal.html?kod=${mevcut.id}`
-    const mesaj = `Merhaba ${musteriHitabi(mevcut)}, hesap ekstrenizi görüntülemek için:\n${link}\nŞifreniz: ${portalSifre}\n\nBu bir otomatik program mesajıdır.`
+    const mesaj = portalMesajOlustur({ ...mevcut, portalSifre })
+    if (!mesaj) return toast.hata('Bu müşterinin portal şifresi yok.')
     const numara = telefon.replace(/\D/g, '')
     const waLink = `https://wa.me/${numara}?text=${encodeURIComponent(mesaj)}`
     window.open(waLink, '_blank')
