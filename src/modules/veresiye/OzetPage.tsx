@@ -15,6 +15,9 @@ import TutarGoster from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
 import { isAdmin, useSession } from '../../lib/session'
 import { useVeresiyeMusteriFiltresi } from '../../shared/veresiyeErisim'
+import { veresiyeBildirimGonder } from '../../shared/veresiyeBildirim'
+import { formatTutar } from '../../shared/TutarGoster'
+import { tarihGunAdiIle } from '../../shared/tarih'
 import type { VeresiyeKaydi, VeresiyeOdeme } from '../../lib/types'
 
 function bugunStr() {
@@ -148,6 +151,11 @@ export default function OzetPage() {
     } else {
       await veresiyeKaydiEkle(veri, kullanici)
       toast.basari('Kayıt eklendi.')
+      const baslik = '📝 Yeni Veresiye Kaydı'
+      const tutar = veri.adet * veri.birimFiyat
+      const ozet = `${tarihGunAdiIle(veri.tarih)} — ${veri.musteriAdi}, toplam ${formatTutar(tutar)}`
+      const satir = `${veri.musteriAdi} — ${veri.urunAdi} × ${veri.adet} = ${formatTutar(tutar)}`
+      veresiyeBildirimGonder(baslik, ozet, [satir])
     }
   }
 
