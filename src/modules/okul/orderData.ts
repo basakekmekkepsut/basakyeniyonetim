@@ -17,7 +17,7 @@ import {
   writeBatch
 } from 'firebase/firestore'
 import { requireDb } from '../../lib/firebase'
-import type { OkulFirma, OkulKapanis, OkulOrder, OkulSchool, Urun } from '../../lib/types'
+import type { OkulKapanis, OkulOrder, OkulSchool, Urun } from '../../lib/types'
 
 const ORDERS = 'okul_orders'
 const TESLIMATLAR = 'okul_teslimatlar'
@@ -48,10 +48,14 @@ export function useOkulOrders(tarih: string) {
   return { orders, yukleniyor, hata }
 }
 
+const TUM_GUNLER = [0, 1, 2, 3, 4, 5, 6]
+
 // Bir tarih ilk kez açıldığında, henüz sipariş girilmemiş aktif hatlar için
 // okulun standart günlük adedini GERÇEKTEN Firestore'a yazar (yalnızca ekranda
 // gösterip yazmamak "kaydedildi sanılan ama kaydedilmemiş veri" riskine yol
 // açardı — Üretim/Ekstre/Mesaj hep okul_orders'ı okuduğu için tutarlılık şart).
+// Okulun o günü "açık günler"i arasında değilse (bkz. OkulSchool.acikGunler),
+// standart adet yerine 0 yazılır — kapalı günlerde sipariş görünmez/üretilmez.
 // İdempotent: zaten sipariş girilmiş hatlara dokunmaz.
 export async function varsayilanSiparisleriHazirla(
   tarih: string,
@@ -60,10 +64,12 @@ export async function varsayilanSiparisleriHazirla(
 ): Promise<void> {
   const db = requireDb()
   const mevcutLineIds = new Set(mevcutOrders.map((o) => o.lineId))
+  const gunIndex = new Date(tarih).getDay()
   const batch = writeBatch(db)
   let sayac = 0
 
   for (const okul of okullar) {
+    const acikMi = (okul.acikGunler ?? TUM_GUNLER).includes(gunIndex)
     for (const l of okul.lines) {
       if (!l.aktif || mevcutLineIds.has(l.id)) continue
       batch.set(doc(collection(db, ORDERS)), {
@@ -71,7 +77,7 @@ export async function varsayilanSiparisleriHazirla(
         schoolId: okul.id,
         lineId: l.id,
         productId: l.productId,
-        adet: l.adet,
+        adet: acikMi ? l.adet : 0,
         kapandiMi: false
       })
       sayac += 1
@@ -190,7 +196,6 @@ function bugunStr(): string {
 export async function gunuKapat(
   tarih: string,
   okullar: OkulSchool[],
-  firmalar: OkulFirma[],
   urunler: Urun[],
   kullanici: { uid: string }
 ): Promise<{ satirSayisi: number; veresiyeYansimayan: number }> {
@@ -221,10 +226,8 @@ export async function gunuKapat(
     adet: number
     birimFiyat: number
     tutar: number
-    faturaHedefiId: string | null
     veresiyeMusteriId: string | null
     okulAdi: string
-    faturaFirmaya: boolean
   }
 
   const taslaklar: TeslimatTaslak[] = []
@@ -238,8 +241,7 @@ export async function gunuKapat(
     const urun = urunler.find((u) => u.id === order.productId)
     if (!okul || !hat || !urun) continue // silinmiş okul/hat/ürün — atla
 
-    const firma = hat.faturaHedefiId ? firmalar.find((f) => f.id === hat.faturaHedefiId) : undefined
-    const veresiyeMusteriId = (firma ? firma.musteriId : okul.musteriId) ?? null
+    const veresiyeMusteriId = okul.musteriId ?? null
     if (!veresiyeMusteriId) veresiyeYansimayan += 1
 
     taslaklar.push({
@@ -251,10 +253,8 @@ export async function gunuKapat(
       adet: order.adet,
       birimFiyat: urun.fiyat,
       tutar: order.adet * urun.fiyat,
-      faturaHedefiId: hat.faturaHedefiId,
       veresiyeMusteriId,
-      okulAdi: okul.ad,
-      faturaFirmaya: Boolean(firma)
+      okulAdi: okul.ad
     })
   }
 
@@ -289,7 +289,6 @@ export async function gunuKapat(
       adet: t.adet,
       birimFiyat: t.birimFiyat,
       tutar: t.tutar,
-      faturaHedefiId: t.faturaHedefiId,
       kapanisZamani: serverTimestamp(),
       kapatanUid: kullanici.uid,
       veresiyeKayitId: veresiyeRef?.id ?? null
@@ -302,7 +301,10 @@ export async function gunuKapat(
         musteriId: t.veresiyeMusteriId,
         musteriAdi: musteriAdlari.get(t.veresiyeMusteriId) ?? '—',
         productId: t.productId,
-        urunAdi: t.faturaFirmaya ? `${t.okulAdi} — ${t.urunAdi}` : t.urunAdi,
+        // Aynı Veresiye müşterisi birden fazla okulu temsil edebileceği için
+        // (ör. bir kurumun birkaç okuluna aynı hesaptan fatura edilmesi) kalem
+        // her zaman hangi okuldan geldiğini gösterecek şekilde etiketlenir.
+        urunAdi: `${t.okulAdi} — ${t.urunAdi}`,
         adet: t.adet,
         birimFiyat: t.birimFiyat,
         tutar: t.tutar,

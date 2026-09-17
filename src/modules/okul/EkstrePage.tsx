@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ChevronDown, Lock, LockOpen, Trash2 } from 'lucide-react'
-import { useOkullar, useOkulFirmalari } from './data'
+import { useOkullar } from './data'
 import { useUrunler } from '../urunler/data'
 import {
   useAcikOkulOrders,
@@ -25,7 +25,6 @@ function bugunStr() {
 
 export default function EkstrePage() {
   const { okullar } = useOkullar()
-  const { firmalar } = useOkulFirmalari()
   const { urunler } = useUrunler()
   const { orders: acikOrders } = useAcikOkulOrders()
   const { teslimatlar } = useOkulTeslimatlar()
@@ -69,7 +68,6 @@ export default function EkstrePage() {
       map.set(t.schoolId, (map.get(t.schoolId) ?? 0) + t.tutar)
     }
     for (const p of payments) {
-      if (p.hedefTipi !== 'okul') continue
       map.set(p.hedefId, (map.get(p.hedefId) ?? 0) - p.tutar)
     }
     return map
@@ -82,7 +80,7 @@ export default function EkstrePage() {
   async function handleKapat(tarih: string) {
     setKapatiliyor(true)
     try {
-      const { satirSayisi, veresiyeYansimayan } = await gunuKapat(tarih, okullar, firmalar, urunler, kullanici)
+      const { satirSayisi, veresiyeYansimayan } = await gunuKapat(tarih, okullar, urunler, kullanici)
       toast.basari(
         `${tarih} kapatıldı — ${satirSayisi} satır kesinleşti.` +
           (veresiyeYansimayan > 0 ? ` ${veresiyeYansimayan} satır için bağlı Veresiye müşterisi yok, yansıtılmadı.` : '')
@@ -253,7 +251,7 @@ export default function EkstrePage() {
               const bakiye = okulBakiyeleri.get(okul.id) ?? 0
               const acik = acikOkulId === okul.id
               const okulTeslimatlari = teslimatlar.filter((t) => t.schoolId === okul.id)
-              const okulOdemeleri = payments.filter((p) => p.hedefTipi === 'okul' && p.hedefId === okul.id)
+              const okulOdemeleri = payments.filter((p) => p.hedefId === okul.id)
 
               return (
                 <div key={okul.id} className="rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
@@ -261,7 +259,14 @@ export default function EkstrePage() {
                     onClick={() => setAcikOkulId(acik ? null : okul.id)}
                     className="flex w-full items-center justify-between px-4 py-3 text-left"
                   >
-                    <p className="font-medium text-bakery-ink-900">{okul.ad}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-medium text-bakery-ink-900">{okul.ad}</p>
+                      {okul.okulDegil && (
+                        <span className="rounded-full bg-bakery-coffee-100 px-1.5 py-0.5 text-[10px] font-medium text-bakery-ink-500">
+                          Okul Dışı
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-3">
                       <span className={`text-sm font-semibold ${bakiye > 0 ? 'text-bakery-danger' : 'text-bakery-success'}`}>
                         <TutarGoster tutar={bakiye} />
@@ -343,7 +348,6 @@ export default function EkstrePage() {
 
       {(odemeFormOkul || duzenlenenOdeme) && (
         <OkulOdemeFormModal
-          hedefTipi="okul"
           hedefId={duzenlenenOdeme?.hedefId ?? odemeFormOkul!.id}
           hedefAdi={duzenlenenOdeme ? (okullar.find((o) => o.id === duzenlenenOdeme.hedefId)?.ad ?? '') : odemeFormOkul!.ad}
           mevcut={duzenlenenOdeme}

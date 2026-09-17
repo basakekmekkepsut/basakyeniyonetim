@@ -3,31 +3,45 @@ import { Plus, Trash2, X } from 'lucide-react'
 import MusteriSecici from '../../shared/MusteriSecici'
 import { useUrunler } from '../urunler/data'
 import { yeniHatId } from './data'
-import type { OkulFirma, OkulHat, OkulSchool, OkulSchoolFormVerisi } from '../../lib/types'
+import type { OkulHat, OkulSchool, OkulSchoolFormVerisi } from '../../lib/types'
+
+// Date.getDay() ile aynı sırayla (0=Pazar) ama ekranda Pazartesi'den başlayan,
+// bakery haftasına daha uygun bir sırayla gösterilir.
+const GUN_SECENEKLERI: { gun: number; etiket: string }[] = [
+  { gun: 1, etiket: 'Pzt' },
+  { gun: 2, etiket: 'Sal' },
+  { gun: 3, etiket: 'Çar' },
+  { gun: 4, etiket: 'Per' },
+  { gun: 5, etiket: 'Cum' },
+  { gun: 6, etiket: 'Cmt' },
+  { gun: 0, etiket: 'Paz' }
+]
+const TUM_GUNLER = GUN_SECENEKLERI.map((g) => g.gun)
 
 interface Props {
   mevcut?: OkulSchool
-  firmalar: OkulFirma[]
   onKaydet: (veri: OkulSchoolFormVerisi) => Promise<void>
   onKapat: () => void
 }
 
-export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: Props) {
+export default function OkulFormModal({ mevcut, onKaydet, onKapat }: Props) {
   const { urunler } = useUrunler()
   const [ad, setAd] = useState(mevcut?.ad ?? '')
-  const [firmaId, setFirmaId] = useState(mevcut?.firmaId ?? '')
   const [musteriId, setMusteriId] = useState(mevcut?.musteriId ?? null as string | null)
   const [lines, setLines] = useState<OkulHat[]>(mevcut?.lines ?? [])
+  const [acikGunler, setAcikGunler] = useState<number[]>(mevcut?.acikGunler ?? TUM_GUNLER)
+  const [okulDegil, setOkulDegil] = useState(mevcut?.okulDegil ?? false)
   const [gonderiliyor, setGonderiliyor] = useState(false)
   const [hata, setHata] = useState<string | null>(null)
+
+  function gunDegistir(gun: number) {
+    setAcikGunler((prev) => (prev.includes(gun) ? prev.filter((g) => g !== gun) : [...prev, gun]))
+  }
 
   const okulUrunleri = urunler.filter((u) => u.aktif && u.modules.includes('okul'))
 
   function hatEkle() {
-    setLines((prev) => [
-      ...prev,
-      { id: yeniHatId(), productId: '', urunAdi: '', adet: 1, aktif: true, faturaHedefiId: null }
-    ])
+    setLines((prev) => [...prev, { id: yeniHatId(), productId: '', urunAdi: '', adet: 1, aktif: true }])
   }
 
   function hatGuncelle(id: string, degisiklik: Partial<OkulHat>) {
@@ -52,9 +66,10 @@ export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: P
     try {
       await onKaydet({
         ad: ad.trim(),
-        firmaId: firmaId || null,
         musteriId,
-        lines: gecerliHatlar
+        lines: gecerliHatlar,
+        acikGunler,
+        okulDegil
       })
       onKapat()
     } catch (err) {
@@ -84,28 +99,14 @@ export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: P
               required
               className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
             />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Firma (lojistik grup)</label>
-            <select
-              value={firmaId}
-              onChange={(e) => setFirmaId(e.target.value)}
-              className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 text-sm outline-none focus:border-bakery-amber-500"
-            >
-              <option value="">Yok — bağımsız okul</option>
-              {firmalar.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.ad}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">
-              Bağımsız veresiye hesabı (opsiyonel)
+            <label className="mt-1.5 flex items-center gap-1.5 text-sm text-bakery-ink-600">
+              <input type="checkbox" checked={okulDegil} onChange={(e) => setOkulDegil(e.target.checked)} />
+              Bu aslında bir okul değil — günlük sabit siparişi olan normal bir müşteri (ör. aşevi, fabrika)
             </label>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Veresiye Hesabı</label>
             <MusteriSecici
               modul="okul"
               seciliMusteriId={musteriId}
@@ -115,7 +116,31 @@ export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: P
               onSec={(m) => setMusteriId(m.id)}
             />
             <p className="mt-1 text-xs text-bakery-ink-500">
-              Sadece bu okulun kendi ayrı veresiye hesabı varsa seçin (günlük ekmek siparişinden bağımsız).
+              Günü Kapat'ta bu okulun teslimat tutarı, seçilen müşterinin Veresiye hesabına otomatik yansır. Birden
+              fazla okul aynı kurum tarafından ödeniyorsa hepsine aynı müşteriyi seçin — hepsi tek hesapta toplanır.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-bakery-ink-800">Açık Günler</label>
+            <div className="flex flex-wrap gap-1.5">
+              {GUN_SECENEKLERI.map(({ gun, etiket }) => (
+                <button
+                  type="button"
+                  key={gun}
+                  onClick={() => gunDegistir(gun)}
+                  className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                    acikGunler.includes(gun)
+                      ? 'bg-bakery-amber-600 text-white'
+                      : 'bg-bakery-cream-100 text-bakery-ink-400 hover:bg-bakery-cream-200'
+                  }`}
+                >
+                  {etiket}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-bakery-ink-500">
+              Kapalı günlerde sipariş adedi otomatik olarak 0 gelir, açık günlerde hattın standart adedi doldurulur.
             </p>
           </div>
 
@@ -158,24 +183,10 @@ export default function OkulFormModal({ mevcut, firmalar, onKaydet, onKapat }: P
                         <Trash2 size={16} />
                       </button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={l.faturaHedefiId ?? ''}
-                        onChange={(e) => hatGuncelle(l.id, { faturaHedefiId: e.target.value || null })}
-                        className="flex-1 rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1.5 text-xs outline-none focus:border-bakery-amber-500"
-                      >
-                        <option value="">Fatura: Doğrudan bu okula</option>
-                        {firmalar.map((f) => (
-                          <option key={f.id} value={f.id}>
-                            Fatura: {f.ad}
-                          </option>
-                        ))}
-                      </select>
-                      <label className="flex items-center gap-1.5 text-xs text-bakery-ink-600">
-                        <input type="checkbox" checked={l.aktif} onChange={(e) => hatGuncelle(l.id, { aktif: e.target.checked })} />
-                        Aktif
-                      </label>
-                    </div>
+                    <label className="flex items-center gap-1.5 text-xs text-bakery-ink-600">
+                      <input type="checkbox" checked={l.aktif} onChange={(e) => hatGuncelle(l.id, { aktif: e.target.checked })} />
+                      Aktif
+                    </label>
                   </div>
                 ))}
               </div>

@@ -220,23 +220,26 @@ export interface OkulHat {
   urunAdi: string
   adet: number
   aktif: boolean
-  faturaHedefiId: string | null // null = doğrudan okula fatura, dolu ise o firmaId'ye fatura
 }
-
-export interface OkulFirma {
-  id: string
-  ad: string
-  musteriId: string | null
-}
-
-export type OkulFirmaFormVerisi = Omit<OkulFirma, 'id'>
 
 export interface OkulSchool {
   id: string
   ad: string
-  firmaId: string | null
+  // Bağlıysa, bu okulun (ve varsa aynı musteriId'yi paylaşan diğer okulların)
+  // günlük teslimat tutarı bu Veresiye müşterisine yansır (bkz. orderData.ts
+  // gunuKapat). Birden fazla okul aynı faturalayan kuruma bağlıysa hepsine
+  // aynı musteriId verilerek doğal olarak tek hesapta toplanır — ayrı bir
+  // "Firma" katmanına gerek yok.
   musteriId: string | null
   lines: OkulHat[]
+  // Haftanın hangi günleri açık (Date.getDay() ile aynı: 0=Pazar...6=Cumartesi).
+  // Bu özellikten önce oluşturulmuş okullarda yok — okuyan tarafta her zaman
+  // `?? TUM_GUNLER` ile "her gün açık" varsayılır (bkz. orderData.ts).
+  acikGunler: number[]
+  // true ise bu aslında bir okul değil, günlük sabit siparişi Okul modülünün
+  // üretim/kapanış akışı üzerinden takip edilen normal bir müşteri (ör. Aşevi,
+  // bir fabrika kantini) — listelerde "Okul Dışı" etiketiyle ayırt edilir.
+  okulDegil: boolean
 }
 
 export type OkulSchoolFormVerisi = Omit<OkulSchool, 'id'>
@@ -261,7 +264,6 @@ export interface OkulTeslimat {
   adet: number
   birimFiyat: number
   tutar: number
-  faturaHedefiId: string | null
   kapatanUid: string
   // Bu teslimatın yansıdığı veresiye_kayitlar belgesi — hedef (okul/firma) bir
   // Veresiye müşterisine bağlıysa dolu, değilse null. Günü Yeniden Aç'ta bu
@@ -276,11 +278,8 @@ export interface OkulKapanis {
   satirSayisi: number
 }
 
-export type OkulPaymentHedefTipi = 'firma' | 'okul'
-
 export interface OkulPayment {
   id: string
-  hedefTipi: OkulPaymentHedefTipi
   hedefId: string
   tutar: number
   tarih: string

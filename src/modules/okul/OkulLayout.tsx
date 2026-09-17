@@ -12,7 +12,6 @@ export default function OkulLayout() {
     { yol: '/okul', etiket: 'Üretim', gorunur: true },
     { yol: '/okul/siparis', etiket: 'Sipariş', gorunur: admin || izin.siparis },
     { yol: '/okul/okullar', etiket: 'Okullar', gorunur: admin || izin.okullar },
-    { yol: '/okul/firmalar', etiket: 'Firmalar', gorunur: admin || izin.okullar },
     { yol: '/okul/ekstre', etiket: 'Ekstre', gorunur: admin || izin.ekstre },
     { yol: '/okul/urunler', etiket: 'Ürünler', gorunur: admin || izin.urunler },
     { yol: '/okul/mesaj', etiket: 'Mesaj', gorunur: admin || izin.mesaj }

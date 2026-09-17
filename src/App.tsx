@@ -28,7 +28,6 @@ const OkulLayout = lazy(() => import('./modules/okul/OkulLayout'))
 const UretimPage = lazy(() => import('./modules/okul/UretimPage'))
 const OkulSiparisPage = lazy(() => import('./modules/okul/SiparisPage'))
 const OkullarPage = lazy(() => import('./modules/okul/OkullarPage'))
-const FirmalarPage = lazy(() => import('./modules/okul/FirmalarPage'))
 const EkstrePage = lazy(() => import('./modules/okul/EkstrePage'))
 const OkulMesajPage = lazy(() => import('./modules/okul/MesajPage'))
 
@@ -101,7 +100,6 @@ function SessionGate() {
                 <Route index element={<UretimPage />} />
                 <Route path="siparis" element={<OkulSiparisPage />} />
                 <Route path="okullar" element={<OkullarPage />} />
-                <Route path="firmalar" element={<FirmalarPage />} />
                 <Route path="ekstre" element={<EkstrePage />} />
                 <Route path="urunler" element={<UrunlerPage />} />
                 <Route path="mesaj" element={<OkulMesajPage />} />

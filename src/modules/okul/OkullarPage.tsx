@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ChevronDown, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useOkullar, useOkulFirmalari, okulEkle, okulGuncelle, okulSil } from './data'
+import { useOkullar, okulEkle, okulGuncelle, okulSil } from './data'
+import { useMusteriler } from '../musteriler/data'
 import OkulFormModal from './OkulFormModal'
 import BosDurum from '../../shared/BosDurum'
 import ConfirmModal from '../../shared/ConfirmModal'
@@ -9,7 +10,7 @@ import type { OkulSchool, OkulSchoolFormVerisi } from '../../lib/types'
 
 export default function OkullarPage() {
   const { okullar, yukleniyor, hata } = useOkullar()
-  const { firmalar } = useOkulFirmalari()
+  const { musteriler } = useMusteriler()
   const toast = useToast()
   const [acikId, setAcikId] = useState<string | null>(null)
   const [formAcik, setFormAcik] = useState(false)
@@ -63,7 +64,7 @@ export default function OkullarPage() {
       ) : (
         <div className="space-y-2">
           {okullar.map((o) => {
-            const firma = firmalar.find((f) => f.id === o.firmaId)
+            const musteri = musteriler.find((m) => m.id === o.musteriId)
             const acik = acikId === o.id
             return (
               <div key={o.id} className="rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
@@ -72,9 +73,16 @@ export default function OkullarPage() {
                   className="flex w-full items-center justify-between px-4 py-3 text-left"
                 >
                   <div>
-                    <p className="font-medium text-bakery-ink-900">{o.ad}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-medium text-bakery-ink-900">{o.ad}</p>
+                      {o.okulDegil && (
+                        <span className="rounded-full bg-bakery-coffee-100 px-2 py-0.5 text-xs font-medium text-bakery-ink-500">
+                          Okul Dışı
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-bakery-ink-500">
-                      {firma ? firma.ad : 'Bağımsız'} · {o.lines.length} hat
+                      {musteri ? musteri.ad : 'Veresiye hesabı bağlı değil'} · {o.lines.length} hat
                     </p>
                   </div>
                   <ChevronDown size={18} className={`text-bakery-ink-400 transition ${acik ? 'rotate-180' : ''}`} />
@@ -87,13 +95,8 @@ export default function OkullarPage() {
                     ) : (
                       <ul className="mb-3 space-y-1 text-sm text-bakery-ink-600">
                         {o.lines.map((l) => (
-                          <li key={l.id} className="flex items-center justify-between">
-                            <span>
-                              {l.urunAdi} — {l.adet} adet/gün {!l.aktif && <em className="text-bakery-ink-400">(pasif)</em>}
-                            </span>
-                            <span className="text-xs text-bakery-ink-400">
-                              {l.faturaHedefiId ? `→ ${firmalar.find((f) => f.id === l.faturaHedefiId)?.ad ?? '—'}` : '→ Doğrudan'}
-                            </span>
+                          <li key={l.id}>
+                            {l.urunAdi} — {l.adet} adet/gün {!l.aktif && <em className="text-bakery-ink-400">(pasif)</em>}
                           </li>
                         ))}
                       </ul>
@@ -125,9 +128,7 @@ export default function OkullarPage() {
         </div>
       )}
 
-      {formAcik && (
-        <OkulFormModal mevcut={duzenlenen} firmalar={firmalar} onKaydet={handleKaydet} onKapat={() => setFormAcik(false)} />
-      )}
+      {formAcik && <OkulFormModal mevcut={duzenlenen} onKaydet={handleKaydet} onKapat={() => setFormAcik(false)} />}
 
       {silinecek && (
         <ConfirmModal

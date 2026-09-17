@@ -1,9 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
-import type { OkulPayment, OkulPaymentFormVerisi, OkulPaymentHedefTipi } from '../../lib/types'
+import type { OkulPayment, OkulPaymentFormVerisi } from '../../lib/types'
 
 interface Props {
-  hedefTipi: OkulPaymentHedefTipi
   hedefId: string
   hedefAdi: string
   mevcut?: OkulPayment
@@ -15,7 +14,7 @@ function bugunStr() {
   return new Date().toISOString().slice(0, 10)
 }
 
-export default function OkulOdemeFormModal({ hedefTipi, hedefId, hedefAdi, mevcut, onKaydet, onKapat }: Props) {
+export default function OkulOdemeFormModal({ hedefId, hedefAdi, mevcut, onKaydet, onKapat }: Props) {
   const [tutar, setTutar] = useState(mevcut?.tutar ?? 0)
   const [tarih, setTarih] = useState(mevcut?.tarih ?? bugunStr())
   const [not, setNot] = useState(mevcut?.not ?? '')
@@ -28,7 +27,7 @@ export default function OkulOdemeFormModal({ hedefTipi, hedefId, hedefAdi, mevcu
     setHata(null)
     setGonderiliyor(true)
     try {
-      await onKaydet({ hedefTipi, hedefId, tutar, tarih, not: not.trim() })
+      await onKaydet({ hedefId, tutar, tarih, not: not.trim() })
       onKapat()
     } catch (err) {
       setHata(err instanceof Error ? err.message : 'Kaydedilemedi.')
@@ -48,7 +47,7 @@ export default function OkulOdemeFormModal({ hedefTipi, hedefId, hedefAdi, mevcu
         </div>
 
         <p className="mb-4 rounded-lg bg-bakery-cream-50 px-3 py-2 text-sm text-bakery-ink-600">
-          Hedef: <strong>{hedefAdi}</strong> ({hedefTipi === 'firma' ? 'Firma' : 'Okul'})
+          Hedef: <strong>{hedefAdi}</strong>
         </p>
 
         <div className="space-y-4">

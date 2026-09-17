@@ -138,11 +138,6 @@ service cloud.firestore {
       allow write: if okulIzni('okullar');
     }
 
-    match /okul_firmalar/{id} {
-      allow read: if hasModule('okul');
-      allow write: if okulIzni('okullar');
-    }
-
     match /okul_orders/{id} {
       allow read: if hasModule('okul');
       allow create: if okulIzni('siparis') && request.resource.data.kapandiMi == false;

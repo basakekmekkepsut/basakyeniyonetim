@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useOkullar, useOkulFirmalari, okulGuncelle, yeniHatId } from './data'
+import { useOkullar, okulGuncelle, yeniHatId } from './data'
 import { useOkulOrders, useOkulKapanis, okulSiparisMiktariGuncelle, varsayilanSiparisleriHazirla } from './orderData'
 import { useUrunler } from '../urunler/data'
+import { useMusteriler } from '../musteriler/data'
 import BosDurum from '../../shared/BosDurum'
 import { useToast } from '../../shared/Toast'
 import type { OkulSchool } from '../../lib/types'
@@ -14,8 +15,8 @@ function yarinStr() {
 
 export default function SiparisPage() {
   const { okullar, yukleniyor: okulYukleniyor } = useOkullar()
-  const { firmalar } = useOkulFirmalari()
   const { urunler } = useUrunler()
+  const { musteriler } = useMusteriler()
   const toast = useToast()
   const [tarih, setTarih] = useState(yarinStr())
   const { orders, yukleniyor: ordersYukleniyor } = useOkulOrders(tarih)
@@ -35,9 +36,13 @@ export default function SiparisPage() {
     try {
       await okulGuncelle(okul.id, {
         ad: okul.ad,
-        firmaId: okul.firmaId,
-        musteriId: okul.musteriId,
-        lines: [...okul.lines, { id: yeniHatId(), productId, urunAdi: urun.ad, adet: 0, aktif: true, faturaHedefiId: null }]
+        musteriId: okul.musteriId ?? null,
+        lines: [...okul.lines, { id: yeniHatId(), productId, urunAdi: urun.ad, adet: 0, aktif: true }],
+        // Bu özellikten önce oluşturulmuş okul belgelerinde bu alanlar yok —
+        // undefined yazmak Firestore'un reddetmesine yol açar (bkz. Sipariş
+        // modülündeki benzer adres/telefon hatası), bu yüzden varsayılan verilir.
+        acikGunler: okul.acikGunler ?? [0, 1, 2, 3, 4, 5, 6],
+        okulDegil: okul.okulDegil ?? false
       })
     } catch (err) {
       toast.hata(err instanceof Error ? err.message : 'Ürün eklenemedi.')
@@ -78,7 +83,9 @@ export default function SiparisPage() {
   const aktifOkullar = okullar.filter((o) => o.lines.some((l) => l.aktif))
   const gruplar = new Map<string, typeof aktifOkullar>()
   for (const okul of aktifOkullar) {
-    const key = okul.firmaId ?? '__dogrudan__'
+    // Aynı Veresiye müşterisine bağlı birden fazla okul (ör. bir kurumun
+    // birkaç okulu) burada doğal olarak tek grupta toplanır.
+    const key = okul.musteriId ?? '__bagimsiz__'
     gruplar.set(key, [...(gruplar.get(key) ?? []), okul])
   }
 
@@ -107,11 +114,11 @@ export default function SiparisPage() {
       ) : (
         <div className="space-y-4">
           {[...gruplar.entries()].map(([key, okullarGrup]) => {
-            const firma = key === '__dogrudan__' ? null : firmalar.find((f) => f.id === key)
+            const musteri = key === '__bagimsiz__' ? null : musteriler.find((m) => m.id === key)
             return (
               <div key={key} className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
                 <h3 className="mb-3 text-sm font-semibold text-bakery-ink-700">
-                  {firma ? firma.ad : 'Doğrudan Okullar'}
+                  {musteri ? musteri.ad : 'Bağımsız Okullar'}
                 </h3>
                 <div className="space-y-3">
                   {okullarGrup.map((okul) => {
@@ -120,7 +127,14 @@ export default function SiparisPage() {
                     )
                     return (
                       <div key={okul.id}>
-                        <p className="mb-1.5 text-sm font-medium text-bakery-ink-900">{okul.ad}</p>
+                        <div className="mb-1.5 flex items-center gap-1.5">
+                          <p className="text-sm font-medium text-bakery-ink-900">{okul.ad}</p>
+                          {okul.okulDegil && (
+                            <span className="rounded-full bg-bakery-coffee-100 px-1.5 py-0.5 text-[10px] font-medium text-bakery-ink-500">
+                              Okul Dışı
+                            </span>
+                          )}
+                        </div>
                         <div className="space-y-1.5 pl-2">
                           {okul.lines
                             .filter((l) => l.aktif)
