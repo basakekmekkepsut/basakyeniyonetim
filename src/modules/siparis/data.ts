@@ -121,9 +121,12 @@ async function kaydetVeSenkronizeEt(
     musteriAdi: veri.musteriAdi,
     musteriGecici: musteri?.gecici ?? false,
     kaynakSablonId: mevcut?.kaynakSablonId ?? null,
-    adres: veri.adres,
-    telefon: veri.telefon,
-    not: veri.not,
+    // Eski/göçürülmüş bazı belgelerde bu alanlar hiç yazılmamış olabilir (undefined) —
+    // Firestore set()'e undefined göndermek "Unsupported field value" hatasıyla TÜM
+    // yazmayı (dolayısıyla ödeme durumu değişikliğini de) sessizce başarısız kılar.
+    adres: veri.adres ?? '',
+    telefon: veri.telefon ?? '',
+    not: veri.not ?? '',
     teslimatTarihi: veri.teslimatTarihi,
     items: veri.items,
     toplamTutar,
