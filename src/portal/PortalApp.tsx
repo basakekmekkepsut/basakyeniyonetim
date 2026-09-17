@@ -1,17 +1,25 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { Bell, BellRing } from 'lucide-react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Bell, BellRing, ChevronDown } from 'lucide-react'
 import { httpsCallable } from 'firebase/functions'
 import { isFirebaseConfigured, requireFunctions } from '../lib/firebase'
 import { formatTutar } from '../shared/TutarGoster'
 import { cuvalGoster } from '../shared/unHesabi'
 import { portalBildirimleriEtkinlestir, pushDurumuGetir, type PushDurum } from '../shared/pushBildirimleri'
+import DurumRozeti from '../shared/DurumRozeti'
+import type { VeresiyeDurumu } from '../lib/types'
 
-interface PortalHareket {
+interface PortalKayit {
   tarih: string
-  tur: 'teslimat' | 'odeme'
-  aciklama: string
+  urunAdi: string
+  adet: number
   tutar: number
-  durum: string
+  durum: VeresiyeDurumu
+}
+
+interface PortalOdeme {
+  tarih: string
+  tutar: number
+  not: string | null
 }
 
 interface PortalSonuc {
@@ -20,7 +28,63 @@ interface PortalSonuc {
   hitapSekli: 'bay' | 'hanim' | null
   veresiyeBakiye: number
   unHesabi: { aktif: boolean; birikenEsdegerAdet: number; adetPerCuval: number | null } | null
-  hareketler: PortalHareket[]
+  kayitlar: PortalKayit[]
+  odemeler: PortalOdeme[]
+}
+
+const AY_ADLARI = [
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+]
+
+function ayEtiketi(ayAnahtari: string) {
+  const [yil, ay] = ayAnahtari.split('-').map(Number)
+  return `${AY_ADLARI[ay - 1]} ${yil}`
+}
+
+interface AylikOzet {
+  anahtar: string
+  etiket: string
+  toplam: number
+  urunler: { urunAdi: string; adet: number }[]
+  kayitlar: PortalKayit[]
+}
+
+function aylikOzetOlustur(kayitlar: PortalKayit[]): AylikOzet[] {
+  const map = new Map<string, AylikOzet>()
+  for (const k of kayitlar) {
+    const anahtar = k.tarih.slice(0, 7)
+    let ay = map.get(anahtar)
+    if (!ay) {
+      ay = { anahtar, etiket: ayEtiketi(anahtar), toplam: 0, urunler: [], kayitlar: [] }
+      map.set(anahtar, ay)
+    }
+    ay.toplam += k.tutar
+    ay.kayitlar.push(k)
+    const urun = ay.urunler.find((u) => u.urunAdi === k.urunAdi)
+    if (urun) urun.adet += k.adet
+    else ay.urunler.push({ urunAdi: k.urunAdi, adet: k.adet })
+  }
+  return [...map.values()]
+    .map((ay) => ({ ...ay, urunler: ay.urunler.sort((a, b) => b.adet - a.adet) }))
+    .sort((a, b) => b.anahtar.localeCompare(a.anahtar))
+}
+
+interface UrunToplami {
+  urunAdi: string
+  adet: number
+  tutar: number
+}
+
+function urunBazliToplamOlustur(kayitlar: PortalKayit[]): UrunToplami[] {
+  const map = new Map<string, UrunToplami>()
+  for (const k of kayitlar) {
+    const mevcut = map.get(k.urunAdi) ?? { urunAdi: k.urunAdi, adet: 0, tutar: 0 }
+    mevcut.adet += k.adet
+    mevcut.tutar += k.tutar
+    map.set(k.urunAdi, mevcut)
+  }
+  return [...map.values()].sort((a, b) => b.tutar - a.tutar)
 }
 
 function hitapGoster(ad: string, adSoyad: string, hitapSekli: PortalSonuc['hitapSekli']) {
@@ -39,10 +103,15 @@ export default function PortalApp() {
   const [veri, setVeri] = useState<PortalSonuc | null>(null)
   const [pushDurum, setPushDurum] = useState<PushDurum>('izin_verilmedi')
   const [pushIsleniyor, setPushIsleniyor] = useState(false)
+  const [acikAy, setAcikAy] = useState<string | null>(null)
 
   useEffect(() => {
     pushDurumuGetir().then(setPushDurum)
   }, [])
+
+  const toplamOdenen = useMemo(() => (veri ? veri.odemeler.reduce((s, o) => s + o.tutar, 0) : 0), [veri])
+  const urunToplamlari = useMemo(() => (veri ? urunBazliToplamOlustur(veri.kayitlar) : []), [veri])
+  const aylikOzet = useMemo(() => (veri ? aylikOzetOlustur(veri.kayitlar) : []), [veri])
 
   async function handleBildirimAc() {
     setPushIsleniyor(true)
@@ -98,7 +167,7 @@ export default function PortalApp() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bakery-cream-50 px-4 py-8">
-      <div className="w-full max-w-sm">
+      <div className={`w-full ${veri ? 'max-w-lg' : 'max-w-sm'}`}>
         <div className="mb-6 text-center">
           <img src="/logo-mark.webp" alt="Başak Ekmek" className="logo-adaptive mx-auto mb-3 h-16 w-44 object-contain object-center" />
           <h1 className="text-xl font-semibold text-bakery-ink-900">Başak Ekmek</h1>
@@ -159,25 +228,140 @@ export default function PortalApp() {
               )}
             </div>
 
+            {veri.odemeler.length > 0 && (
+              <div className="rounded-2xl bg-bakery-surface p-5 shadow-lg shadow-bakery-coffee-900/10">
+                <h2 className="mb-3 text-sm font-semibold text-bakery-ink-800">Ödemeleriniz</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-bakery-cream-100 text-left text-xs text-bakery-ink-500">
+                        <th className="pb-1.5 font-medium">Tarih</th>
+                        <th className="pb-1.5 font-medium">Tutar</th>
+                        <th className="pb-1.5 font-medium">Not</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {veri.odemeler.map((o, i) => (
+                        <tr key={i} className="border-b border-bakery-cream-100 last:border-0">
+                          <td className="py-1.5 text-bakery-ink-600">{o.tarih}</td>
+                          <td className="py-1.5 font-medium text-bakery-success">{formatTutar(o.tutar)}</td>
+                          <td className="py-1.5 text-bakery-ink-500">{o.not ?? '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-3 text-right text-sm font-semibold text-bakery-ink-900">
+                  Toplam Ödediğiniz: {formatTutar(toplamOdenen)}
+                </p>
+              </div>
+            )}
+
+            {urunToplamlari.length > 0 && (
+              <div className="rounded-2xl bg-bakery-surface p-5 shadow-lg shadow-bakery-coffee-900/10">
+                <h2 className="mb-3 text-sm font-semibold text-bakery-ink-800">Ürün Bazlı Toplam (Tüm Zamanlar)</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-bakery-cream-100 text-left text-xs text-bakery-ink-500">
+                        <th className="pb-1.5 font-medium">Ürün</th>
+                        <th className="pb-1.5 font-medium">Adet</th>
+                        <th className="pb-1.5 font-medium">Tutar</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {urunToplamlari.map((u) => (
+                        <tr key={u.urunAdi} className="border-b border-bakery-cream-100 last:border-0">
+                          <td className="py-1.5 text-bakery-ink-800">{u.urunAdi}</td>
+                          <td className="py-1.5 text-bakery-ink-600">{u.adet} adet</td>
+                          <td className="py-1.5 font-medium text-bakery-ink-900">{formatTutar(u.tutar)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {aylikOzet.length > 0 && (
+              <div className="rounded-2xl bg-bakery-surface p-5 shadow-lg shadow-bakery-coffee-900/10">
+                <h2 className="mb-3 text-sm font-semibold text-bakery-ink-800">
+                  Aylık Özet <span className="font-normal text-bakery-ink-400">(detay için dokun)</span>
+                </h2>
+                <div className="space-y-1">
+                  {aylikOzet.map((ay) => {
+                    const acik = acikAy === ay.anahtar
+                    return (
+                      <div key={ay.anahtar} className="border-b border-bakery-cream-100 last:border-0">
+                        <button
+                          type="button"
+                          onClick={() => setAcikAy(acik ? null : ay.anahtar)}
+                          className="flex w-full items-center justify-between gap-2 py-2 text-left text-sm"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium text-bakery-ink-800">{ay.etiket}</p>
+                            <p className="truncate text-xs text-bakery-ink-400">
+                              {ay.urunler.map((u) => `${u.urunAdi}: ${u.adet}`).join(', ')}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <span className="font-semibold text-bakery-ink-900">{formatTutar(ay.toplam)}</span>
+                            <ChevronDown size={16} className={`text-bakery-ink-400 transition-transform ${acik ? 'rotate-180' : ''}`} />
+                          </div>
+                        </button>
+                        {acik && (
+                          <ul className="mb-2 space-y-1.5 rounded-lg bg-bakery-cream-50 p-2.5">
+                            {ay.kayitlar.map((k, i) => (
+                              <li key={i} className="flex items-center justify-between text-xs">
+                                <span className="text-bakery-ink-600">
+                                  {k.tarih} — {k.urunAdi} × {k.adet}
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                  <span className="font-medium text-bakery-ink-900">{formatTutar(k.tutar)}</span>
+                                  <DurumRozeti durum={k.durum} />
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="rounded-2xl bg-bakery-surface p-5 shadow-lg shadow-bakery-coffee-900/10">
-              <h2 className="mb-3 text-sm font-semibold text-bakery-ink-800">Son Hareketler</h2>
-              {veri.hareketler.length === 0 ? (
+              <h2 className="mb-3 text-sm font-semibold text-bakery-ink-800">Tüm İşlemler</h2>
+              {veri.kayitlar.length === 0 ? (
                 <p className="text-sm text-bakery-ink-400">Henüz hareket yok.</p>
               ) : (
-                <ul className="space-y-2">
-                  {veri.hareketler.map((h, i) => (
-                    <li key={i} className="flex items-center justify-between border-b border-bakery-cream-100 pb-2 text-sm last:border-0">
-                      <div>
-                        <p className="text-bakery-ink-800">{h.aciklama}</p>
-                        <p className="text-xs text-bakery-ink-400">{h.tarih}</p>
-                      </div>
-                      <span className={h.tur === 'odeme' ? 'font-medium text-bakery-success' : 'font-medium text-bakery-ink-900'}>
-                        {h.tur === 'odeme' ? '+ ' : ''}
-                        {formatTutar(h.tutar)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="max-h-96 overflow-y-auto overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="sticky top-0 border-b border-bakery-cream-100 bg-bakery-surface text-left text-xs text-bakery-ink-500">
+                        <th className="pb-1.5 font-medium">Tarih</th>
+                        <th className="pb-1.5 font-medium">Ürün</th>
+                        <th className="pb-1.5 font-medium">Adet</th>
+                        <th className="pb-1.5 font-medium">Tutar</th>
+                        <th className="pb-1.5 font-medium">Durum</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {veri.kayitlar.map((k, i) => (
+                        <tr key={i} className="border-b border-bakery-cream-100 last:border-0">
+                          <td className="py-1.5 text-bakery-ink-600">{k.tarih}</td>
+                          <td className="py-1.5 text-bakery-ink-800">{k.urunAdi}</td>
+                          <td className="py-1.5 text-bakery-ink-600">{k.adet}</td>
+                          <td className="py-1.5 font-medium text-bakery-ink-900">{formatTutar(k.tutar)}</td>
+                          <td className="py-1.5">
+                            <DurumRozeti durum={k.durum} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
 

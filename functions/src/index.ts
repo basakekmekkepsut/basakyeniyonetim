@@ -91,21 +91,26 @@ export const portalGiris = onCall<PortalGirisData>({ region: 'europe-west1' }, a
 
   const tarihSirala = (a: { tarih: string }, b: { tarih: string }) => b.tarih.localeCompare(a.tarih)
 
+  // Aylık özet ve "tüm zamanlar" ürün toplamı için tam geçmiş gerekiyor — bu
+  // yüzden 50/60 kaydıyla sınırlanmıyor (müşteri başına makul bir üst sınır
+  // olarak 2000 kayıt/ödeme yeterince geniş, kötüye kullanımı da engelliyor).
   const [kayitlarSnap, odemelerSnap] = await Promise.all([
-    db.collection('veresiye_kayitlar').where('musteriId', '==', musteriId).orderBy('tarih', 'desc').limit(50).get(),
-    db.collection('veresiye_odemeler').where('musteriId', '==', musteriId).orderBy('tarih', 'desc').limit(50).get()
+    db.collection('veresiye_kayitlar').where('musteriId', '==', musteriId).orderBy('tarih', 'desc').limit(2000).get(),
+    db.collection('veresiye_odemeler').where('musteriId', '==', musteriId).orderBy('tarih', 'desc').limit(2000).get()
   ])
 
-  const teslimatlar = kayitlarSnap.docs.map((d) => {
-    const v = d.data()
-    return { tarih: v.tarih as string, tur: 'teslimat' as const, aciklama: `${v.adet}× ${v.urunAdi}`, tutar: v.tutar as number, durum: v.durum as string }
-  })
-  const odemeler = odemelerSnap.docs.map((d) => {
-    const v = d.data()
-    return { tarih: v.tarih as string, tur: 'odeme' as const, aciklama: v.not || 'Ödeme', tutar: v.tutar as number, durum: 'odendi' }
-  })
-
-  const hareketler = [...teslimatlar, ...odemeler].sort(tarihSirala).slice(0, 60)
+  const kayitlar = kayitlarSnap.docs
+    .map((d) => {
+      const v = d.data()
+      return { tarih: v.tarih as string, urunAdi: v.urunAdi as string, adet: v.adet as number, tutar: v.tutar as number, durum: v.durum as string }
+    })
+    .sort(tarihSirala)
+  const odemeler = odemelerSnap.docs
+    .map((d) => {
+      const v = d.data()
+      return { tarih: v.tarih as string, tutar: v.tutar as number, not: (v.not as string) || null }
+    })
+    .sort(tarihSirala)
 
   return {
     ad: musteri.ad as string,
@@ -113,7 +118,8 @@ export const portalGiris = onCall<PortalGirisData>({ region: 'europe-west1' }, a
     hitapSekli: musteri.hitapSekli ?? null,
     veresiyeBakiye: musteri.veresiyeBakiye as number,
     unHesabi: musteri.unHesabi ?? null,
-    hareketler
+    kayitlar,
+    odemeler
   }
 })
 

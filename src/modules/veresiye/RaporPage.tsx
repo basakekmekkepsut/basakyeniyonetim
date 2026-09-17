@@ -32,6 +32,7 @@ interface MusteriSatiri {
   odemeTutar: number
   kayitSayisi: number
   unEsdeger: number
+  urunler: { urunAdi: string; adet: number }[]
 }
 
 export default function RaporPage() {
@@ -51,7 +52,7 @@ export default function RaporPage() {
     const satirGetir = (musteriId: string, musteriAdi: string) => {
       const mevcut = map.get(musteriId)
       if (mevcut) return mevcut
-      const yeni: MusteriSatiri = { musteriId, musteriAdi, teslimatTutar: 0, odemeTutar: 0, kayitSayisi: 0, unEsdeger: 0 }
+      const yeni: MusteriSatiri = { musteriId, musteriAdi, teslimatTutar: 0, odemeTutar: 0, kayitSayisi: 0, unEsdeger: 0, urunler: [] }
       map.set(musteriId, yeni)
       return yeni
     }
@@ -60,12 +61,16 @@ export default function RaporPage() {
       if (k.durum === 'veresiye') satir.teslimatTutar += k.tutar
       if (k.durum === 'un_odemeli') satir.unEsdeger += k.esdegerAdet
       satir.kayitSayisi += 1
+      // Ödeme durumundan bağımsız — "kaç ekmek aldı" sorusuna cevap, borç değil.
+      const urun = satir.urunler.find((u) => u.urunAdi === k.urunAdi)
+      if (urun) urun.adet += k.adet
+      else satir.urunler.push({ urunAdi: k.urunAdi, adet: k.adet })
     }
     for (const o of odemeler) {
       const satir = satirGetir(o.musteriId, o.musteriAdi)
       satir.odemeTutar += o.tutar
     }
-    let liste = [...map.values()]
+    let liste = [...map.values()].map((s) => ({ ...s, urunler: s.urunler.sort((a, b) => b.adet - a.adet) }))
     const q = arama.trim().toLocaleLowerCase('tr-TR')
     if (q) liste = liste.filter((s) => s.musteriAdi.toLocaleLowerCase('tr-TR').includes(q))
     return liste.sort((a, b) => b.teslimatTutar - a.teslimatTutar)
@@ -164,7 +169,12 @@ export default function RaporPage() {
           <div className="space-y-2 md:hidden">
             {musteriRaporu.map((m) => (
               <div key={m.musteriId} className="rounded-xl bg-bakery-surface p-3.5 shadow-sm shadow-bakery-coffee-900/5">
-                <p className="mb-1.5 font-medium text-bakery-ink-900">{m.musteriAdi}</p>
+                <p className="font-medium text-bakery-ink-900">{m.musteriAdi}</p>
+                {m.urunler.length > 0 && (
+                  <p className="mb-1.5 text-xs text-bakery-ink-500">
+                    {m.urunler.map((u) => `${u.urunAdi}: ${u.adet}`).join(', ')}
+                  </p>
+                )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-bakery-ink-500">Teslimat ({m.kayitSayisi} kayıt)</span>
                   <span className="font-semibold text-bakery-ink-900">
@@ -204,7 +214,14 @@ export default function RaporPage() {
               <tbody>
                 {musteriRaporu.map((m) => (
                   <tr key={m.musteriId} className="border-b border-bakery-cream-100 last:border-0">
-                    <td className="px-4 py-3 font-medium text-bakery-ink-900">{m.musteriAdi}</td>
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-bakery-ink-900">{m.musteriAdi}</p>
+                      {m.urunler.length > 0 && (
+                        <p className="text-xs text-bakery-ink-500">
+                          {m.urunler.map((u) => `${u.urunAdi}: ${u.adet}`).join(', ')}
+                        </p>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-bakery-ink-600">{m.kayitSayisi}</td>
                     <td className="px-4 py-3 font-semibold text-bakery-ink-900">
                       <TutarGoster tutar={m.teslimatTutar} />
