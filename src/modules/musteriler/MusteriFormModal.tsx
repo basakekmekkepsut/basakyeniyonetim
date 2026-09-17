@@ -102,7 +102,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
   function portalWhatsappGonder() {
     if (!mevcut) return
     const link = `${PORTAL_SITE_URL}/portal.html?kod=${mevcut.id}`
-    const mesaj = `Merhaba ${musteriHitabi(mevcut)}, hesap ekstrenizi görüntülemek için:\n${link}\nŞifreniz: ${portalSifre}`
+    const mesaj = `Merhaba ${musteriHitabi(mevcut)}, hesap ekstrenizi görüntülemek için:\n${link}\nŞifreniz: ${portalSifre}\n\nBu bir otomatik program mesajıdır.`
     const numara = telefon.replace(/\D/g, '')
     const waLink = `https://wa.me/${numara}?text=${encodeURIComponent(mesaj)}`
     window.open(waLink, '_blank')
