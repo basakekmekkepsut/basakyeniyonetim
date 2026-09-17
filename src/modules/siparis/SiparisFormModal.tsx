@@ -1,6 +1,5 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Plus, Trash2, X } from 'lucide-react'
-import MusteriSecici from '../../shared/MusteriSecici'
 import ConfirmModal from '../../shared/ConfirmModal'
 import { formatTutar } from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
@@ -22,17 +21,16 @@ interface Props {
 }
 
 function bosKalem(): SiparisKalemi {
-  return { productId: '', urunAdi: '', adet: 1, birimFiyat: 0 }
+  return { productId: '', urunAdi: '', adet: 0, birimFiyat: 0 }
 }
 
 export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKaydet, onKapat }: Props) {
   const { urunler } = useUrunler()
   const { musteriler } = useMusteriler()
   const toast = useToast()
-  const [girisModu, setGirisModu] = useState<'kayitli' | 'serbest'>('kayitli')
   const [musteriId, setMusteriId] = useState(mevcut?.musteriId ?? '')
   const [musteriAdi, setMusteriAdi] = useState(mevcut?.musteriAdi ?? '')
-  const [serbestAd, setSerbestAd] = useState('')
+  const [oneriAcik, setOneriAcik] = useState(false)
   const [adres, setAdres] = useState(mevcut?.adres ?? '')
   const [telefon, setTelefon] = useState(mevcut?.telefon ?? '')
   const [not, setNot] = useState(mevcut?.not ?? '')
@@ -45,9 +43,55 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
   const [oneriIsleniyor, setOneriIsleniyor] = useState(false)
 
   const siparisUrunleri = urunler.filter((u) => u.aktif && u.modules.includes('siparis'))
+  const siparisMusterileri = useMemo(
+    () => musteriler.filter((m) => m.aktif && m.moduller.includes('siparis')),
+    [musteriler]
+  )
   const seciliMusteri = musteriler.find((m) => m.id === musteriId)
   const unMusterisi = unHesabiAktifMi(seciliMusteri)
   const toplam = items.reduce((s, i) => s + i.adet * i.birimFiyat, 0)
+
+  // musteriId boşken serbest metin girildiği anlamına gelir — yazılan isim
+  // tam olarak kayıtlı bir müşteriyle eşleşiyorsa (öneriden seçmeden Enter'a
+  // basılmış olsa bile) o müşteri kullanılır, aksi halde "Geçici Müşteri"
+  // olarak oluşturulur (bkz. handleSubmit).
+  const eslesenMusteriler = useMemo(() => {
+    const q = musteriAdi.trim().toLocaleLowerCase('tr-TR')
+    if (!q || musteriId) return []
+    return siparisMusterileri.filter((m) => m.ad.toLocaleLowerCase('tr-TR').includes(q)).slice(0, 8)
+  }, [musteriAdi, musteriId, siparisMusterileri])
+
+  function musteriSec(m: (typeof siparisMusterileri)[number]) {
+    setMusteriId(m.id)
+    setMusteriAdi(m.ad)
+    setAdres((mevcutAdres) => mevcutAdres || m.adres)
+    setTelefon((mevcutTel) => mevcutTel || m.telefon)
+    setOneriAcik(false)
+  }
+
+  // Siparişlerin büyük çoğunluğu "Roll Ekmek" olduğu için, ürünler yüklendiğinde
+  // henüz ürün seçilmemiş satırlar bu ürünle dolduruluyor — adet KASITLI olarak
+  // boş bırakılıyor, elle girilmesi gerekiyor (bkz. Adet input'unun placeholder'ı).
+  const varsayilanUrun = useMemo(
+    () => siparisUrunleri.find((u) => u.ad.toLocaleLowerCase('tr-TR').includes('roll')),
+    [siparisUrunleri]
+  )
+  useEffect(() => {
+    if (mevcut || !varsayilanUrun) return
+    setItems((prev) =>
+      prev.map((k) =>
+        k.productId
+          ? k
+          : {
+              ...k,
+              productId: varsayilanUrun.id,
+              urunAdi: varsayilanUrun.ad,
+              birimFiyat: seciliMusteri?.ozelFiyatlar[varsayilanUrun.id] ?? varsayilanUrun.fiyat
+            }
+      )
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [varsayilanUrun])
 
   function kalemGuncelle(index: number, degisiklik: Partial<SiparisKalemi>) {
     setItems((prev) => prev.map((k, i) => (i === index ? { ...k, ...degisiklik } : k)))
@@ -60,7 +104,17 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
   }
 
   function satirEkle() {
-    setItems((prev) => [...prev, bosKalem()])
+    setItems((prev) => [
+      ...prev,
+      varsayilanUrun
+        ? {
+            productId: varsayilanUrun.id,
+            urunAdi: varsayilanUrun.ad,
+            adet: 0,
+            birimFiyat: seciliMusteri?.ozelFiyatlar[varsayilanUrun.id] ?? varsayilanUrun.fiyat
+          }
+        : bosKalem()
+    ])
   }
 
   function satirSil(index: number) {
@@ -69,12 +123,9 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (girisModu === 'kayitli' && !musteriId) {
-      setHata('Müşteri seçmelisiniz.')
-      return
-    }
-    if (girisModu === 'serbest' && !serbestAd.trim()) {
-      setHata('İsim girmelisiniz.')
+    const adTrim = musteriAdi.trim()
+    if (!adTrim) {
+      setHata('Müşteri adı girmelisiniz.')
       return
     }
     if (!teslimatTarihi) {
@@ -90,13 +141,22 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
     setGonderiliyor(true)
     try {
       let gonderilecekMusteriId = musteriId
-      let gonderilecekMusteriAdi = musteriAdi
+      let gonderilecekMusteriAdi = musteriId ? musteriAdi : adTrim
+      let serbestOlusturuldu = false
 
-      if (girisModu === 'serbest') {
-        const ad = serbestAd.trim()
-        const sonuc = await serbestMusteriBulYaOlustur(ad)
-        gonderilecekMusteriId = sonuc.id
-        gonderilecekMusteriAdi = ad
+      if (!gonderilecekMusteriId) {
+        // Öneriden tıklamadan tam eşleşen bir isim yazılmışsa (ör. Enter'a
+        // basıldıysa) kayıtlı müşteriyi kullan, aksi halde geçici müşteri oluştur.
+        const tamEslesen = siparisMusterileri.find((m) => m.ad.toLocaleLowerCase('tr-TR') === adTrim.toLocaleLowerCase('tr-TR'))
+        if (tamEslesen) {
+          gonderilecekMusteriId = tamEslesen.id
+          gonderilecekMusteriAdi = tamEslesen.ad
+        } else {
+          const sonuc = await serbestMusteriBulYaOlustur(adTrim)
+          gonderilecekMusteriId = sonuc.id
+          gonderilecekMusteriAdi = adTrim
+          serbestOlusturuldu = true
+        }
       }
 
       await onKaydet({
@@ -110,7 +170,7 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
         odemeSekli
       })
 
-      if (girisModu === 'serbest') {
+      if (serbestOlusturuldu) {
         try {
           const sayi = await musteriSiparisSayisi(gonderilecekMusteriId)
           if (sayi >= ONERI_ESIGI) {
@@ -177,56 +237,42 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
 
         <div className="space-y-4">
           <div>
-            <div className="mb-1.5 flex items-center justify-between">
-              <label className="text-sm font-medium text-bakery-ink-800">Müşteri *</label>
-              {!mevcut && (
-                <div className="flex gap-1">
-                  {(
-                    [
-                      ['kayitli', 'Kayıtlı Müşteri'],
-                      ['serbest', 'Serbest / Geçici İsim']
-                    ] as const
-                  ).map(([key, etiket]) => (
+            <label className="mb-1.5 block text-sm font-medium text-bakery-ink-800">Müşteri *</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={musteriAdi}
+                onChange={(e) => {
+                  setMusteriAdi(e.target.value)
+                  setMusteriId('')
+                }}
+                onFocus={() => setOneriAcik(true)}
+                onBlur={() => setTimeout(() => setOneriAcik(false), 150)}
+                placeholder="Müşteri adı yazın veya listeden seçin…"
+                autoComplete="off"
+                className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
+              />
+              {oneriAcik && eslesenMusteriler.length > 0 && (
+                <div className="absolute z-40 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-bakery-cream-200 bg-bakery-surface shadow-lg">
+                  {eslesenMusteriler.map((m) => (
                     <button
                       type="button"
-                      key={key}
-                      onClick={() => setGirisModu(key)}
-                      className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                        girisModu === key ? 'bg-bakery-amber-600 text-white' : 'bg-bakery-cream-100 text-bakery-ink-600 hover:bg-bakery-cream-200'
-                      }`}
+                      key={m.id}
+                      onClick={() => musteriSec(m)}
+                      className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-bakery-cream-50"
                     >
-                      {etiket}
+                      <span>{m.ad}</span>
+                      {m.telefon && <span className="text-bakery-ink-400">{m.telefon}</span>}
                     </button>
                   ))}
                 </div>
               )}
             </div>
-
-            {girisModu === 'kayitli' ? (
-              <MusteriSecici
-                modul="siparis"
-                seciliMusteriId={musteriId || null}
-                onSec={(m) => {
-                  setMusteriId(m.id)
-                  setMusteriAdi(m.ad)
-                  setAdres((mevcutAdres) => mevcutAdres || m.adres)
-                  setTelefon((mevcutTel) => mevcutTel || m.telefon)
-                }}
-              />
-            ) : (
-              <div>
-                <input
-                  type="text"
-                  value={serbestAd}
-                  onChange={(e) => setSerbestAd(e.target.value)}
-                  placeholder="Örn. Yoldan geçen müşteri, Ahmet Usta'nın çırağı…"
-                  className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
-                />
-                <p className="mt-1 text-xs text-bakery-ink-500">
-                  Kayıtlı olmayan/tek seferlik bir isim — "Geçici Müşteri" olarak kaydedilir. Aynı isimle sık sipariş
-                  alınırsa sistem kalıcı müşteri yapmayı önerecektir.
-                </p>
-              </div>
+            {!musteriId && musteriAdi.trim() && (
+              <p className="mt-1 text-xs text-bakery-ink-500">
+                Kayıtlı bir müşteriyle eşleşmezse "Geçici Müşteri" olarak kaydedilir. Aynı isimle sık sipariş alınırsa
+                sistem kalıcı müşteri yapmayı önerecektir.
+              </p>
             )}
           </div>
 
@@ -282,8 +328,9 @@ export default function SiparisFormModal({ mevcut, baslik, varsayilanTarih, onKa
                   <input
                     type="number"
                     min={1}
-                    value={kalem.adet}
-                    onChange={(e) => kalemGuncelle(i, { adet: Number(e.target.value) })}
+                    value={kalem.adet || ''}
+                    onChange={(e) => kalemGuncelle(i, { adet: Number(e.target.value) || 0 })}
+                    placeholder="Adet"
                     className="w-16 rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-2 py-2 text-center text-sm outline-none focus:border-bakery-amber-500"
                   />
                   <input

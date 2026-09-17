@@ -92,6 +92,11 @@ export default function SiparislerPage() {
 
   const filtrelenmis = useMemo(() => {
     let liste = siparisler
+    // Şablondan üretilmiş 'planlandi' taslaklar, teslimat günü yaklaşana kadar
+    // (yarına kadar) listede gösterilmez — aksi halde haftalar/aylar öncesinden
+    // toplu üretilmiş taslaklar listeyi anlamsızca kalabalıklaştırıyordu.
+    const yarin = yarinStr()
+    liste = liste.filter((s) => s.durum !== 'planlandi' || s.teslimatTarihi <= yarin)
     if (urunFiltre !== 'hepsi') liste = liste.filter((s) => s.items.some((it) => it.productId === urunFiltre))
     const q = arama.trim().toLocaleLowerCase('tr-TR')
     if (q) liste = liste.filter((s) => s.musteriAdi.toLocaleLowerCase('tr-TR').includes(q))
