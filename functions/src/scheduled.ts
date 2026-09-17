@@ -165,11 +165,14 @@ async function siparisMesajiOlustur(tarih: string): Promise<string> {
   const siparisler = snap.docs.map((d) => d.data() as SiparisOzet).filter((s) => s.durum !== 'iptal')
   if (siparisler.length === 0) return ''
 
+  const urunToplamlari = new Map<string, number>()
   const satirlar = siparisler.map((s) => {
     const urunler = s.items.map((it) => `${it.adet}x ${it.urunAdi}`).join(', ')
+    for (const it of s.items) urunToplamlari.set(it.urunAdi, (urunToplamlari.get(it.urunAdi) ?? 0) + it.adet)
     return `• ${s.musteriAdi} — ${urunler}`
   })
-  return `📋 ${tarih} Sipariş Listesi\n\n${satirlar.join('\n')}`
+  const toplamSatirlari = [...urunToplamlari.entries()].map(([urun, adet]) => `${urun}: ${adet} adet`)
+  return [`📋 ${tarih} Sipariş Listesi`, '', ...satirlar, '', 'Ürün bazında toplam:', ...toplamSatirlari].join('\n')
 }
 
 // --- Zamanlanmış görevler ---
