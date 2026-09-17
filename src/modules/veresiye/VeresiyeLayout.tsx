@@ -1,18 +1,24 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import { isAdmin, useSession } from '../../lib/session'
 
 const SEKMELER = [
-  { yol: '/veresiye', etiket: 'Özet' },
-  { yol: '/veresiye/musteriler', etiket: 'Müşteriler' },
-  { yol: '/veresiye/gunluk-giris', etiket: 'Günlük Giriş' },
-  { yol: '/veresiye/un-hesapli-giris', etiket: 'Un Hesaplı Giriş' },
-  { yol: '/veresiye/giris-sablonu', etiket: 'Giriş Şablonu' }
+  { yol: '/veresiye', etiket: 'Özet', sadeceAdmin: false },
+  { yol: '/veresiye/musteriler', etiket: 'Müşteriler', sadeceAdmin: false },
+  { yol: '/veresiye/rapor', etiket: 'Rapor', sadeceAdmin: true },
+  { yol: '/veresiye/gunluk-giris', etiket: 'Günlük Giriş', sadeceAdmin: false },
+  { yol: '/veresiye/un-hesapli-giris', etiket: 'Un Hesaplı Giriş', sadeceAdmin: false },
+  { yol: '/veresiye/giris-sablonu', etiket: 'Giriş Şablonu', sadeceAdmin: false }
 ]
 
 export default function VeresiyeLayout() {
+  const session = useSession()
+  const admin = session.status === 'signed-in' && isAdmin(session.profile)
+  const sekmeler = SEKMELER.filter((s) => !s.sadeceAdmin || admin)
+
   return (
     <div className="space-y-4">
       <nav className="flex gap-1 overflow-x-auto border-b border-bakery-cream-200">
-        {SEKMELER.map((s) => (
+        {sekmeler.map((s) => (
           <NavLink
             key={s.yol}
             to={s.yol}

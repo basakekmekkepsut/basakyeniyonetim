@@ -1,7 +1,17 @@
 import { CalendarDays } from 'lucide-react'
-import { endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from 'date-fns'
+import { endOfMonth, endOfWeek, format, startOfMonth, startOfWeek, subMonths, subWeeks } from 'date-fns'
 
-export type DonemAnahtari = 'yaklasan' | 'bugun' | 'yarin' | 'dun' | 'bu_hafta' | 'bu_ay' | 'ozel' | 'tumu'
+export type DonemAnahtari =
+  | 'yaklasan'
+  | 'bugun'
+  | 'yarin'
+  | 'dun'
+  | 'bu_hafta'
+  | 'gecen_hafta'
+  | 'bu_ay'
+  | 'gecen_ay'
+  | 'ozel'
+  | 'tumu'
 
 export interface DonemAraligi {
   baslangic: string | null
@@ -34,8 +44,19 @@ export function donemAraligiHesapla(donem: DonemAnahtari, ozelBaslangic?: string
         baslangic: gunStr(startOfWeek(bugun, { weekStartsOn: 1 })),
         bitis: gunStr(endOfWeek(bugun, { weekStartsOn: 1 }))
       }
+    case 'gecen_hafta': {
+      const gecenHafta = subWeeks(bugun, 1)
+      return {
+        baslangic: gunStr(startOfWeek(gecenHafta, { weekStartsOn: 1 })),
+        bitis: gunStr(endOfWeek(gecenHafta, { weekStartsOn: 1 }))
+      }
+    }
     case 'bu_ay':
       return { baslangic: gunStr(startOfMonth(bugun)), bitis: gunStr(endOfMonth(bugun)) }
+    case 'gecen_ay': {
+      const gecenAy = subMonths(bugun, 1)
+      return { baslangic: gunStr(startOfMonth(gecenAy)), bitis: gunStr(endOfMonth(gecenAy)) }
+    }
     case 'ozel':
       return { baslangic: ozelBaslangic || null, bitis: ozelBitis || null }
     case 'tumu':
