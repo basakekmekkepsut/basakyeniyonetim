@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useOkullar, okulGuncelle, yeniHatId } from './data'
+import { useOkullar, okulGuncelle, yeniHatId, okullariGrupla } from './data'
 import { useOkulOrders, useOkulKapanis, okulSiparisMiktariGuncelle, varsayilanSiparisleriHazirla } from './orderData'
 import { useUrunler } from '../urunler/data'
 import { useMusteriler } from '../musteriler/data'
@@ -81,13 +81,7 @@ export default function SiparisPage() {
   }
 
   const aktifOkullar = okullar.filter((o) => o.lines.some((l) => l.aktif))
-  const gruplar = new Map<string, typeof aktifOkullar>()
-  for (const okul of aktifOkullar) {
-    // Aynı Veresiye müşterisine bağlı birden fazla okul (ör. bir kurumun
-    // birkaç okulu) burada doğal olarak tek grupta toplanır.
-    const key = okul.musteriId ?? '__bagimsiz__'
-    gruplar.set(key, [...(gruplar.get(key) ?? []), okul])
-  }
+  const gruplar = okullariGrupla(aktifOkullar, musteriler)
 
   return (
     <div className="space-y-4">
@@ -113,28 +107,17 @@ export default function SiparisPage() {
         <BosDurum baslik="Aktif hat tanımlı okul yok" aciklama="Okullar sekmesinden okul ve hat ekleyin." />
       ) : (
         <div className="space-y-4">
-          {[...gruplar.entries()].map(([key, okullarGrup]) => {
-            const musteri = key === '__bagimsiz__' ? null : musteriler.find((m) => m.id === key)
-            return (
-              <div key={key} className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
-                <h3 className="mb-3 text-sm font-semibold text-bakery-ink-700">
-                  {musteri ? musteri.ad : 'Bağımsız Okullar'}
-                </h3>
+          {gruplar.map((grup) => (
+              <div key={grup.anahtar} className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
+                <h3 className="mb-3 text-sm font-semibold text-bakery-ink-700">{grup.baslik}</h3>
                 <div className="space-y-3">
-                  {okullarGrup.map((okul) => {
+                  {grup.okullar.map((okul) => {
                     const eklenebilirUrunler = okulUrunleri.filter(
                       (u) => !okul.lines.some((l) => l.productId === u.id)
                     )
                     return (
                       <div key={okul.id}>
-                        <div className="mb-1.5 flex items-center gap-1.5">
-                          <p className="text-sm font-medium text-bakery-ink-900">{okul.ad}</p>
-                          {okul.okulDegil && (
-                            <span className="rounded-full bg-bakery-coffee-100 px-1.5 py-0.5 text-[10px] font-medium text-bakery-ink-500">
-                              Okul Dışı
-                            </span>
-                          )}
-                        </div>
+                        <p className="mb-1.5 text-sm font-medium text-bakery-ink-900">{okul.ad}</p>
                         <div className="space-y-1.5 pl-2">
                           {okul.lines
                             .filter((l) => l.aktif)
@@ -182,8 +165,7 @@ export default function SiparisPage() {
                   })}
                 </div>
               </div>
-            )
-          })}
+          ))}
         </div>
       )}
     </div>

@@ -91,7 +91,8 @@ export default function GirisSablonuPage() {
         <p className="mt-1 text-sm text-bakery-ink-500">
           Hangi müşterinin hangi ekmeği düzenli aldığını burada bir kere ayarla — Günlük Giriş ekranında her gün sadece adetleri
           gireceksin, müşteri/ürün seçmene gerek kalmayacak. Bir müşteri geçici olarak almıyorsa satırı silmeye gerek yok, tikini
-          kaldır (pasif yap), tekrar aldığında tekrar işaretlersin.
+          kaldır (pasif yap), tekrar aldığında tekrar işaretlersin. Bir müşterinin TÜM satırlarını pasif yaparsan (ör. artık
+          siparişleri Okul modülü üzerinden otomatik yansıyor), o müşteri Günlük Giriş ekranından tamamen kaybolur.
         </p>
       </div>
 

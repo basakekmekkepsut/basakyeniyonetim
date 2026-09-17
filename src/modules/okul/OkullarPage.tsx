@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ChevronDown, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useOkullar, okulEkle, okulGuncelle, okulSil } from './data'
+import { useOkullar, okulEkle, okulGuncelle, okulSil, okullariGrupla } from './data'
 import { useMusteriler } from '../musteriler/data'
 import OkulFormModal from './OkulFormModal'
 import BosDurum from '../../shared/BosDurum'
@@ -12,6 +12,7 @@ export default function OkullarPage() {
   const { okullar, yukleniyor, hata } = useOkullar()
   const { musteriler } = useMusteriler()
   const toast = useToast()
+  const gruplar = okullariGrupla(okullar, musteriler)
   const [acikId, setAcikId] = useState<string | null>(null)
   const [formAcik, setFormAcik] = useState(false)
   const [duzenlenen, setDuzenlenen] = useState<OkulSchool | undefined>()
@@ -62,69 +63,69 @@ export default function OkullarPage() {
       ) : okullar.length === 0 ? (
         <BosDurum baslik="Henüz okul eklenmedi" aciklama="İlk okulu eklemek için yukarıdaki butonu kullanın." />
       ) : (
-        <div className="space-y-2">
-          {okullar.map((o) => {
-            const musteri = musteriler.find((m) => m.id === o.musteriId)
-            const acik = acikId === o.id
-            return (
-              <div key={o.id} className="rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
-                <button
-                  onClick={() => setAcikId(acik ? null : o.id)}
-                  className="flex w-full items-center justify-between px-4 py-3 text-left"
-                >
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <p className="font-medium text-bakery-ink-900">{o.ad}</p>
-                      {o.okulDegil && (
-                        <span className="rounded-full bg-bakery-coffee-100 px-2 py-0.5 text-xs font-medium text-bakery-ink-500">
-                          Okul Dışı
-                        </span>
+        <div className="space-y-5">
+          {gruplar.map((grup) => (
+            <div key={grup.anahtar}>
+              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-bakery-ink-500">{grup.baslik}</h3>
+              <div className="space-y-2">
+                {grup.okullar.map((o) => {
+                  const musteri = musteriler.find((m) => m.id === o.musteriId)
+                  const acik = acikId === o.id
+                  return (
+                    <div key={o.id} className="rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
+                      <button
+                        onClick={() => setAcikId(acik ? null : o.id)}
+                        className="flex w-full items-center justify-between px-4 py-3 text-left"
+                      >
+                        <div>
+                          <p className="font-medium text-bakery-ink-900">{o.ad}</p>
+                          <p className="text-xs text-bakery-ink-500">
+                            {musteri ? musteri.ad : 'Veresiye hesabı bağlı değil'} · {o.lines.length} hat
+                          </p>
+                        </div>
+                        <ChevronDown size={18} className={`text-bakery-ink-400 transition ${acik ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {acik && (
+                        <div className="border-t border-bakery-cream-100 px-4 py-3">
+                          {o.lines.length === 0 ? (
+                            <p className="text-sm text-bakery-ink-400">Hat tanımlı değil.</p>
+                          ) : (
+                            <ul className="mb-3 space-y-1 text-sm text-bakery-ink-600">
+                              {o.lines.map((l) => (
+                                <li key={l.id}>
+                                  {l.urunAdi} — {l.adet} adet/gün {!l.aktif && <em className="text-bakery-ink-400">(pasif)</em>}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <div className="flex justify-end gap-1">
+                            <button
+                              onClick={() => {
+                                setDuzenlenen(o)
+                                setFormAcik(true)
+                              }}
+                              className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
+                              aria-label="Düzenle"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button
+                              onClick={() => setSilinecek(o)}
+                              className="rounded-lg p-1.5 text-bakery-danger hover:bg-bakery-danger/10"
+                              aria-label="Sil"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
-                    <p className="text-xs text-bakery-ink-500">
-                      {musteri ? musteri.ad : 'Veresiye hesabı bağlı değil'} · {o.lines.length} hat
-                    </p>
-                  </div>
-                  <ChevronDown size={18} className={`text-bakery-ink-400 transition ${acik ? 'rotate-180' : ''}`} />
-                </button>
-
-                {acik && (
-                  <div className="border-t border-bakery-cream-100 px-4 py-3">
-                    {o.lines.length === 0 ? (
-                      <p className="text-sm text-bakery-ink-400">Hat tanımlı değil.</p>
-                    ) : (
-                      <ul className="mb-3 space-y-1 text-sm text-bakery-ink-600">
-                        {o.lines.map((l) => (
-                          <li key={l.id}>
-                            {l.urunAdi} — {l.adet} adet/gün {!l.aktif && <em className="text-bakery-ink-400">(pasif)</em>}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <div className="flex justify-end gap-1">
-                      <button
-                        onClick={() => {
-                          setDuzenlenen(o)
-                          setFormAcik(true)
-                        }}
-                        className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
-                        aria-label="Düzenle"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => setSilinecek(o)}
-                        className="rounded-lg p-1.5 text-bakery-danger hover:bg-bakery-danger/10"
-                        aria-label="Sil"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  )
+                })}
               </div>
-            )
-          })}
+            </div>
+          ))}
         </div>
       )}
 

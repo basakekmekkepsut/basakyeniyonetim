@@ -98,6 +98,16 @@ export default function GunlukGirisPage() {
     return sablonlar.find((s) => s.musteriId === musteriId)?.kalemler.filter((k) => k.aktif !== false) ?? []
   }
 
+  // Giriş Şablonu'nda bir müşterinin TÜM kalemleri bilerek pasif yapılmışsa
+  // (ör. artık Okul modülü üzerinden otomatik yansıyan bir müşteri), bunu
+  // "şablonu yok, tüm ürünleri göster"le KARIŞTIRMAYIP müşteriyi Günlük
+  // Giriş'ten tamamen çıkarıyoruz — aksi halde Ayarlar > Müşteriler'deki "sık
+  // ürünler" ayarına düşüp yine de kart olarak görünmeye devam ediyordu.
+  function tumKalemleriPasif(musteriId: string): boolean {
+    const sablon = sablonlar.find((s) => s.musteriId === musteriId)
+    return Boolean(sablon && sablon.kalemler.length > 0 && musterininAktifKalemleri(musteriId).length === 0)
+  }
+
   const veresiyeMusterileri = useMemo(() => {
     const siraGetir = (m: Musteri) => {
       const kalemler = musterininAktifKalemleri(m.id)
@@ -105,7 +115,7 @@ export default function GunlukGirisPage() {
       return Math.min(...kalemler.map((k) => k.sira ?? 0))
     }
     return musteriler
-      .filter((m) => m.aktif && m.moduller.includes('veresiye'))
+      .filter((m) => m.aktif && m.moduller.includes('veresiye') && !tumKalemleriPasif(m.id))
       .sort((a, b) => {
         const sa = siraGetir(a)
         const sb = siraGetir(b)
