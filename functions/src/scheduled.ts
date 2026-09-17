@@ -23,13 +23,13 @@ function gunEkle(tarihStr: string, gun: number): string {
   return dt.toISOString().slice(0, 10)
 }
 
-const AY_ADLARI = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
 const GUN_ADLARI = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
 
-function tarihBaslikGoster(tarihStr: string): string {
+/** "2026-09-19" -> "2026-09-19 Cumartesi" */
+function tarihGunAdiIle(tarihStr: string): string {
   const [y, m, d] = tarihStr.split('-').map(Number)
   const tarih = new Date(Date.UTC(y, m - 1, d))
-  return `${d} ${AY_ADLARI[m - 1]} ${GUN_ADLARI[tarih.getUTCDay()]}`
+  return `${tarihStr} ${GUN_ADLARI[tarih.getUTCDay()]}`
 }
 
 // --- Telegram yardımcıları ---
@@ -148,7 +148,7 @@ async function okulMesajiOlustur(tarih: string): Promise<string> {
   if (satirlar.length === 0) return ''
 
   const toplamSatirlari = [...urunToplamlari.entries()].map(([urun, adet]) => `${urun}: ${adet} adet`)
-  return [`Ekmek Siparişi — ${tarihBaslikGoster(tarih)}`, '', ...satirlar, '', 'Ürün bazında toplam:', ...toplamSatirlari].join('\n')
+  return [`Ekmek Siparişi — ${tarihGunAdiIle(tarih)}`, '', ...satirlar, '', 'Ürün bazında toplam:', ...toplamSatirlari].join('\n')
 }
 
 // --- Sipariş (müşteri) mesajı (bkz. src/modules/siparis/MesajPage.tsx siparisMesajOlustur ile aynı format) ---
@@ -176,7 +176,7 @@ async function siparisMesajiOlustur(tarih: string): Promise<string> {
     return `• ${s.musteriAdi} — ${urunler}`
   })
   const toplamSatirlari = [...urunToplamlari.entries()].map(([urun, adet]) => `${urun}: ${adet} adet`)
-  return [`📋 ${tarih} Sipariş Listesi`, '', ...satirlar, '', 'Ürün bazında toplam:', ...toplamSatirlari].join('\n')
+  return [`📋 ${tarihGunAdiIle(tarih)} Sipariş Listesi`, '', ...satirlar, '', 'Ürün bazında toplam:', ...toplamSatirlari].join('\n')
 }
 
 // --- Zamanlanmış görevler ---

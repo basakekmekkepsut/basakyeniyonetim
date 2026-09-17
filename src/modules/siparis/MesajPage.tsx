@@ -3,6 +3,7 @@ import { MessageCircle } from 'lucide-react'
 import { useSiparisler } from './data'
 import BosDurum from '../../shared/BosDurum'
 import TelegramGonderButonu from '../../shared/TelegramGonderButonu'
+import { tarihGunAdiIle } from '../../shared/tarih'
 import type { Siparis } from '../../lib/types'
 
 function bugunStr() {
@@ -26,7 +27,7 @@ function siparisMesajOlustur(tarih: string, siparisler: Siparis[]): string {
     return `• ${s.musteriAdi} — ${urunler}`
   })
   const toplamSatirlari = [...urunToplamlari.entries()].map(([urun, adet]) => `${urun}: ${adet} adet`)
-  return [`📋 ${tarih} Sipariş Listesi`, '', ...satirlar, '', 'Ürün bazında toplam:', ...toplamSatirlari].join('\n')
+  return [`📋 ${tarihGunAdiIle(tarih)} Sipariş Listesi`, '', ...satirlar, '', 'Ürün bazında toplam:', ...toplamSatirlari].join('\n')
 }
 
 function waAc(mesaj: string) {

@@ -4,21 +4,13 @@ import { useOkullar } from './data'
 import { useOkulOrders } from './orderData'
 import BosDurum from '../../shared/BosDurum'
 import TelegramGonderButonu from '../../shared/TelegramGonderButonu'
+import { tarihGunAdiIle } from '../../shared/tarih'
 import type { OkulOrder, OkulSchool } from '../../lib/types'
 
 function yarinStr() {
   const d = new Date()
   d.setDate(d.getDate() + 1)
   return d.toISOString().slice(0, 10)
-}
-
-const AY_ADLARI = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
-const GUN_ADLARI = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
-
-function tarihBaslikGoster(tarihStr: string): string {
-  const [y, m, d] = tarihStr.split('-').map(Number)
-  const tarih = new Date(y, m - 1, d)
-  return `${d} ${AY_ADLARI[m - 1]} ${GUN_ADLARI[tarih.getDay()]}`
 }
 
 function okulMesajOlustur(tarih: string, okullar: OkulSchool[], orders: OkulOrder[]): string {
@@ -42,7 +34,7 @@ function okulMesajOlustur(tarih: string, okullar: OkulSchool[], orders: OkulOrde
   const toplamSatirlari = [...urunToplamlari.entries()].map(([urun, adet]) => `${urun}: ${adet} adet`)
 
   return [
-    `Ekmek Siparişi — ${tarihBaslikGoster(tarih)}`,
+    `Ekmek Siparişi — ${tarihGunAdiIle(tarih)}`,
     '',
     ...satirlar,
     '',

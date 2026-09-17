@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Minus, Plus } from 'lucide-react'
 import { httpsCallable } from 'firebase/functions'
+import { doc, getDoc } from 'firebase/firestore'
 import { useMusteriler } from '../musteriler/data'
 import { useUrunler } from '../urunler/data'
 import { useVeresiyeSablonlar } from './sablonData'
@@ -11,8 +12,10 @@ import { formatTutar } from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
 import { useSession } from '../../lib/session'
 import { unHesabiAktifMi } from '../../shared/unHesabi'
-import { requireFunctions } from '../../lib/firebase'
-import type { Musteri } from '../../lib/types'
+import { requireDb, requireFunctions } from '../../lib/firebase'
+import { sendTelegramNotification } from '../../shared/telegram'
+import { tarihGunAdiIle } from '../../shared/tarih'
+import type { Musteri, TelegramAyarlari } from '../../lib/types'
 
 function bugunStr() {
   return new Date().toISOString().slice(0, 10)
@@ -40,15 +43,24 @@ async function bildirimGonder(
   }
   if (satirlar.length === 0) return
 
-  const ozet = `${tarih} — ${satirlar.length} satır, toplam ${formatTutar(toplam)}`
-  const govde = [ozet, '', '📦 Yeni Kayıt', ...satirlar.slice(0, 20)].join('\n')
+  const baslik = '📝 Günlük Giriş Kaydedildi'
+  const ozet = `${tarihGunAdiIle(tarih)} — ${satirlar.length} satır, toplam ${formatTutar(toplam)}`
+  const govde = [ozet, '', '📦 Yeni Kayıt', ...satirlar].join('\n')
 
   try {
     const cagir = httpsCallable<{ baslik: string; govde: string }, { basarili: boolean }>(
       requireFunctions(),
       'veresiyeGirisBildirimGonder'
     )
-    await cagir({ baslik: '📝 Günlük Giriş Kaydedildi', govde })
+    await cagir({ baslik, govde: [ozet, '', '📦 Yeni Kayıt', ...satirlar.slice(0, 20)].join('\n') })
+  } catch {
+    // yut — kayıt zaten başarıyla tamamlandı
+  }
+
+  try {
+    const ayarlarSnap = await getDoc(doc(requireDb(), 'settings', 'telegram'))
+    const chatId = (ayarlarSnap.data() as TelegramAyarlari | undefined)?.chatIds?.veresiye
+    if (chatId) await sendTelegramNotification(chatId, `${baslik}\n\n${govde}`)
   } catch {
     // yut — kayıt zaten başarıyla tamamlandı
   }
