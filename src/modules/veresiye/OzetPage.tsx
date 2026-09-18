@@ -69,7 +69,7 @@ export default function OzetPage() {
   const session = useSession()
   const toast = useToast()
 
-  const [donem, setDonem] = useState<DonemAnahtari>('bu_ay')
+  const [donem, setDonem] = useState<DonemAnahtari>('bugun')
   const [ozelBaslangic, setOzelBaslangic] = useState(bugunStr())
   const [ozelBitis, setOzelBitis] = useState(bugunStr())
   const [musteriId, setMusteriId] = useState<string | null>(null)

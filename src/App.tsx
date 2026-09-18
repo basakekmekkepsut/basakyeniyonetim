@@ -40,7 +40,10 @@ const TelegramAyarlariPage = lazy(() => import('./modules/ayarlar/telegram/Teleg
 const HaftalikLogPage = lazy(() => import('./modules/ayarlar/HaftalikLogPage'))
 const YedeklemePage = lazy(() => import('./modules/ayarlar/YedeklemePage'))
 
-const MODUL_SIRASI: Modul[] = ['siparis', 'veresiye', 'okul']
+// Uygulama açılışında varsayılan olarak Veresiye > Özet'e iniliyor (bkz.
+// ilkModul) — modülü olmayan kullanıcı için sıradaki ilk erişilebilir modüle
+// düşer. Bu sıra, alt gezinme çubuğunun görsel sırasını ETKİLEMEZ (bkz. Layout.tsx).
+const MODUL_SIRASI: Modul[] = ['veresiye', 'siparis', 'okul']
 
 export default function App() {
   if (!isFirebaseConfigured) return <ConfigMissing />
