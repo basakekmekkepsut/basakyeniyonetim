@@ -74,7 +74,7 @@ export default function OzetPage() {
   const [ozelBitis, setOzelBitis] = useState(bugunStr())
   const [musteriId, setMusteriId] = useState<string | null>(null)
   const [gorunum, setGorunum] = useState<'teslimatlar' | 'odemeler'>('teslimatlar')
-  const [kaynakFiltre, setKaynakFiltre] = useState<'tumu' | 'siparis' | 'veresiye'>('tumu')
+  const [kaynakFiltre, setKaynakFiltre] = useState<'tumu' | 'siparis' | 'veresiye'>('veresiye')
   const [grafikAcik, setGrafikAcik] = useState(false)
 
   const [kayitFormAcik, setKayitFormAcik] = useState(false)

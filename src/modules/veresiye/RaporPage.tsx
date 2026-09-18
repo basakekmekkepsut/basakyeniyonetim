@@ -7,6 +7,7 @@ import TutarGoster, { formatTutar } from '../../shared/TutarGoster'
 import BosDurum from '../../shared/BosDurum'
 import DurumRozeti from '../../shared/DurumRozeti'
 import { isAdmin, useSession } from '../../lib/session'
+import { anaUrunAdi } from '../../shared/urunAdi'
 import type { VeresiyeKaydi, VeresiyeOdeme } from '../../lib/types'
 
 function bugunStr() {
@@ -41,6 +42,7 @@ interface MusteriSatiri {
   kayitSayisi: number
   unEsdeger: number
   urunler: UrunToplami[]
+  kaynakUrunleri: UrunToplami[]
   kayitlarListesi: VeresiyeKaydi[]
   odemelerListesi: VeresiyeOdeme[]
 }
@@ -73,6 +75,7 @@ export default function RaporPage() {
         kayitSayisi: 0,
         unEsdeger: 0,
         urunler: [],
+        kaynakUrunleri: [],
         kayitlarListesi: [],
         odemelerListesi: []
       }
@@ -86,12 +89,24 @@ export default function RaporPage() {
       satir.kayitSayisi += 1
       satir.kayitlarListesi.push(k)
       // Ödeme durumundan bağımsız — "kaç ekmek aldı" sorusuna cevap, borç değil.
-      const urun = satir.urunler.find((u) => u.urunAdi === k.urunAdi)
-      if (urun) {
-        urun.adet += k.adet
-        urun.tutar += k.tutar
+      // Okul modülünden gelen kayıtlarda urunAdi "{okul} — {ürün}" biçimindedir
+      // (bir veresiye hesabına birden çok okul bağlıysa, ör. "Yeniçeri") — bu
+      // yüzden gerçek ürün toplamı ANA ürün adına göre, kaynak detayı ise ham
+      // urunAdi'ye göre ayrı ayrı tutuluyor.
+      const anaAd = anaUrunAdi(k.urunAdi)
+      const anaUrun = satir.urunler.find((u) => u.urunAdi === anaAd)
+      if (anaUrun) {
+        anaUrun.adet += k.adet
+        anaUrun.tutar += k.tutar
       } else {
-        satir.urunler.push({ urunAdi: k.urunAdi, adet: k.adet, tutar: k.tutar })
+        satir.urunler.push({ urunAdi: anaAd, adet: k.adet, tutar: k.tutar })
+      }
+      const kaynakUrun = satir.kaynakUrunleri.find((u) => u.urunAdi === k.urunAdi)
+      if (kaynakUrun) {
+        kaynakUrun.adet += k.adet
+        kaynakUrun.tutar += k.tutar
+      } else {
+        satir.kaynakUrunleri.push({ urunAdi: k.urunAdi, adet: k.adet, tutar: k.tutar })
       }
     }
     for (const o of odemeler) {
@@ -102,6 +117,7 @@ export default function RaporPage() {
     let liste = [...map.values()].map((s) => ({
       ...s,
       urunler: [...s.urunler].sort((a, b) => b.tutar - a.tutar),
+      kaynakUrunleri: [...s.kaynakUrunleri].sort((a, b) => b.tutar - a.tutar),
       kayitlarListesi: [...s.kayitlarListesi].sort(tarihSirala),
       odemelerListesi: [...s.odemelerListesi].sort(tarihSirala)
     }))
@@ -261,6 +277,34 @@ export default function RaporPage() {
                               </thead>
                               <tbody>
                                 {m.urunler.map((u) => (
+                                  <tr key={u.urunAdi} className="border-t border-bakery-cream-100">
+                                    <td className="px-2.5 py-1.5 text-bakery-ink-800">{u.urunAdi}</td>
+                                    <td className="px-2.5 py-1.5 text-bakery-ink-600">{u.adet} adet</td>
+                                    <td className="px-2.5 py-1.5 font-medium text-bakery-ink-900">{formatTutar(u.tutar)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {m.kaynakUrunleri.length > m.urunler.length && (
+                        <div>
+                          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-bakery-ink-500">
+                            Kaynak Bazlı Detay
+                          </h3>
+                          <div className="overflow-x-auto rounded-lg bg-bakery-cream-50">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="text-left text-xs text-bakery-ink-500">
+                                  <th className="px-2.5 py-1.5 font-medium">Kaynak — Ürün</th>
+                                  <th className="px-2.5 py-1.5 font-medium">Adet</th>
+                                  <th className="px-2.5 py-1.5 font-medium">Tutar</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {m.kaynakUrunleri.map((u) => (
                                   <tr key={u.urunAdi} className="border-t border-bakery-cream-100">
                                     <td className="px-2.5 py-1.5 text-bakery-ink-800">{u.urunAdi}</td>
                                     <td className="px-2.5 py-1.5 text-bakery-ink-600">{u.adet} adet</td>

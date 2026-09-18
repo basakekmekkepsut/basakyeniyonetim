@@ -6,6 +6,7 @@ import { formatTutar } from '../shared/TutarGoster'
 import { cuvalGoster } from '../shared/unHesabi'
 import { portalBildirimleriEtkinlestir, pushDurumuGetir, type PushDurum } from '../shared/pushBildirimleri'
 import DurumRozeti from '../shared/DurumRozeti'
+import { anaUrunAdi } from '../shared/urunAdi'
 import type { VeresiyeDurumu } from '../lib/types'
 
 interface PortalKayit {
@@ -61,9 +62,14 @@ function aylikOzetOlustur(kayitlar: PortalKayit[]): AylikOzet[] {
     }
     ay.toplam += k.tutar
     ay.kayitlar.push(k)
-    const urun = ay.urunler.find((u) => u.urunAdi === k.urunAdi)
+    // Okul modülünden gelen kayıtlarda urunAdi "{okul} — {ürün}" biçiminde
+    // olabilir (bir veresiye hesabına birden çok okul bağlıysa) — özet ürün
+    // adı burada ANA ürün adına göre toplanır, kayıt satırları ise ham adıyla
+    // (bkz. shared/urunAdi.ts).
+    const anaAd = anaUrunAdi(k.urunAdi)
+    const urun = ay.urunler.find((u) => u.urunAdi === anaAd)
     if (urun) urun.adet += k.adet
-    else ay.urunler.push({ urunAdi: k.urunAdi, adet: k.adet })
+    else ay.urunler.push({ urunAdi: anaAd, adet: k.adet })
   }
   return [...map.values()]
     .map((ay) => ({ ...ay, urunler: ay.urunler.sort((a, b) => b.adet - a.adet) }))
@@ -79,10 +85,11 @@ interface UrunToplami {
 function urunBazliToplamOlustur(kayitlar: PortalKayit[]): UrunToplami[] {
   const map = new Map<string, UrunToplami>()
   for (const k of kayitlar) {
-    const mevcut = map.get(k.urunAdi) ?? { urunAdi: k.urunAdi, adet: 0, tutar: 0 }
+    const anaAd = anaUrunAdi(k.urunAdi)
+    const mevcut = map.get(anaAd) ?? { urunAdi: anaAd, adet: 0, tutar: 0 }
     mevcut.adet += k.adet
     mevcut.tutar += k.tutar
-    map.set(k.urunAdi, mevcut)
+    map.set(anaAd, mevcut)
   }
   return [...map.values()].sort((a, b) => b.tutar - a.tutar)
 }
