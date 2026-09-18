@@ -111,9 +111,12 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
     setHata(null)
     setGonderiliyor(true)
     try {
+      // deger === 0 GEÇERLİ bir özel fiyattır (ör. müşteriye ücretsiz ekmek
+      // veriliyor) — yalnızca boş bırakılmış (override yok) veya negatif
+      // girişler elenir.
       const temizOzelFiyatlar: Record<string, number> = {}
       for (const [productId, deger] of Object.entries(ozelFiyatlar)) {
-        if (deger !== '' && deger > 0) temizOzelFiyatlar[productId] = deger
+        if (deger !== '' && deger >= 0) temizOzelFiyatlar[productId] = deger
       }
 
       const girisi: MusteriGirisi = {
@@ -292,7 +295,7 @@ export default function MusteriFormModal({ mevcut, onKaydet, onKapat }: Props) {
                           onChange={(e) => ozelFiyatDegistir(u.id, e.target.value)}
                           className="w-28 rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1.5 text-sm outline-none focus:border-bakery-amber-500"
                         />
-                        {mevcut && ozelFiyatlar[u.id] && Number(ozelFiyatlar[u.id]) > 0 && (
+                        {mevcut && ozelFiyatlar[u.id] !== '' && ozelFiyatlar[u.id] !== undefined && Number(ozelFiyatlar[u.id]) >= 0 && (
                           <button
                             type="button"
                             onClick={() => setGecmiseUygulaUrun({ id: u.id, ad: u.ad, fiyat: Number(ozelFiyatlar[u.id]) })}
