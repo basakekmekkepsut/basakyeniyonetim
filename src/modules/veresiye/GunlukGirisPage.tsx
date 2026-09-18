@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Minus, Plus } from 'lucide-react'
 import { useMusteriler } from '../musteriler/data'
 import { useUrunler } from '../urunler/data'
+import { useOkullar } from '../okul/data'
 import { useVeresiyeSablonlar } from './sablonData'
 import { gunlukGirisKaydet, type GunlukGirisSatiri } from './data'
 import { unOdemesiEkle } from './unHesabiData'
@@ -54,6 +55,7 @@ export default function GunlukGirisPage() {
   const { musteriler, yukleniyor: musteriYukleniyor } = useMusteriler()
   const { urunler } = useUrunler()
   const { sablonlar } = useVeresiyeSablonlar()
+  const { okullar } = useOkullar()
 
   const [tarih, setTarih] = useState(bugunStr())
   const [satirlar, setSatirlar] = useState<Record<string, SatirState>>({})
@@ -97,6 +99,13 @@ export default function GunlukGirisPage() {
     return Boolean(sablon && sablon.kalemler.length > 0 && musterininAktifKalemleri(musteriId).length === 0)
   }
 
+  // Bir okulun veresiye hesabı olarak bağlanmış müşteriler (musteriId) —
+  // bunların veresiye kayıtları YALNIZCA Okul modülünün "Günü Kapat" akışından
+  // gelir; manuel Günlük Giriş'te görünmeleri "hiç şablon eklemedim ama tüm
+  // ürünlerle otomatik çıktı" şaşkınlığına yol açıyordu, o yüzden tamamen hariç
+  // tutuluyorlar (bkz. okul/orderData.ts gunuKapat).
+  const okulMusteriIdleri = useMemo(() => new Set(okullar.map((o) => o.musteriId).filter((id): id is string => Boolean(id))), [okullar])
+
   const veresiyeMusterileri = useMemo(() => {
     const siraGetir = (m: Musteri) => {
       const kalemler = musterininAktifKalemleri(m.id)
@@ -104,7 +113,9 @@ export default function GunlukGirisPage() {
       return Math.min(...kalemler.map((k) => k.sira ?? 0))
     }
     return musteriler
-      .filter((m) => m.aktif && m.moduller.includes('veresiye') && !tumKalemleriPasif(m.id))
+      .filter(
+        (m) => m.aktif && m.moduller.includes('veresiye') && !tumKalemleriPasif(m.id) && !okulMusteriIdleri.has(m.id)
+      )
       .sort((a, b) => {
         const sa = siraGetir(a)
         const sb = siraGetir(b)
@@ -114,7 +125,7 @@ export default function GunlukGirisPage() {
         return a.ad.localeCompare(b.ad, 'tr-TR')
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [musteriler, sablonlar])
+  }, [musteriler, sablonlar, okulMusteriIdleri])
   const veresiyeUrunleri = useMemo(() => urunler.filter((u) => u.aktif && u.modules.includes('veresiye')), [urunler])
 
   function satirGetir(musteriId: string): SatirState {

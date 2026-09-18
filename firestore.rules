@@ -134,7 +134,10 @@ service cloud.firestore {
     }
 
     match /okul_schools/{id} {
-      allow read: if hasModule('okul');
+      // Veresiye modülü de okuyabilir — Günlük Giriş, hangi müşterilerin Okul
+      // senkronuyla (musteriId üzerinden) yönetildiğini bilip onları manuel
+      // giriş listesinden hariç tutmak için bu koleksiyonu kullanır.
+      allow read: if hasModule('okul') || hasModule('veresiye');
       allow write: if okulIzni('okullar');
     }
 
