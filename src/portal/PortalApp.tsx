@@ -47,6 +47,7 @@ interface AylikOzet {
   anahtar: string
   etiket: string
   toplam: number
+  toplamAdet: number
   urunler: { urunAdi: string; adet: number }[]
   kayitlar: PortalKayit[]
 }
@@ -57,10 +58,11 @@ function aylikOzetOlustur(kayitlar: PortalKayit[]): AylikOzet[] {
     const anahtar = k.tarih.slice(0, 7)
     let ay = map.get(anahtar)
     if (!ay) {
-      ay = { anahtar, etiket: ayEtiketi(anahtar), toplam: 0, urunler: [], kayitlar: [] }
+      ay = { anahtar, etiket: ayEtiketi(anahtar), toplam: 0, toplamAdet: 0, urunler: [], kayitlar: [] }
       map.set(anahtar, ay)
     }
     ay.toplam += k.tutar
+    ay.toplamAdet += k.adet
     ay.kayitlar.push(k)
     // Okul modülünden gelen kayıtlarda urunAdi "{okul} — {ürün}" biçiminde
     // olabilir (bir veresiye hesabına birden çok okul bağlıysa) — özet ürün
@@ -312,7 +314,10 @@ export default function PortalApp() {
                             </p>
                           </div>
                           <div className="flex shrink-0 items-center gap-1.5">
-                            <span className="font-semibold text-bakery-ink-900">{formatTutar(ay.toplam)}</span>
+                            <div className="text-right">
+                              <p className="font-semibold text-bakery-ink-900">{formatTutar(ay.toplam)}</p>
+                              <p className="text-xs text-bakery-ink-400">{ay.toplamAdet} adet</p>
+                            </div>
                             <ChevronDown size={16} className={`text-bakery-ink-400 transition-transform ${acik ? 'rotate-180' : ''}`} />
                           </div>
                         </button>
