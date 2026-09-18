@@ -43,13 +43,19 @@ function ayEtiketi(ayAnahtari: string) {
   return `${AY_ADLARI[ay - 1]} ${yil}`
 }
 
+interface AylikUrunSatiri {
+  urunAdi: string
+  adet: number
+  tutar: number
+  kayitlar: PortalKayit[]
+}
+
 interface AylikOzet {
   anahtar: string
   etiket: string
   toplam: number
   toplamAdet: number
-  urunler: { urunAdi: string; adet: number }[]
-  kayitlar: PortalKayit[]
+  urunler: AylikUrunSatiri[]
 }
 
 function aylikOzetOlustur(kayitlar: PortalKayit[]): AylikOzet[] {
@@ -58,20 +64,26 @@ function aylikOzetOlustur(kayitlar: PortalKayit[]): AylikOzet[] {
     const anahtar = k.tarih.slice(0, 7)
     let ay = map.get(anahtar)
     if (!ay) {
-      ay = { anahtar, etiket: ayEtiketi(anahtar), toplam: 0, toplamAdet: 0, urunler: [], kayitlar: [] }
+      ay = { anahtar, etiket: ayEtiketi(anahtar), toplam: 0, toplamAdet: 0, urunler: [] }
       map.set(anahtar, ay)
     }
     ay.toplam += k.tutar
     ay.toplamAdet += k.adet
-    ay.kayitlar.push(k)
     // Okul modülünden gelen kayıtlarda urunAdi "{okul} — {ürün}" biçiminde
-    // olabilir (bir veresiye hesabına birden çok okul bağlıysa) — özet ürün
-    // adı burada ANA ürün adına göre toplanır, kayıt satırları ise ham adıyla
-    // (bkz. shared/urunAdi.ts).
+    // olabilir (bir veresiye hesabına birden çok okul bağlıysa) — ürün satırı
+    // burada ANA ürün adına göre toplanır, altındaki kayıtlar ise okul/kaynak
+    // izlenebilirliği için ham adıyla saklanır (bkz. shared/urunAdi.ts) — bu
+    // sayede müşteri "379 Roll" yazan satıra dokununca hangi okuldan kaçar
+    // adet geldiğini tek tek toplamadan görebiliyor.
     const anaAd = anaUrunAdi(k.urunAdi)
     const urun = ay.urunler.find((u) => u.urunAdi === anaAd)
-    if (urun) urun.adet += k.adet
-    else ay.urunler.push({ urunAdi: anaAd, adet: k.adet })
+    if (urun) {
+      urun.adet += k.adet
+      urun.tutar += k.tutar
+      urun.kayitlar.push(k)
+    } else {
+      ay.urunler.push({ urunAdi: anaAd, adet: k.adet, tutar: k.tutar, kayitlar: [k] })
+    }
   }
   return [...map.values()]
     .map((ay) => ({ ...ay, urunler: ay.urunler.sort((a, b) => b.adet - a.adet) }))
@@ -113,6 +125,7 @@ export default function PortalApp() {
   const [pushDurum, setPushDurum] = useState<PushDurum>('izin_verilmedi')
   const [pushIsleniyor, setPushIsleniyor] = useState(false)
   const [acikAy, setAcikAy] = useState<string | null>(null)
+  const [acikUrun, setAcikUrun] = useState<string | null>(null)
 
   useEffect(() => {
     pushDurumuGetir().then(setPushDurum)
@@ -322,19 +335,45 @@ export default function PortalApp() {
                           </div>
                         </button>
                         {acik && (
-                          <ul className="mb-2 space-y-1.5 rounded-lg bg-bakery-cream-50 p-2.5">
-                            {ay.kayitlar.map((k, i) => (
-                              <li key={i} className="flex items-center justify-between text-xs">
-                                <span className="text-bakery-ink-600">
-                                  {k.tarih} — {k.urunAdi} × {k.adet}
-                                </span>
-                                <span className="flex items-center gap-1.5">
-                                  <span className="font-medium text-bakery-ink-900">{formatTutar(k.tutar)}</span>
-                                  <DurumRozeti durum={k.durum} />
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
+                          <div className="mb-2 space-y-1 rounded-lg bg-bakery-cream-50 p-2">
+                            {ay.urunler.map((u) => {
+                              const urunAnahtari = `${ay.anahtar}__${u.urunAdi}`
+                              const urunAcik = acikUrun === urunAnahtari
+                              return (
+                                <div key={u.urunAdi}>
+                                  <button
+                                    type="button"
+                                    onClick={() => setAcikUrun(urunAcik ? null : urunAnahtari)}
+                                    className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-xs hover:bg-bakery-cream-100"
+                                  >
+                                    <span className="text-bakery-ink-700">{u.urunAdi} × {u.adet}</span>
+                                    <span className="flex items-center gap-1">
+                                      <span className="font-medium text-bakery-ink-900">{formatTutar(u.tutar)}</span>
+                                      <ChevronDown
+                                        size={13}
+                                        className={`text-bakery-ink-400 transition-transform ${urunAcik ? 'rotate-180' : ''}`}
+                                      />
+                                    </span>
+                                  </button>
+                                  {urunAcik && (
+                                    <ul className="ml-2 space-y-1 border-l border-bakery-cream-200 py-1 pl-2">
+                                      {u.kayitlar.map((k, i) => (
+                                        <li key={i} className="flex items-center justify-between text-xs">
+                                          <span className="text-bakery-ink-500">
+                                            {k.tarih} — {k.urunAdi} × {k.adet}
+                                          </span>
+                                          <span className="flex items-center gap-1.5">
+                                            <span className="font-medium text-bakery-ink-800">{formatTutar(k.tutar)}</span>
+                                            <DurumRozeti durum={k.durum} />
+                                          </span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
                         )}
                       </div>
                     )
