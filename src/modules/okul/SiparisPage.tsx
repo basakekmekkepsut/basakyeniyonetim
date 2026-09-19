@@ -37,7 +37,7 @@ export default function SiparisPage() {
       await okulGuncelle(okul.id, {
         ad: okul.ad,
         musteriId: okul.musteriId ?? null,
-        lines: [...okul.lines, { id: yeniHatId(), productId, urunAdi: urun.ad, adet: 0, aktif: true }],
+        lines: [...okul.lines, { id: yeniHatId(), productId, urunAdi: urun.ad, adet: 0, aktif: true, gunler: [0, 1, 2, 3, 4, 5, 6] }],
         // Bu özellikten önce oluşturulmuş okul belgelerinde bu alanlar yok —
         // undefined yazmak Firestore'un reddetmesine yol açar (bkz. Sipariş
         // modülündeki benzer adres/telefon hatası), bu yüzden varsayılan verilir.

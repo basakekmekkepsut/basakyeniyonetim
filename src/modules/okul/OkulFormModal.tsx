@@ -41,11 +41,22 @@ export default function OkulFormModal({ mevcut, onKaydet, onKapat }: Props) {
   const okulUrunleri = urunler.filter((u) => u.aktif && u.modules.includes('okul'))
 
   function hatEkle() {
-    setLines((prev) => [...prev, { id: yeniHatId(), productId: '', urunAdi: '', adet: 1, aktif: true }])
+    setLines((prev) => [...prev, { id: yeniHatId(), productId: '', urunAdi: '', adet: 1, aktif: true, gunler: TUM_GUNLER }])
   }
 
   function hatGuncelle(id: string, degisiklik: Partial<OkulHat>) {
     setLines((prev) => prev.map((l) => (l.id === id ? { ...l, ...degisiklik } : l)))
+  }
+
+  function hatGunDegistir(id: string, gun: number) {
+    setLines((prev) =>
+      prev.map((l) => {
+        if (l.id !== id) return l
+        const mevcutGunler = l.gunler ?? TUM_GUNLER
+        const yeniGunler = mevcutGunler.includes(gun) ? mevcutGunler.filter((g) => g !== gun) : [...mevcutGunler, gun]
+        return { ...l, gunler: yeniGunler }
+      })
+    )
   }
 
   function hatSil(id: string) {
@@ -183,10 +194,33 @@ export default function OkulFormModal({ mevcut, onKaydet, onKapat }: Props) {
                         <Trash2 size={16} />
                       </button>
                     </div>
-                    <label className="flex items-center gap-1.5 text-xs text-bakery-ink-600">
-                      <input type="checkbox" checked={l.aktif} onChange={(e) => hatGuncelle(l.id, { aktif: e.target.checked })} />
-                      Aktif
-                    </label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="flex items-center gap-1.5 text-xs text-bakery-ink-600">
+                        <input type="checkbox" checked={l.aktif} onChange={(e) => hatGuncelle(l.id, { aktif: e.target.checked })} />
+                        Aktif
+                      </label>
+                      <div className="flex flex-wrap gap-1">
+                        {GUN_SECENEKLERI.map(({ gun, etiket }) => (
+                          <button
+                            type="button"
+                            key={gun}
+                            onClick={() => hatGunDegistir(l.id, gun)}
+                            className={`rounded-full px-1.5 py-0.5 text-[11px] font-medium transition ${
+                              (l.gunler ?? TUM_GUNLER).includes(gun)
+                                ? 'bg-bakery-amber-500/20 text-bakery-amber-700'
+                                : 'bg-bakery-cream-100 text-bakery-ink-400'
+                            }`}
+                          >
+                            {etiket}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {(l.gunler ?? TUM_GUNLER).length < 7 && (
+                      <p className="mt-1 text-[11px] text-bakery-ink-500">
+                        Bu ürün yalnızca işaretli günlerde gider — diğer günlerde otomatik 0 gelir (okul kapalıysa zaten geçerli).
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>

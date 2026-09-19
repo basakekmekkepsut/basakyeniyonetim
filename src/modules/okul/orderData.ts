@@ -69,15 +69,18 @@ export async function varsayilanSiparisleriHazirla(
   let sayac = 0
 
   for (const okul of okullar) {
-    const acikMi = (okul.acikGunler ?? TUM_GUNLER).includes(gunIndex)
+    const okulAcikMi = (okul.acikGunler ?? TUM_GUNLER).includes(gunIndex)
     for (const l of okul.lines) {
       if (!l.aktif || mevcutLineIds.has(l.id)) continue
+      // Okulun kendi açık günü VE hattın kendi gün kısıtlaması (varsa) birlikte
+      // sağlanmalı — ör. her gün giden ekmeğe ek olarak yalnızca Pzt/Per simit.
+      const hatAcikMi = okulAcikMi && (l.gunler ?? TUM_GUNLER).includes(gunIndex)
       batch.set(doc(collection(db, ORDERS)), {
         tarih,
         schoolId: okul.id,
         lineId: l.id,
         productId: l.productId,
-        adet: acikMi ? l.adet : 0,
+        adet: hatAcikMi ? l.adet : 0,
         kapandiMi: false
       })
       sayac += 1

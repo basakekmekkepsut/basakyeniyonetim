@@ -220,6 +220,12 @@ export interface OkulHat {
   urunAdi: string
   adet: number
   aktif: boolean
+  // Bu hattın haftanın hangi günleri gideceği (Date.getDay() ile aynı:
+  // 0=Pazar...6=Cumartesi) — okulun kendi acikGunler'ından BAĞIMSIZ, ek bir
+  // kısıtlamadır (ör. her gün giden ekmeğe ek olarak yalnızca Pzt/Per simit).
+  // Bu özellikten önce oluşturulmuş hatlarda yok — okuyan tarafta her zaman
+  // `?? TUM_GUNLER` ile "her gün" varsayılır (bkz. orderData.ts).
+  gunler?: number[]
 }
 
 export interface OkulSchool {

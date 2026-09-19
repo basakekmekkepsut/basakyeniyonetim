@@ -8,6 +8,15 @@ import ConfirmModal from '../../shared/ConfirmModal'
 import { useToast } from '../../shared/Toast'
 import type { OkulSchool, OkulSchoolFormVerisi } from '../../lib/types'
 
+const GUN_ETIKETLERI: Record<number, string> = { 1: 'Pzt', 2: 'Sal', 3: 'Çar', 4: 'Per', 5: 'Cum', 6: 'Cmt', 0: 'Paz' }
+const GUN_SIRASI = [1, 2, 3, 4, 5, 6, 0]
+
+function gunlerEtiketi(gunler: number[]): string {
+  return GUN_SIRASI.filter((g) => gunler.includes(g))
+    .map((g) => GUN_ETIKETLERI[g])
+    .join(', ')
+}
+
 export default function OkullarPage() {
   const { okullar, yukleniyor, hata } = useOkullar()
   const { musteriler } = useMusteriler()
@@ -94,7 +103,11 @@ export default function OkullarPage() {
                             <ul className="mb-3 space-y-1 text-sm text-bakery-ink-600">
                               {o.lines.map((l) => (
                                 <li key={l.id}>
-                                  {l.urunAdi} — {l.adet} adet/gün {!l.aktif && <em className="text-bakery-ink-400">(pasif)</em>}
+                                  {l.urunAdi} — {l.adet} adet/gün
+                                  {l.gunler && l.gunler.length < 7 && (
+                                    <span className="text-bakery-ink-400"> ({gunlerEtiketi(l.gunler)})</span>
+                                  )}{' '}
+                                  {!l.aktif && <em className="text-bakery-ink-400">(pasif)</em>}
                                 </li>
                               ))}
                             </ul>
