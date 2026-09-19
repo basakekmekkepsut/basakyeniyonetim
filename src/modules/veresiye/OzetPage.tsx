@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { BarChart2, Pencil, Plus, Trash2 } from 'lucide-react'
 import type { Timestamp } from 'firebase/firestore'
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useVeresiyeKayitlar, veresiyeKaydiEkle, veresiyeKaydiGuncelle, veresiyeKaydiSil } from './data'
 import { useVeresiyeOdemeler, odemeEkle, odemeGuncelle, odemeSil } from './odemeData'
 import VeresiyeKayitFormModal from './VeresiyeKayitFormModal'
@@ -19,6 +18,12 @@ import { veresiyeBildirimGonder } from '../../shared/veresiyeBildirim'
 import { formatTutar } from '../../shared/TutarGoster'
 import { tarihGunAdiIle } from '../../shared/tarih'
 import type { VeresiyeKaydi, VeresiyeOdeme } from '../../lib/types'
+
+// recharts oldukça ağır bir kütüphane — Özet artık uygulamanın açılış sayfası
+// olduğu için (bkz. App.tsx MODUL_SIRASI) grafiği ayrı dosyaya alıp lazy
+// import ediyoruz, böylece her girişte değil yalnızca "Grafiksel Özet"
+// açıldığında indiriliyor.
+const OzetGrafik = lazy(() => import('./OzetGrafik'))
 
 function bugunStr() {
   return new Date().toISOString().slice(0, 10)
@@ -305,24 +310,9 @@ export default function OzetPage() {
       </div>
 
       {grafikAcik && (
-        <div className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
-          <h3 className="mb-3 text-sm font-semibold text-bakery-ink-800">Borç / Tahsilat Trend</h3>
-          {grafikVerisi.length === 0 ? (
-            <p className="text-sm text-bakery-ink-400">Bu aralıkta veri yok.</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={grafikVerisi}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0ddbc" />
-                <XAxis dataKey="tarih" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="borc" name="Borç" fill="#c9711f" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="tahsilat" name="Tahsilat" fill="#3f7d4a" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+        <Suspense fallback={<p className="text-sm text-bakery-ink-500">Grafik yükleniyor…</p>}>
+          <OzetGrafik veri={grafikVerisi} />
+        </Suspense>
       )}
 
       {gorunum === 'teslimatlar' ? (
