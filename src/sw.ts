@@ -15,12 +15,11 @@ clientsClaim()
 precacheAndRoute(self.__WB_MANIFEST)
 
 // Ana uygulama tek sayfa (SPA) olduğu için eşleşmeyen tüm gezinmeler index.html'e
-// düşer — ANCAK portal.html kendi başına ayrı bir statik dosya olduğu için bu
-// fallback'ten HARİÇ tutulur (aksi halde müşteri portalı personel giriş ekranına
-// yönlendirilir, bkz. vite.config.ts'deki önceki generateSW yapılandırmasının
-// tarihi ve bu satırların eklenme nedeni).
+// düşer — ANCAK portal.html ve uretim.html kendi başlarına ayrı statik dosyalar
+// olduğu için bu fallback'ten HARİÇ tutulur (aksi halde müşteri portalı/üretim
+// özeti personel giriş ekranına yönlendirilir).
 registerRoute(
   new NavigationRoute(createHandlerBoundToURL('/index.html'), {
-    denylist: [/^\/portal\.html/]
+    denylist: [/^\/portal\.html/, /^\/uretim\.html/]
   })
 )

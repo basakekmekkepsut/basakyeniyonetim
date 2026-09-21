@@ -121,6 +121,79 @@ export const portalGiris = onCall<PortalGirisData>({ region: 'europe-west1' }, a
   }
 })
 
+interface UretimOzetiData {
+  tarih: string
+}
+
+interface UretimOzetiSiparisVerisi {
+  silindi?: boolean
+  durum?: string
+  items?: { adet: number; urunAdi: string }[]
+}
+
+interface UretimOzetiOkulSchoolVerisi {
+  lines?: { id: string; urunAdi: string }[]
+}
+
+interface UretimOzetiOkulOrderVerisi {
+  schoolId: string
+  lineId: string
+  adet: number
+}
+
+/**
+ * Ustaların (üretim ekibi) giriş yapmadan bakabileceği bir üretim özeti —
+ * Sipariş ve Okul modüllerindeki o günkü siparişleri ürün bazında toplayıp
+ * döner. Bilinçli olarak yalnızca "ürün: adet" çiftlerini içerir — müşteri
+ * adı, okul adı, fiyat gibi hiçbir hassas/ticari bilgi dışarı sızmaz, bu
+ * yüzden auth gerektirmeden (public link) çağrılabilir.
+ */
+export const uretimOzetiGetir = onCall<UretimOzetiData>({ region: 'europe-west1' }, async (request) => {
+  const { tarih } = request.data ?? {}
+  if (!tarih || typeof tarih !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(tarih)) {
+    throw new HttpsError('invalid-argument', 'Geçerli bir tarih (YYYY-MM-DD) gerekli.')
+  }
+
+  const db = getFirestore()
+  const toplamlar = new Map<string, number>()
+  const ekle = (urunAdi: string, adet: number) => toplamlar.set(urunAdi, (toplamlar.get(urunAdi) ?? 0) + adet)
+
+  const siparisSnap = await db
+    .collection('siparis_orders')
+    .where('teslimatTarihi', '==', tarih)
+    .where('silindi', '==', false)
+    .get()
+  for (const d of siparisSnap.docs) {
+    const veri = d.data() as UretimOzetiSiparisVerisi
+    if (veri.durum === 'iptal') continue
+    for (const it of veri.items ?? []) ekle(it.urunAdi, it.adet)
+  }
+
+  const [okullarSnap, okulOrdersSnap] = await Promise.all([
+    db.collection('okul_schools').get(),
+    db.collection('okul_orders').where('tarih', '==', tarih).get()
+  ])
+  const okulHatlari = new Map<string, Map<string, string>>()
+  okullarSnap.docs.forEach((d) => {
+    const veri = d.data() as UretimOzetiOkulSchoolVerisi
+    const hatMap = new Map<string, string>()
+    for (const l of veri.lines ?? []) hatMap.set(l.id, l.urunAdi)
+    okulHatlari.set(d.id, hatMap)
+  })
+  for (const d of okulOrdersSnap.docs) {
+    const veri = d.data() as UretimOzetiOkulOrderVerisi
+    if (veri.adet <= 0) continue
+    const urunAdi = okulHatlari.get(veri.schoolId)?.get(veri.lineId) ?? '—'
+    ekle(urunAdi, veri.adet)
+  }
+
+  const urunler = [...toplamlar.entries()]
+    .map(([urunAdi, adet]) => ({ urunAdi, adet }))
+    .sort((a, b) => b.adet - a.adet)
+
+  return { urunler }
+})
+
 // --- Manuel yedekleme / geri yükleme (Ayarlar) ---
 
 /**
