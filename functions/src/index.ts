@@ -132,6 +132,7 @@ interface UretimOzetiSiparisVerisi {
 }
 
 interface UretimOzetiOkulSchoolVerisi {
+  ad: string
   lines?: { id: string; urunAdi: string }[]
 }
 
@@ -144,9 +145,11 @@ interface UretimOzetiOkulOrderVerisi {
 /**
  * Ustaların (üretim ekibi) giriş yapmadan bakabileceği bir üretim özeti —
  * Sipariş ve Okul modüllerindeki o günkü siparişleri ürün bazında toplayıp
- * döner. Bilinçli olarak yalnızca "ürün: adet" çiftlerini içerir — müşteri
- * adı, okul adı, fiyat gibi hiçbir hassas/ticari bilgi dışarı sızmaz, bu
- * yüzden auth gerektirmeden (public link) çağrılabilir.
+ * döner, ayrıca Okul siparişlerinin okul bazında dağılımını da verir (hangi
+ * okul kaç adet alıyor — ustaların takip edebilmesi için). Bilinçli olarak
+ * Sipariş modülündeki MÜŞTERİ adları/adresleri dışarı verilmez, yalnızca
+ * ürün toplamına dahil edilir; bu yüzden auth gerektirmeden (public link)
+ * çağrılabilir.
  */
 export const uretimOzetiGetir = onCall<UretimOzetiData>({ region: 'europe-west1' }, async (request) => {
   const { tarih } = request.data ?? {}
@@ -174,24 +177,41 @@ export const uretimOzetiGetir = onCall<UretimOzetiData>({ region: 'europe-west1'
     db.collection('okul_orders').where('tarih', '==', tarih).get()
   ])
   const okulHatlari = new Map<string, Map<string, string>>()
+  const okulAdlari = new Map<string, string>()
   okullarSnap.docs.forEach((d) => {
     const veri = d.data() as UretimOzetiOkulSchoolVerisi
+    okulAdlari.set(d.id, veri.ad)
     const hatMap = new Map<string, string>()
     for (const l of veri.lines ?? []) hatMap.set(l.id, l.urunAdi)
     okulHatlari.set(d.id, hatMap)
   })
+
+  const okulSatirlari = new Map<string, Map<string, number>>() // schoolId -> (urunAdi -> adet)
   for (const d of okulOrdersSnap.docs) {
     const veri = d.data() as UretimOzetiOkulOrderVerisi
     if (veri.adet <= 0) continue
     const urunAdi = okulHatlari.get(veri.schoolId)?.get(veri.lineId) ?? '—'
     ekle(urunAdi, veri.adet)
+    const satirlar = okulSatirlari.get(veri.schoolId) ?? new Map<string, number>()
+    satirlar.set(urunAdi, (satirlar.get(urunAdi) ?? 0) + veri.adet)
+    okulSatirlari.set(veri.schoolId, satirlar)
   }
 
   const urunler = [...toplamlar.entries()]
     .map(([urunAdi, adet]) => ({ urunAdi, adet }))
     .sort((a, b) => b.adet - a.adet)
 
-  return { urunler }
+  const okullar = [...okulSatirlari.entries()]
+    .map(([schoolId, satirlarMap]) => {
+      const satirlar = [...satirlarMap.entries()]
+        .map(([urunAdi, adet]) => ({ urunAdi, adet }))
+        .sort((a, b) => b.adet - a.adet)
+      const toplam = satirlar.reduce((s, x) => s + x.adet, 0)
+      return { okulAdi: okulAdlari.get(schoolId) ?? '—', satirlar, toplam }
+    })
+    .sort((a, b) => b.toplam - a.toplam)
+
+  return { urunler, okullar }
 })
 
 // --- Manuel yedekleme / geri yükleme (Ayarlar) ---

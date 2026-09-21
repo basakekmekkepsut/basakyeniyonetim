@@ -8,6 +8,12 @@ interface UretimUrunu {
   adet: number
 }
 
+interface UretimOkulSatiri {
+  okulAdi: string
+  satirlar: UretimUrunu[]
+  toplam: number
+}
+
 function yarinStr() {
   const d = new Date()
   d.setDate(d.getDate() + 1)
@@ -16,11 +22,13 @@ function yarinStr() {
 
 // Ustaların (üretim ekibi) giriş yapmadan bakabileceği, tamamen açık bir
 // üretim özeti — Sipariş ve Okul modüllerindeki o günkü siparişleri ürün
-// bazında toplayıp gösterir. Bilinçli olarak müşteri/okul adı, fiyat gibi
-// hiçbir ticari bilgi içermez (bkz. functions/src/index.ts uretimOzetiGetir).
+// bazında toplayıp gösterir, ayrıca hangi okulun ne kadar aldığını da
+// listeler. Sipariş modülündeki müşteri adları/adresleri BİLİNÇLİ olarak
+// dışarı verilmez (bkz. functions/src/index.ts uretimOzetiGetir).
 export default function UretimApp() {
   const [tarih, setTarih] = useState(yarinStr())
   const [urunler, setUrunler] = useState<UretimUrunu[]>([])
+  const [okullar, setOkullar] = useState<UretimOkulSatiri[]>([])
   const [yukleniyor, setYukleniyor] = useState(true)
   const [hata, setHata] = useState<string | null>(null)
 
@@ -29,11 +37,15 @@ export default function UretimApp() {
     let iptalEdildi = false
     setYukleniyor(true)
     setHata(null)
-    const cagir = httpsCallable<{ tarih: string }, { urunler: UretimUrunu[] }>(requireFunctions(), 'uretimOzetiGetir')
+    const cagir = httpsCallable<{ tarih: string }, { urunler: UretimUrunu[]; okullar: UretimOkulSatiri[] }>(
+      requireFunctions(),
+      'uretimOzetiGetir'
+    )
     cagir({ tarih })
       .then((sonuc) => {
         if (iptalEdildi) return
         setUrunler(sonuc.data.urunler)
+        setOkullar(sonuc.data.okullar)
       })
       .catch((err) => {
         if (iptalEdildi) return
@@ -85,21 +97,46 @@ export default function UretimApp() {
             <p className="text-sm text-bakery-ink-400">Bu tarihte sipariş yok.</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {urunler.map((u) => (
-              <div
-                key={u.urunAdi}
-                className="flex items-center justify-between rounded-2xl bg-bakery-surface px-4 py-3.5 shadow-lg shadow-bakery-coffee-900/10"
-              >
-                <span className="text-base font-medium text-bakery-ink-800">{u.urunAdi}</span>
-                <span className="text-xl font-bold text-bakery-amber-600">{u.adet}</span>
+          <>
+            <div className="space-y-2">
+              {urunler.map((u) => (
+                <div
+                  key={u.urunAdi}
+                  className="flex items-center justify-between rounded-2xl bg-bakery-surface px-4 py-3.5 shadow-lg shadow-bakery-coffee-900/10"
+                >
+                  <span className="text-base font-medium text-bakery-ink-800">{u.urunAdi}</span>
+                  <span className="text-xl font-bold text-bakery-amber-600">{u.adet}</span>
+                </div>
+              ))}
+              <div className="flex items-center justify-between rounded-2xl bg-bakery-coffee-800 px-4 py-3.5 text-white shadow-lg">
+                <span className="text-sm font-medium">Toplam</span>
+                <span className="text-xl font-bold">{toplamAdet}</span>
               </div>
-            ))}
-            <div className="flex items-center justify-between rounded-2xl bg-bakery-coffee-800 px-4 py-3.5 text-white shadow-lg">
-              <span className="text-sm font-medium">Toplam</span>
-              <span className="text-xl font-bold">{toplamAdet}</span>
             </div>
-          </div>
+
+            {okullar.length > 0 && (
+              <div className="mt-5">
+                <h2 className="mb-2 text-sm font-semibold text-bakery-ink-700">Okul Bazında Dağılım</h2>
+                <div className="space-y-2">
+                  {okullar.map((o) => (
+                    <div key={o.okulAdi} className="rounded-2xl bg-bakery-surface p-3.5 shadow-lg shadow-bakery-coffee-900/10">
+                      <div className="mb-1 flex items-center justify-between">
+                        <span className="font-medium text-bakery-ink-900">{o.okulAdi}</span>
+                        <span className="text-sm font-semibold text-bakery-amber-600">{o.toplam} adet</span>
+                      </div>
+                      <ul className="pl-1 text-sm text-bakery-ink-600">
+                        {o.satirlar.map((s) => (
+                          <li key={s.urunAdi}>
+                            {s.adet}× {s.urunAdi}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
