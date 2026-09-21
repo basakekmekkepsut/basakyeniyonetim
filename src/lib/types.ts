@@ -218,6 +218,12 @@ export interface OkulHat {
   // Bu özellikten önce oluşturulmuş hatlarda yok — okuyan tarafta her zaman
   // `?? TUM_GUNLER` ile "her gün" varsayılır (bkz. orderData.ts).
   gunler?: number[]
+  // Dönen gün (rotasyon): haftada yalnızca BİR gün verilen ama bu günün her
+  // hafta listede bir sonraki güne kaydığı hatlar için (ör. Yibo Yatılı'ya
+  // haftada 1 gün simit — bu hafta Cuma, gelecek hafta Salı, ... döngüsel).
+  // İKİSİ DE doluysa gunler'i EZER (bkz. orderData.ts hatAktifGunuHesapla).
+  donguGunleri?: number[] // rotasyon sırası, takvim sırasıyla (ör. [2,3,4,5] = Sal,Çar,Per,Cum)
+  donguReferansTarihi?: string // YYYY-MM-DD — donguGunleri'nden birine denk gelen, bilinen GERÇEK bir tarih
 }
 
 export interface OkulSchool {

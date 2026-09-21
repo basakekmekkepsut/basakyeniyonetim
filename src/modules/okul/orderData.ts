@@ -17,7 +17,7 @@ import {
   writeBatch
 } from 'firebase/firestore'
 import { requireDb } from '../../lib/firebase'
-import type { OkulKapanis, OkulOrder, OkulSchool, Urun } from '../../lib/types'
+import type { OkulHat, OkulKapanis, OkulOrder, OkulSchool, Urun } from '../../lib/types'
 
 const ORDERS = 'okul_orders'
 const TESLIMATLAR = 'okul_teslimatlar'
@@ -57,6 +57,35 @@ const TUM_GUNLER = [0, 1, 2, 3, 4, 5, 6]
 // Okulun o günü "açık günler"i arasında değilse (bkz. OkulSchool.acikGunler),
 // standart adet yerine 0 yazılır — kapalı günlerde sipariş görünmez/üretilmez.
 // İdempotent: zaten sipariş girilmiş hatlara dokunmaz.
+// Verilen tarihin (YYYY-MM-DD) içinde bulunduğu haftanın Pazartesi'sini
+// YYYY-MM-DD olarak döner — dönen gün rotasyonunu hafta bazında hizalamak için.
+function haftaninPazartesiTarihi(tarih: string): string {
+  const d = new Date(tarih)
+  const gun = d.getDay() // 0=Paz...6=Cmt
+  const fark = gun === 0 ? -6 : 1 - gun
+  d.setDate(d.getDate() + fark)
+  return d.toISOString().slice(0, 10)
+}
+
+// "Dönen gün" hatları için (bkz. OkulHat.donguGunleri) — o hattın VERİLEN
+// tarihte hangi haftalık günde aktif olması gerektiğini hesaplar. Referans
+// tarih, rotasyonu gerçek bir örnekle haftaya sabitler (ör. "bu hafta Cuma
+// verildi" -> gelecek/geçmiş haftalar buna göre otomatik kayar). donguGunleri
+// tanımlı değilse (statik gunler kullanan normal hatlar) null döner.
+function hatDonenGunuHesapla(hat: OkulHat, tarih: string): number | null {
+  if (!hat.donguGunleri || hat.donguGunleri.length === 0 || !hat.donguReferansTarihi) return null
+  const referansGun = new Date(hat.donguReferansTarihi).getDay()
+  const referansIndeks = hat.donguGunleri.indexOf(referansGun)
+  if (referansIndeks === -1) return null
+  const gunMs = 24 * 60 * 60 * 1000
+  const hedefPazartesi = new Date(haftaninPazartesiTarihi(tarih)).getTime()
+  const referansPazartesi = new Date(haftaninPazartesiTarihi(hat.donguReferansTarihi)).getTime()
+  const haftaFarki = Math.round((hedefPazartesi - referansPazartesi) / (7 * gunMs))
+  const uzunluk = hat.donguGunleri.length
+  const index = (((referansIndeks + haftaFarki) % uzunluk) + uzunluk) % uzunluk
+  return hat.donguGunleri[index]
+}
+
 export async function varsayilanSiparisleriHazirla(
   tarih: string,
   okullar: OkulSchool[],
@@ -74,7 +103,9 @@ export async function varsayilanSiparisleriHazirla(
       if (!l.aktif || mevcutLineIds.has(l.id)) continue
       // Okulun kendi açık günü VE hattın kendi gün kısıtlaması (varsa) birlikte
       // sağlanmalı — ör. her gün giden ekmeğe ek olarak yalnızca Pzt/Per simit.
-      const hatAcikMi = okulAcikMi && (l.gunler ?? TUM_GUNLER).includes(gunIndex)
+      // Dönen gün rotasyonu varsa (donguGunleri) statik gunler'in yerine geçer.
+      const donenGun = hatDonenGunuHesapla(l, tarih)
+      const hatAcikMi = okulAcikMi && (donenGun !== null ? donenGun === gunIndex : (l.gunler ?? TUM_GUNLER).includes(gunIndex))
       batch.set(doc(collection(db, ORDERS)), {
         tarih,
         schoolId: okul.id,

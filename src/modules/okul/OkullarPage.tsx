@@ -104,8 +104,14 @@ export default function OkullarPage() {
                               {o.lines.map((l) => (
                                 <li key={l.id}>
                                   {l.urunAdi} — {l.adet} adet/gün
-                                  {l.gunler && l.gunler.length < 7 && (
-                                    <span className="text-bakery-ink-400"> ({gunlerEtiketi(l.gunler)})</span>
+                                  {l.donguGunleri && l.donguGunleri.length > 0 ? (
+                                    <span className="text-bakery-ink-400">
+                                      {' '}
+                                      (dönen: {gunlerEtiketi(l.donguGunleri)} · ref: {l.donguReferansTarihi})
+                                    </span>
+                                  ) : (
+                                    l.gunler &&
+                                    l.gunler.length < 7 && <span className="text-bakery-ink-400"> ({gunlerEtiketi(l.gunler)})</span>
                                   )}{' '}
                                   {!l.aktif && <em className="text-bakery-ink-400">(pasif)</em>}
                                 </li>

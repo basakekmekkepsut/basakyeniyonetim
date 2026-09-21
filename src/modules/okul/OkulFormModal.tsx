@@ -59,6 +59,26 @@ export default function OkulFormModal({ mevcut, onKaydet, onKapat }: Props) {
     )
   }
 
+  // "Dönen gün": haftada yalnızca bir gün verilen ama bu günün listede her
+  // hafta bir sonrakine kaydığı hatlar için (ör. haftada 1 gün simit — bu
+  // hafta Cuma, gelecek hafta Salı, ...). Açıldığında statik gunler'in yerine
+  // geçer (bkz. orderData.ts hatDonenGunuHesapla).
+  function hatDonguModuDegistir(id: string, acik: boolean) {
+    hatGuncelle(id, acik ? { donguGunleri: [], donguReferansTarihi: '' } : { donguGunleri: undefined, donguReferansTarihi: undefined })
+  }
+
+  function hatDonguGunDegistir(id: string, gun: number) {
+    setLines((prev) =>
+      prev.map((l) => {
+        if (l.id !== id) return l
+        const mevcut = l.donguGunleri ?? []
+        const yeni = mevcut.includes(gun) ? mevcut.filter((g) => g !== gun) : [...mevcut, gun]
+        yeni.sort((a, b) => TUM_GUNLER.indexOf(a) - TUM_GUNLER.indexOf(b))
+        return { ...l, donguGunleri: yeni }
+      })
+    )
+  }
+
   function hatSil(id: string) {
     setLines((prev) => prev.filter((l) => l.id !== id))
   }
@@ -72,6 +92,14 @@ export default function OkulFormModal({ mevcut, onKaydet, onKapat }: Props) {
     e.preventDefault()
     if (!ad.trim()) return setHata('Okul adı zorunludur.')
     const gecerliHatlar = lines.filter((l) => l.productId)
+    for (const l of gecerliHatlar) {
+      if (!l.donguGunleri || l.donguGunleri.length === 0) continue
+      if (!l.donguReferansTarihi) return setHata(`"${l.urunAdi || 'Hat'}" için dönen gün referans tarihi seçilmeli.`)
+      const referansGun = new Date(l.donguReferansTarihi).getDay()
+      if (!l.donguGunleri.includes(referansGun)) {
+        return setHata(`"${l.urunAdi || 'Hat'}" referans tarihi, işaretlediğiniz günlerden birine denk gelmeli.`)
+      }
+    }
     setHata(null)
     setGonderiliyor(true)
     try {
@@ -199,27 +227,73 @@ export default function OkulFormModal({ mevcut, onKaydet, onKapat }: Props) {
                         <input type="checkbox" checked={l.aktif} onChange={(e) => hatGuncelle(l.id, { aktif: e.target.checked })} />
                         Aktif
                       </label>
-                      <div className="flex flex-wrap gap-1">
-                        {GUN_SECENEKLERI.map(({ gun, etiket }) => (
-                          <button
-                            type="button"
-                            key={gun}
-                            onClick={() => hatGunDegistir(l.id, gun)}
-                            className={`rounded-full px-1.5 py-0.5 text-[11px] font-medium transition ${
-                              (l.gunler ?? TUM_GUNLER).includes(gun)
-                                ? 'bg-bakery-amber-500/20 text-bakery-amber-700'
-                                : 'bg-bakery-cream-100 text-bakery-ink-400'
-                            }`}
-                          >
-                            {etiket}
-                          </button>
-                        ))}
-                      </div>
+                      <label className="flex items-center gap-1.5 text-xs text-bakery-ink-600">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(l.donguGunleri)}
+                          onChange={(e) => hatDonguModuDegistir(l.id, e.target.checked)}
+                        />
+                        Dönen gün (haftadan haftaya kayan tek gün)
+                      </label>
                     </div>
-                    {(l.gunler ?? TUM_GUNLER).length < 7 && (
-                      <p className="mt-1 text-[11px] text-bakery-ink-500">
-                        Bu ürün yalnızca işaretli günlerde gider — diğer günlerde otomatik 0 gelir (okul kapalıysa zaten geçerli).
-                      </p>
+
+                    {l.donguGunleri ? (
+                      <div className="mt-1.5 space-y-1.5">
+                        <div className="flex flex-wrap gap-1">
+                          {GUN_SECENEKLERI.map(({ gun, etiket }) => (
+                            <button
+                              type="button"
+                              key={gun}
+                              onClick={() => hatDonguGunDegistir(l.id, gun)}
+                              className={`rounded-full px-1.5 py-0.5 text-[11px] font-medium transition ${
+                                l.donguGunleri!.includes(gun)
+                                  ? 'bg-bakery-amber-500/20 text-bakery-amber-700'
+                                  : 'bg-bakery-cream-100 text-bakery-ink-400'
+                              }`}
+                            >
+                              {etiket}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <label className="text-[11px] text-bakery-ink-500">Referans tarih:</label>
+                          <input
+                            type="date"
+                            value={l.donguReferansTarihi ?? ''}
+                            onChange={(e) => hatGuncelle(l.id, { donguReferansTarihi: e.target.value })}
+                            className="rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1 text-xs outline-none focus:border-bakery-amber-500"
+                          />
+                        </div>
+                        <p className="text-[11px] text-bakery-ink-500">
+                          Yukarıdaki günler arasında SIRAYLA haftadan haftaya kayar. Referans tarih, seçili günlerden
+                          birine denk gelen, GERÇEKTEN o gün verilmiş/verilecek bir tarih olmalı — sistem oradan
+                          geçmiş/gelecek haftaların hangi güne denk geldiğini otomatik hesaplar.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {GUN_SECENEKLERI.map(({ gun, etiket }) => (
+                            <button
+                              type="button"
+                              key={gun}
+                              onClick={() => hatGunDegistir(l.id, gun)}
+                              className={`rounded-full px-1.5 py-0.5 text-[11px] font-medium transition ${
+                                (l.gunler ?? TUM_GUNLER).includes(gun)
+                                  ? 'bg-bakery-amber-500/20 text-bakery-amber-700'
+                                  : 'bg-bakery-cream-100 text-bakery-ink-400'
+                              }`}
+                            >
+                              {etiket}
+                            </button>
+                          ))}
+                        </div>
+                        {(l.gunler ?? TUM_GUNLER).length < 7 && (
+                          <p className="mt-1 text-[11px] text-bakery-ink-500">
+                            Bu ürün yalnızca işaretli günlerde gider — diğer günlerde otomatik 0 gelir (okul kapalıysa zaten geçerli).
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 ))}
