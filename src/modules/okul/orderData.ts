@@ -261,14 +261,26 @@ export async function gunuKapat(
     })
   }
 
-  // Hedef müşterilerin GÜNCEL adını çek — Okul/Firma'nın kendi 'ad' alanı,
-  // Veresiye tarafında kayıtlı müşteri adından farklı olabilir.
+  // Hedef müşterilerin GÜNCEL adını ve varsa ürüne özel fiyatını çek — Okul
+  // hattı yalnızca ürünün standart fiyatını bilir, ama müşteri kartında o ürün
+  // için özel bir fiyat (ör. Aşevi'ne ücretsiz ekmek için ₺0) tanımlıysa bu
+  // Okul teslimatlarına da yansımalı (bkz. Ayarlar > Müşteriler özel fiyat).
   const hedefIdler = [...new Set(taslaklar.map((t) => t.veresiyeMusteriId).filter((id): id is string => !!id))]
-  const musteriAdlari = new Map<string, string>()
+  const musteriBilgileri = new Map<string, { ad: string; ozelFiyatlar: Record<string, number> }>()
   for (let i = 0; i < hedefIdler.length; i += 30) {
     const parca = hedefIdler.slice(i, i + 30)
     const snap = await getDocs(query(collection(db, 'musteriler'), where(documentId(), 'in', parca)))
-    snap.docs.forEach((s) => musteriAdlari.set(s.id, (s.data().ad as string) ?? '—'))
+    snap.docs.forEach((s) => {
+      const veri = s.data()
+      musteriBilgileri.set(s.id, { ad: (veri.ad as string) ?? '—', ozelFiyatlar: (veri.ozelFiyatlar as Record<string, number>) ?? {} })
+    })
+  }
+  for (const t of taslaklar) {
+    const ozelFiyat = t.veresiyeMusteriId ? musteriBilgileri.get(t.veresiyeMusteriId)?.ozelFiyatlar[t.productId] : undefined
+    if (ozelFiyat !== undefined) {
+      t.birimFiyat = ozelFiyat
+      t.tutar = t.adet * ozelFiyat
+    }
   }
 
   const batch = writeBatch(db)
@@ -302,7 +314,7 @@ export async function gunuKapat(
     if (veresiyeRef && t.veresiyeMusteriId) {
       batch.set(veresiyeRef, {
         musteriId: t.veresiyeMusteriId,
-        musteriAdi: musteriAdlari.get(t.veresiyeMusteriId) ?? '—',
+        musteriAdi: musteriBilgileri.get(t.veresiyeMusteriId)?.ad ?? '—',
         productId: t.productId,
         // Aynı Veresiye müşterisi birden fazla okulu temsil edebileceği için
         // (ör. bir kurumun birkaç okuluna aynı hesaptan fatura edilmesi) kalem
