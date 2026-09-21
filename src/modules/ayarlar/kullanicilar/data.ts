@@ -41,8 +41,7 @@ export const BOS_PROFIL: KullaniciProfili = {
     veresiye: { gorebilecegiMusteriler: 'all' },
     okul: { siparis: false, okullar: false, urunler: false, ekstre: false, mesaj: false }
   },
-  aktif: true,
-  bildirimler: { yeniSiparis: false, gunlukHatirlatma: false, yeniVeresiyeKaydi: false, okulHatirlatma: false }
+  aktif: true
 }
 
 export async function kullaniciProfiliOlustur(uid: string, profil: KullaniciProfili): Promise<void> {

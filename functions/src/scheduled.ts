@@ -1,8 +1,6 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler'
-import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { defineSecret } from 'firebase-functions/params'
 import { getFirestore } from 'firebase-admin/firestore'
-import { getMessaging } from 'firebase-admin/messaging'
 
 const telegramBotToken = defineSecret('TELEGRAM_BOT_TOKEN')
 const TIME_ZONE = 'Europe/Istanbul'
@@ -64,45 +62,6 @@ async function telegramChatIdGetir(modul: 'siparis' | 'veresiye' | 'okul'): Prom
   const snap = await getFirestore().doc('settings/telegram').get()
   const chatId = snap.data()?.chatIds?.[modul]
   return typeof chatId === 'string' && chatId ? chatId : null
-}
-
-// --- Push bildirimleri (kullanıcı tercihine göre — bkz. KullaniciProfili.bildirimler) ---
-
-export async function pushGonderKullanicilara(
-  bildirimTuru: 'yeniSiparis' | 'gunlukHatirlatma' | 'yeniVeresiyeKaydi' | 'okulHatirlatma',
-  baslik: string,
-  govde: string
-): Promise<void> {
-  const db = getFirestore()
-  const usersSnap = await db.collection('users').where(`bildirimler.${bildirimTuru}`, '==', true).get()
-  const tokenKaynaklari: { uid: string; token: string }[] = []
-  for (const d of usersSnap.docs) {
-    const tokenlar: string[] = d.data().fcmTokens ?? []
-    for (const t of tokenlar) tokenKaynaklari.push({ uid: d.id, token: t })
-  }
-  if (tokenKaynaklari.length === 0) return
-
-  const sonuc = await getMessaging().sendEachForMulticast({
-    tokens: tokenKaynaklari.map((t) => t.token),
-    notification: { title: baslik, body: govde }
-  })
-
-  // Artık geçersiz (kaldırılmış/süresi dolmuş) token'ları sahibi kullanıcıdan temizle.
-  const gecersizByUid = new Map<string, string[]>()
-  sonuc.responses.forEach((r, i) => {
-    if (!r.success) {
-      const { uid, token } = tokenKaynaklari[i]
-      gecersizByUid.set(uid, [...(gecersizByUid.get(uid) ?? []), token])
-    }
-  })
-  await Promise.all(
-    [...gecersizByUid.entries()].map(async ([uid, gecersizTokenlar]) => {
-      const kullaniciDoc = usersSnap.docs.find((d) => d.id === uid)
-      const mevcutTokenlar: string[] = kullaniciDoc?.data().fcmTokens ?? []
-      const yeniTokenlar = mevcutTokenlar.filter((t) => !gecersizTokenlar.includes(t))
-      await db.doc(`users/${uid}`).update({ fcmTokens: yeniTokenlar })
-    })
-  )
 }
 
 // --- Okul sipariş mesajı (bkz. src/modules/okul/MesajPage.tsx okulMesajOlustur ile aynı format) ---
@@ -200,23 +159,32 @@ export const okulSiparisiAksamGonder = onSchedule(
   }
 )
 
-/** Her akşam 17:00 (İstanbul) — "okul hatırlatma" tercihi açık kullanıcılara, bugünün
- * okul siparişlerini gözden geçirip günü kapatmayı hatırlatan bir push gönderir.
- * Bugün için hiç bekleyen (henüz kapanmamış) satır yoksa gönderilmez. */
-export const okulHatirlatmaGonder = onSchedule({ schedule: '0 17 * * *', timeZone: TIME_ZONE, region: REGION }, async () => {
-  const bugun = istanbulTarihStr(new Date())
-  const db = getFirestore()
-  const snap = await db.collection('okul_orders').where('tarih', '==', bugun).where('kapandiMi', '==', false).get()
-  if (snap.empty) {
-    console.log(`[okulHatirlatmaGonder] ${bugun} için bekleyen sipariş yok, atlanıyor.`)
-    return
+/** Her akşam 17:00 (İstanbul) — bugünün okul siparişlerinde hâlâ kapanmamış satır
+ * varsa, Okul modülünün Telegram sohbetine günü kapatmayı hatırlatan bir mesaj
+ * gönderir (eskiden push'tu — push bildirimleri tamamen kaldırıldığı için
+ * Telegram'a taşındı). Bugün için hiç bekleyen satır yoksa gönderilmez. */
+export const okulHatirlatmaGonder = onSchedule(
+  { schedule: '0 17 * * *', timeZone: TIME_ZONE, region: REGION, secrets: [telegramBotToken] },
+  async () => {
+    const bugun = istanbulTarihStr(new Date())
+    const db = getFirestore()
+    const snap = await db.collection('okul_orders').where('tarih', '==', bugun).where('kapandiMi', '==', false).get()
+    if (snap.empty) {
+      console.log(`[okulHatirlatmaGonder] ${bugun} için bekleyen sipariş yok, atlanıyor.`)
+      return
+    }
+    const chatId = await telegramChatIdGetir('okul')
+    if (!chatId) {
+      console.log('[okulHatirlatmaGonder] Okul için Telegram chat ID tanımlı değil, atlanıyor.')
+      return
+    }
+    await telegramMesajGonder(
+      telegramBotToken.value().trim(),
+      chatId,
+      '⏰ Bugünün okul siparişlerini gözden geçirip günü kapatmayı unutmayın.'
+    )
   }
-  await pushGonderKullanicilara(
-    'okulHatirlatma',
-    'Okul Siparişlerini Kontrol Edin',
-    'Bugünün okul siparişlerini gözden geçirip günü kapatmayı unutmayın.'
-  )
-})
+)
 
 /** Sipariş modülü için ortak mantık — yarın + öbür günün listelerini ayrı ayrı gönderir. */
 async function siparisListeleriniGonder(): Promise<void> {
@@ -238,19 +206,11 @@ async function siparisListeleriniGonder(): Promise<void> {
   }
 }
 
-/** Her sabah 07:45 (İstanbul) — yarın ve öbür günün sipariş listelerini Telegram'a, ayrıca
- * "günlük hatırlatma" tercihi açık personele yarının sipariş sayısını push olarak gönderir. */
+/** Her sabah 07:45 (İstanbul) — yarın ve öbür günün sipariş listelerini Telegram'a gönderir. */
 export const siparisListeleriSabahGonder = onSchedule(
   { schedule: '45 7 * * *', timeZone: TIME_ZONE, region: REGION, secrets: [telegramBotToken] },
   async () => {
     await siparisListeleriniGonder()
-
-    const yarin = gunEkle(istanbulTarihStr(new Date()), 1)
-    const db = getFirestore()
-    const snap = await db.collection('siparis_orders').where('teslimatTarihi', '==', yarin).where('silindi', '==', false).get()
-    const sayisi = snap.docs.map((d) => d.data()).filter((s) => s.durum !== 'iptal').length
-    if (sayisi === 0) return
-    await pushGonderKullanicilara('gunlukHatirlatma', 'Yarın İçin Sipariş Var', `Yarın için ${sayisi} sipariş bulunuyor.`)
   }
 )
 
@@ -291,21 +251,3 @@ export const jsonYedekGonder = onSchedule(
     await telegramDosyaGonder(telegramBotToken.value().trim(), chatId, icerik, dosyaAdi, `${tarih} tarihli otomatik veritabanı yedeği`)
   }
 )
-
-// --- Anlık push bildirimi: yeni sipariş girildiğinde ---
-
-interface YeniSiparisVerisi {
-  musteriAdi?: string
-  durum?: string
-  items?: { adet: number; urunAdi: string }[]
-}
-
-/** Yeni bir sipariş dokümanı oluşturulduğunda, "yeni sipariş" bildirimini açmış personele
- * anlık push gönderir. İleriye dönük toplu üretilmiş 'planlandi' taslaklar hariçtir —
- * bunlar tek seferde onlarca kayıt oluşturabildiği için bildirim spam'ine yol açardı. */
-export const yeniSiparisBildirimi = onDocumentCreated({ document: 'siparis_orders/{siparisId}', region: REGION }, async (event) => {
-  const veri = event.data?.data() as YeniSiparisVerisi | undefined
-  if (!veri || veri.durum === 'planlandi') return
-  const urunOzet = (veri.items ?? []).map((it) => `${it.adet}x ${it.urunAdi}`).join(', ')
-  await pushGonderKullanicilara('yeniSiparis', 'Yeni Sipariş', `${veri.musteriAdi ?? '—'} — ${urunOzet}`)
-})

@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Bell, BellRing, ChevronDown } from 'lucide-react'
+import { useMemo, useState, type FormEvent } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { httpsCallable } from 'firebase/functions'
 import { isFirebaseConfigured, requireFunctions } from '../lib/firebase'
 import { formatTutar } from '../shared/TutarGoster'
 import { cuvalGoster } from '../shared/unHesabi'
-import { portalBildirimleriEtkinlestir, pushDurumuGetir, type PushDurum } from '../shared/pushBildirimleri'
 import DurumRozeti from '../shared/DurumRozeti'
 import { anaUrunAdi } from '../shared/urunAdi'
 import type { VeresiyeDurumu } from '../lib/types'
@@ -122,30 +121,12 @@ export default function PortalApp() {
   const [hata, setHata] = useState<string | null>(null)
   const [hataKodu, setHataKodu] = useState<string | null>(null)
   const [veri, setVeri] = useState<PortalSonuc | null>(null)
-  const [pushDurum, setPushDurum] = useState<PushDurum>('izin_verilmedi')
-  const [pushIsleniyor, setPushIsleniyor] = useState(false)
   const [acikAy, setAcikAy] = useState<string | null>(null)
   const [acikUrun, setAcikUrun] = useState<string | null>(null)
-
-  useEffect(() => {
-    pushDurumuGetir().then(setPushDurum)
-  }, [])
 
   const toplamOdenen = useMemo(() => (veri ? veri.odemeler.reduce((s, o) => s + o.tutar, 0) : 0), [veri])
   const urunToplamlari = useMemo(() => (veri ? urunBazliToplamOlustur(veri.kayitlar) : []), [veri])
   const aylikOzet = useMemo(() => (veri ? aylikOzetOlustur(veri.kayitlar) : []), [veri])
-
-  async function handleBildirimAc() {
-    setPushIsleniyor(true)
-    try {
-      await portalBildirimleriEtkinlestir(kod, sifre)
-      setPushDurum('aktif')
-    } catch (err) {
-      setHata(err instanceof Error ? err.message : 'Bildirimler açılamadı.')
-    } finally {
-      setPushIsleniyor(false)
-    }
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -415,24 +396,6 @@ export default function PortalApp() {
                 </div>
               )}
             </div>
-
-            {pushDurum !== 'desteklenmiyor' && pushDurum !== 'aktif' && (
-              <button
-                onClick={handleBildirimAc}
-                disabled={pushIsleniyor || pushDurum === 'reddedildi'}
-                title={pushDurum === 'reddedildi' ? 'Tarayıcı ayarlarından bildirim izni vermeniz gerekiyor.' : undefined}
-                className="flex w-full items-center justify-center gap-1.5 rounded-2xl bg-bakery-surface py-2.5 text-sm font-medium text-bakery-ink-700 shadow-lg shadow-bakery-coffee-900/10 hover:bg-bakery-cream-50 disabled:opacity-50"
-              >
-                <Bell size={15} />
-                {pushIsleniyor ? 'Açılıyor…' : 'Bildirimleri Aç'}
-              </button>
-            )}
-            {pushDurum === 'aktif' && (
-              <div className="flex items-center justify-center gap-1.5 rounded-2xl bg-bakery-surface py-2.5 text-sm font-medium text-bakery-success shadow-lg shadow-bakery-coffee-900/10">
-                <BellRing size={15} />
-                Bildirimler açık
-              </div>
-            )}
 
             <button
               onClick={() => {

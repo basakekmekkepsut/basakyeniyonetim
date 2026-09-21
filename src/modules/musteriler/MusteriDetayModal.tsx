@@ -1,13 +1,11 @@
 import { useMemo } from 'react'
-import { X, Bell, Pencil, Phone, MapPin, Share2 } from 'lucide-react'
-import { httpsCallable } from 'firebase/functions'
+import { X, Pencil, Phone, MapPin, Share2 } from 'lucide-react'
 import { useVeresiyeKayitlar } from '../veresiye/data'
 import { useVeresiyeOdemeler } from '../veresiye/odemeData'
 import { unHesabiAktifMi, cuvalGoster } from '../../shared/unHesabi'
 import { musteriHitabi, portalMesajOlustur } from '../../shared/musteriYardimci'
 import DurumRozeti from '../../shared/DurumRozeti'
 import { formatTutar } from '../../shared/TutarGoster'
-import { requireFunctions } from '../../lib/firebase'
 import { isAdmin, useSession } from '../../lib/session'
 import { useToast } from '../../shared/Toast'
 import type { Musteri } from '../../lib/types'
@@ -32,19 +30,6 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
   const veresiyeSecili = m.moduller.includes('veresiye')
   const unMusterisi = unHesabiAktifMi(m)
   const admin = session.status === 'signed-in' && isAdmin(session.profile)
-
-  async function handleTestBildirim() {
-    try {
-      const cagir = httpsCallable<{ hedefTipi: 'musteri'; id: string }, { basarili: number; basarisiz: number }>(
-        requireFunctions(),
-        'pushTestGonder'
-      )
-      const sonuc = await cagir({ hedefTipi: 'musteri', id: m.id })
-      toast.basari(`Test bildirimi gönderildi (${sonuc.data.basarili} cihaza).`)
-    } catch (err) {
-      toast.hata(err instanceof Error ? err.message : 'Bildirim gönderilemedi.')
-    }
-  }
 
   // Veresiye'de olmayan müşteri için sorguyu atlamak yerine (hook'lar koşulsuz
   // çağrılmalı) hiçbir dokümanla eşleşmeyecek bir musteriId veriyoruz.
@@ -202,15 +187,6 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
         </div>
 
         <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-bakery-cream-100 bg-bakery-surface/95 px-5 py-3.5 backdrop-blur">
-          {admin && (
-            <button
-              onClick={handleTestBildirim}
-              title="Test bildirimi gönder"
-              className="mr-auto rounded-xl p-2 text-bakery-ink-500 hover:bg-bakery-cream-100"
-            >
-              <Bell size={16} />
-            </button>
-          )}
           <button onClick={onKapat} className="rounded-xl px-4 py-2 text-sm font-medium text-bakery-ink-600 hover:bg-bakery-cream-100">
             Kapat
           </button>

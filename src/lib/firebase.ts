@@ -2,7 +2,6 @@ import { initializeApp, type FirebaseApp } from 'firebase/app'
 import { connectAuthEmulator, getAuth, type Auth } from 'firebase/auth'
 import { connectFirestoreEmulator, initializeFirestore, persistentLocalCache, type Firestore } from 'firebase/firestore'
 import { connectFunctionsEmulator, getFunctions, type Functions } from 'firebase/functions'
-import { getMessaging, isSupported as pushDesteginiKontrolEt, type Messaging } from 'firebase/messaging'
 
 const env = import.meta.env
 
@@ -11,7 +10,6 @@ const config = {
   authDomain: env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined,
   projectId: env.VITE_FIREBASE_PROJECT_ID as string | undefined,
   storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined,
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID as string | undefined,
   appId: env.VITE_FIREBASE_APP_ID as string | undefined
 }
 
@@ -63,20 +61,4 @@ export function requireDb(): Firestore {
 export function requireFunctions(): Functions {
   if (!functions) throw new Error('Firebase Functions yapılandırılmadı — .env dosyasını kontrol edin.')
   return functions
-}
-
-// Push bildirimi (FCM), Safari/iOS gibi bazı ortamlarda hiç desteklenmeyebilir ve
-// senkron getMessaging() çağrısı desteklenmeyen ortamda hata fırlatır — bu yüzden
-// isSupported() ile önce kontrol edilip tembel (lazy) olarak oluşturulur.
-let messaging: Messaging | undefined
-let messagingKontrolEdildi = false
-
-export async function pushMessagingGetir(): Promise<Messaging | null> {
-  if (!app) return null
-  if (messagingKontrolEdildi) return messaging ?? null
-  messagingKontrolEdildi = true
-  const destekleniyor = await pushDesteginiKontrolEt().catch(() => false)
-  if (!destekleniyor) return null
-  messaging = getMessaging(app)
-  return messaging
 }

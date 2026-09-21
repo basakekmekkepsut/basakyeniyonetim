@@ -1,11 +1,9 @@
 import { useState } from 'react'
-import { Bell, Pencil, Plus } from 'lucide-react'
-import { httpsCallable } from 'firebase/functions'
+import { Pencil, Plus } from 'lucide-react'
 import { useKullanicilar, kullaniciProfiliOlustur, kullaniciProfiliGuncelle, type KullaniciSatiri } from './data'
 import KullaniciFormModal from './KullaniciFormModal'
 import BosDurum from '../../../shared/BosDurum'
 import { useToast } from '../../../shared/Toast'
-import { requireFunctions } from '../../../lib/firebase'
 import type { KullaniciProfili } from '../../../lib/types'
 import { useSession } from '../../../lib/session'
 
@@ -15,19 +13,6 @@ export default function KullanicilarPage() {
   const toast = useToast()
   const [formAcik, setFormAcik] = useState(false)
   const [duzenlenen, setDuzenlenen] = useState<KullaniciSatiri | undefined>()
-
-  async function handleTestBildirim(uid: string) {
-    try {
-      const cagir = httpsCallable<{ hedefTipi: 'personel'; id: string }, { basarili: number; basarisiz: number }>(
-        requireFunctions(),
-        'pushTestGonder'
-      )
-      const sonuc = await cagir({ hedefTipi: 'personel', id: uid })
-      toast.basari(`Test bildirimi gönderildi (${sonuc.data.basarili} cihaza).`)
-    } catch (err) {
-      toast.hata(err instanceof Error ? err.message : 'Bildirim gönderilemedi.')
-    }
-  }
 
   async function handleKaydet(uid: string, profil: KullaniciProfili) {
     if (duzenlenen) {
@@ -99,14 +84,6 @@ export default function KullanicilarPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleTestBildirim(k.uid)}
-                      className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
-                      aria-label="Test bildirimi gönder"
-                      title="Test bildirimi gönder"
-                    >
-                      <Bell size={16} />
-                    </button>
                     <button
                       onClick={() => {
                         setDuzenlenen(k)

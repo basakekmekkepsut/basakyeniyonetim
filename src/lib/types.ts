@@ -21,14 +21,6 @@ export interface KullaniciProfili {
     }
   }
   aktif: boolean
-  // Bu özellikten önce oluşturulmuş kullanıcı dokümanlarında yok — okuyan
-  // tarafta her zaman `?? false` ile varsayılan kapalı kabul edilir.
-  bildirimler: {
-    yeniSiparis: boolean // yeni bir müşteri siparişi girildiğinde anlık push
-    gunlukHatirlatma: boolean // her sabah 7:45'te "yarın için sipariş var" özeti
-    yeniVeresiyeKaydi: boolean // Günlük Giriş'te "Tümünü Kaydet" sonrası özet push
-    okulHatirlatma: boolean // her akşam 17:00'de okul siparişlerini gözden geçirme hatırlatması
-  }
 }
 
 export type Modul = 'siparis' | 'veresiye' | 'okul'
