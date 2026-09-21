@@ -141,6 +141,7 @@ interface UretimOzetiOkulOrderVerisi {
   schoolId: string
   lineId: string
   adet: number
+  not?: string
 }
 
 /**
@@ -188,14 +189,17 @@ export const uretimOzetiGetir = onCall<UretimOzetiData>({ region: 'europe-west1'
     okulHatlari.set(d.id, hatMap)
   })
 
-  const okulSatirlari = new Map<string, Map<string, number>>() // schoolId -> (urunAdi -> adet)
+  // Not (ör. "dilimli") belirli bir hatta ait olduğu için, aynı okulda aynı
+  // ürün adını taşıyan satırlar birleştirilmez — her okul_orders kaydı kendi
+  // notuyla ayrı bir satır olarak kalır.
+  const okulSatirlari = new Map<string, { urunAdi: string; adet: number; not?: string }[]>()
   for (const d of okulOrdersSnap.docs) {
     const veri = d.data() as UretimOzetiOkulOrderVerisi
     if (veri.adet <= 0) continue
     const urunAdi = okulHatlari.get(veri.schoolId)?.get(veri.lineId) ?? '—'
     ekle(urunAdi, veri.adet)
-    const satirlar = okulSatirlari.get(veri.schoolId) ?? new Map<string, number>()
-    satirlar.set(urunAdi, (satirlar.get(urunAdi) ?? 0) + veri.adet)
+    const satirlar = okulSatirlari.get(veri.schoolId) ?? []
+    satirlar.push({ urunAdi, adet: veri.adet, not: veri.not || undefined })
     okulSatirlari.set(veri.schoolId, satirlar)
   }
 
@@ -204,12 +208,10 @@ export const uretimOzetiGetir = onCall<UretimOzetiData>({ region: 'europe-west1'
     .sort((a, b) => b.adet - a.adet)
 
   const okullar = [...okulSatirlari.entries()]
-    .map(([schoolId, satirlarMap]) => {
-      const satirlar = [...satirlarMap.entries()]
-        .map(([urunAdi, adet]) => ({ urunAdi, adet }))
-        .sort((a, b) => b.adet - a.adet)
-      const toplam = satirlar.reduce((s, x) => s + x.adet, 0)
-      return { okulAdi: okulAdlari.get(schoolId) ?? '—', satirlar, toplam }
+    .map(([schoolId, satirlar]) => {
+      const sirali = [...satirlar].sort((a, b) => b.adet - a.adet)
+      const toplam = sirali.reduce((s, x) => s + x.adet, 0)
+      return { okulAdi: okulAdlari.get(schoolId) ?? '—', satirlar: sirali, toplam }
     })
     .sort((a, b) => b.toplam - a.toplam)
 

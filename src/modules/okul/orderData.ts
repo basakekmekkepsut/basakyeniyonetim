@@ -150,6 +150,30 @@ export async function okulSiparisMiktariGuncelle(
   }
 }
 
+// Sipariş sayfasındaki serbest metin not alanı için (ör. "dilimli", "sabaha") —
+// aynı gün+hat için zaten bir kayıt varsa günceller, yoksa (nadiren — genelde
+// varsayilanSiparisleriHazirla zaten oluşturmuştur) 0 adetle oluşturur.
+export async function okulSiparisNotuGuncelle(
+  tarih: string,
+  schoolId: string,
+  lineId: string,
+  productId: string,
+  not: string
+): Promise<void> {
+  const db = requireDb()
+  const mevcutSnap = await getDocs(
+    query(collection(db, ORDERS), where('tarih', '==', tarih), where('lineId', '==', lineId), limit(1))
+  )
+  const mevcutRef = mevcutSnap.docs[0]?.ref
+  const temizNot = not.trim()
+
+  if (mevcutRef) {
+    await updateDoc(mevcutRef, { not: temizNot })
+  } else {
+    await addDoc(collection(db, ORDERS), { tarih, schoolId, lineId, productId, adet: 0, kapandiMi: false, not: temizNot })
+  }
+}
+
 // Ekstre > "Beklemede" bölümünden yanlış/gereksiz bir satırı doğrudan silmek için
 // (Günü Kapat'tan ÖNCE — kesinleşmiş bir teslimatı değil, henüz kapanmamış bir
 // okul_orders satırını siler).

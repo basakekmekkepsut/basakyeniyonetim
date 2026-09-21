@@ -256,6 +256,9 @@ export interface OkulOrder {
   productId: string
   adet: number
   kapandiMi: boolean
+  // Sipariş sayfasından girilen, o güne özel serbest metin not (ör. "dilimli",
+  // "dilimsiz") — ustaların da görebileceği üretim özetine yansır.
+  not?: string
 }
 
 export interface OkulTeslimat {

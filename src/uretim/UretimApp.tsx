@@ -6,6 +6,7 @@ import { tarihGunAdiIle } from '../shared/tarih'
 interface UretimUrunu {
   urunAdi: string
   adet: number
+  not?: string
 }
 
 interface UretimOkulSatiri {
@@ -147,9 +148,10 @@ export default function UretimApp() {
                         <span className="text-sm font-semibold text-bakery-amber-600">{o.toplam} adet</span>
                       </div>
                       <ul className="pl-1 text-sm text-bakery-ink-600">
-                        {o.satirlar.map((s) => (
-                          <li key={s.urunAdi}>
+                        {o.satirlar.map((s, i) => (
+                          <li key={i}>
                             {s.adet}× {s.urunAdi}
+                            {s.not && <span className="font-medium text-bakery-amber-600"> — {s.not}</span>}
                           </li>
                         ))}
                       </ul>

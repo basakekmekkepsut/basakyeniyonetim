@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useOkullar, okulGuncelle, yeniHatId, okullariGrupla } from './data'
-import { useOkulOrders, useOkulKapanis, okulSiparisMiktariGuncelle, varsayilanSiparisleriHazirla } from './orderData'
+import {
+  useOkulOrders,
+  useOkulKapanis,
+  okulSiparisMiktariGuncelle,
+  okulSiparisNotuGuncelle,
+  varsayilanSiparisleriHazirla
+} from './orderData'
 import { useUrunler } from '../urunler/data'
 import { useMusteriler } from '../musteriler/data'
 import BosDurum from '../../shared/BosDurum'
@@ -23,6 +29,7 @@ export default function SiparisPage() {
   const { kapanis, yukleniyor: kapanisYukleniyor } = useOkulKapanis(tarih)
 
   const [degerler, setDegerler] = useState<Record<string, number>>({})
+  const [notlar, setNotlar] = useState<Record<string, string>>({})
   const okulUrunleri = urunler.filter((u) => u.aktif && u.modules.includes('okul'))
 
   // "+ Ürün Ekle": okulun sabit hat listesinde olmayan bir ürünü o okula, adet 0
@@ -61,6 +68,10 @@ export default function SiparisPage() {
     }
     for (const o of orders) yeni[o.lineId] = o.adet
     setDegerler(yeni)
+
+    const yeniNotlar: Record<string, string> = {}
+    for (const o of orders) if (o.not) yeniNotlar[o.lineId] = o.not
+    setNotlar(yeniNotlar)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tarih, orders.length, okullar.length])
 
@@ -78,6 +89,14 @@ export default function SiparisPage() {
 
   async function commit(schoolId: string, lineId: string, productId: string, adet: number) {
     await okulSiparisMiktariGuncelle(tarih, schoolId, lineId, productId, adet)
+  }
+
+  async function commitNot(schoolId: string, lineId: string, productId: string, not: string) {
+    try {
+      await okulSiparisNotuGuncelle(tarih, schoolId, lineId, productId, not)
+    } catch (err) {
+      toast.hata(err instanceof Error ? err.message : 'Not kaydedilemedi.')
+    }
   }
 
   const aktifOkullar = okullar.filter((o) => o.lines.some((l) => l.aktif))
@@ -125,23 +144,34 @@ export default function SiparisPage() {
                               const order = lineOrder(l.id)
                               const kapali = order?.kapandiMi ?? false
                               return (
-                                <div key={l.id} className="flex items-center justify-between gap-3 text-sm">
-                                  <span className="text-bakery-ink-600">{l.urunAdi}</span>
-                                  <div className="flex items-center gap-2">
-                                    {kapali && <span className="text-xs text-bakery-ink-400">Kapandı</span>}
-                                    <input
-                                      type="number"
-                                      min={0}
-                                      disabled={kapali}
-                                      value={degerler[l.id] ?? ''}
-                                      placeholder="0"
-                                      onChange={(e) =>
-                                        setDegerler((prev) => ({ ...prev, [l.id]: Number(e.target.value) }))
-                                      }
-                                      onBlur={(e) => commit(okul.id, l.id, l.productId, Number(e.target.value) || 0)}
-                                      className="w-20 rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-2 py-1.5 text-center outline-none focus:border-bakery-amber-500 disabled:bg-bakery-cream-100 disabled:text-bakery-ink-400"
-                                    />
+                                <div key={l.id} className="flex flex-col gap-1">
+                                  <div className="flex items-center justify-between gap-3 text-sm">
+                                    <span className="text-bakery-ink-600">{l.urunAdi}</span>
+                                    <div className="flex items-center gap-2">
+                                      {kapali && <span className="text-xs text-bakery-ink-400">Kapandı</span>}
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        disabled={kapali}
+                                        value={degerler[l.id] ?? ''}
+                                        placeholder="0"
+                                        onChange={(e) =>
+                                          setDegerler((prev) => ({ ...prev, [l.id]: Number(e.target.value) }))
+                                        }
+                                        onBlur={(e) => commit(okul.id, l.id, l.productId, Number(e.target.value) || 0)}
+                                        className="w-20 rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-2 py-1.5 text-center outline-none focus:border-bakery-amber-500 disabled:bg-bakery-cream-100 disabled:text-bakery-ink-400"
+                                      />
+                                    </div>
                                   </div>
+                                  <input
+                                    type="text"
+                                    disabled={kapali}
+                                    value={notlar[l.id] ?? ''}
+                                    placeholder="Not ekle… (ör. dilimli, sabaha)"
+                                    onChange={(e) => setNotlar((prev) => ({ ...prev, [l.id]: e.target.value }))}
+                                    onBlur={(e) => commitNot(okul.id, l.id, l.productId, e.target.value)}
+                                    className="w-full rounded-lg border border-dashed border-bakery-cream-200 bg-transparent px-2 py-1 text-xs text-bakery-ink-500 outline-none focus:border-bakery-amber-500 disabled:bg-bakery-cream-100"
+                                  />
                                 </div>
                               )
                             })}

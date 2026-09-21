@@ -34,7 +34,7 @@ export default function UretimPage() {
           .filter((o) => o.schoolId === okul.id)
           .map((o) => {
             const hat = okul.lines.find((l) => l.id === o.lineId)
-            return { urunAdi: hat?.urunAdi ?? '—', adet: o.adet }
+            return { urunAdi: hat?.urunAdi ?? '—', adet: o.adet, not: o.not }
           })
         return { okul, satirlar, toplam: satirlar.reduce((s, x) => s + x.adet, 0) }
       })
@@ -83,6 +83,7 @@ export default function UretimPage() {
                     {satirlar.map((s, i) => (
                       <li key={i}>
                         {s.adet}× {s.urunAdi}
+                        {s.not && <span className="text-bakery-amber-600"> — {s.not}</span>}
                       </li>
                     ))}
                   </ul>
