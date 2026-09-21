@@ -14,6 +14,11 @@ interface UretimOkulSatiri {
   toplam: number
 }
 
+interface UretimSiparisSatiri {
+  musteriAdi: string
+  satirlar: UretimUrunu[]
+}
+
 function yarinStr() {
   const d = new Date()
   d.setDate(d.getDate() + 1)
@@ -22,12 +27,14 @@ function yarinStr() {
 
 // Ustaların (üretim ekibi) giriş yapmadan bakabileceği, tamamen açık bir
 // üretim özeti — Sipariş ve Okul modüllerindeki o günkü siparişleri ürün
-// bazında toplayıp gösterir, ayrıca hangi okulun ne kadar aldığını da
-// listeler. Sipariş modülündeki müşteri adları/adresleri BİLİNÇLİ olarak
-// dışarı verilmez (bkz. functions/src/index.ts uretimOzetiGetir).
+// bazında toplayıp gösterir, ayrıca kimin (müşteri/okul) ne sipariş ettiğini
+// de listeler (bkz. functions/src/index.ts uretimOzetiGetir). Ürün bazlı
+// toplamların hepsini tek bir sayıda toplamıyoruz — farklı ürünleri (ör. roll
+// + simit) toplamak anlamlı bir "toplam" üretmez.
 export default function UretimApp() {
   const [tarih, setTarih] = useState(yarinStr())
   const [urunler, setUrunler] = useState<UretimUrunu[]>([])
+  const [siparisler, setSiparisler] = useState<UretimSiparisSatiri[]>([])
   const [okullar, setOkullar] = useState<UretimOkulSatiri[]>([])
   const [yukleniyor, setYukleniyor] = useState(true)
   const [hata, setHata] = useState<string | null>(null)
@@ -37,14 +44,15 @@ export default function UretimApp() {
     let iptalEdildi = false
     setYukleniyor(true)
     setHata(null)
-    const cagir = httpsCallable<{ tarih: string }, { urunler: UretimUrunu[]; okullar: UretimOkulSatiri[] }>(
-      requireFunctions(),
-      'uretimOzetiGetir'
-    )
+    const cagir = httpsCallable<
+      { tarih: string },
+      { urunler: UretimUrunu[]; siparisler: UretimSiparisSatiri[]; okullar: UretimOkulSatiri[] }
+    >(requireFunctions(), 'uretimOzetiGetir')
     cagir({ tarih })
       .then((sonuc) => {
         if (iptalEdildi) return
         setUrunler(sonuc.data.urunler)
+        setSiparisler(sonuc.data.siparisler)
         setOkullar(sonuc.data.okullar)
       })
       .catch((err) => {
@@ -58,8 +66,6 @@ export default function UretimApp() {
       iptalEdildi = true
     }
   }, [tarih])
-
-  const toplamAdet = urunler.reduce((s, u) => s + u.adet, 0)
 
   if (!isFirebaseConfigured) {
     return (
@@ -108,11 +114,27 @@ export default function UretimApp() {
                   <span className="text-xl font-bold text-bakery-amber-600">{u.adet}</span>
                 </div>
               ))}
-              <div className="flex items-center justify-between rounded-2xl bg-bakery-coffee-800 px-4 py-3.5 text-white shadow-lg">
-                <span className="text-sm font-medium">Toplam</span>
-                <span className="text-xl font-bold">{toplamAdet}</span>
-              </div>
             </div>
+
+            {siparisler.length > 0 && (
+              <div className="mt-5">
+                <h2 className="mb-2 text-sm font-semibold text-bakery-ink-700">Sipariş Detayı</h2>
+                <div className="space-y-2">
+                  {siparisler.map((s, i) => (
+                    <div key={i} className="rounded-2xl bg-bakery-surface p-3.5 shadow-lg shadow-bakery-coffee-900/10">
+                      <p className="mb-1 font-medium text-bakery-ink-900">{s.musteriAdi}</p>
+                      <ul className="pl-1 text-sm text-bakery-ink-600">
+                        {s.satirlar.map((u, j) => (
+                          <li key={j}>
+                            {u.adet}× {u.urunAdi}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {okullar.length > 0 && (
               <div className="mt-5">

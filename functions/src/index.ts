@@ -128,6 +128,7 @@ interface UretimOzetiData {
 interface UretimOzetiSiparisVerisi {
   silindi?: boolean
   durum?: string
+  musteriAdi?: string
   items?: { adet: number; urunAdi: string }[]
 }
 
@@ -144,12 +145,8 @@ interface UretimOzetiOkulOrderVerisi {
 
 /**
  * Ustaların (üretim ekibi) giriş yapmadan bakabileceği bir üretim özeti —
- * Sipariş ve Okul modüllerindeki o günkü siparişleri ürün bazında toplayıp
- * döner, ayrıca Okul siparişlerinin okul bazında dağılımını da verir (hangi
- * okul kaç adet alıyor — ustaların takip edebilmesi için). Bilinçli olarak
- * Sipariş modülündeki MÜŞTERİ adları/adresleri dışarı verilmez, yalnızca
- * ürün toplamına dahil edilir; bu yüzden auth gerektirmeden (public link)
- * çağrılabilir.
+ * Sipariş ve Okul modüllerindeki o günkü siparişleri hem ürün bazında
+ * toplayıp hem de kime/hangi okula ait olduğunu göstererek döner.
  */
 export const uretimOzetiGetir = onCall<UretimOzetiData>({ region: 'europe-west1' }, async (request) => {
   const { tarih } = request.data ?? {}
@@ -166,11 +163,16 @@ export const uretimOzetiGetir = onCall<UretimOzetiData>({ region: 'europe-west1'
     .where('teslimatTarihi', '==', tarih)
     .where('silindi', '==', false)
     .get()
+  const siparisler: { musteriAdi: string; satirlar: { urunAdi: string; adet: number }[] }[] = []
   for (const d of siparisSnap.docs) {
     const veri = d.data() as UretimOzetiSiparisVerisi
     if (veri.durum === 'iptal') continue
-    for (const it of veri.items ?? []) ekle(it.urunAdi, it.adet)
+    const satirlar = (veri.items ?? []).map((it) => ({ urunAdi: it.urunAdi, adet: it.adet }))
+    if (satirlar.length === 0) continue
+    for (const it of satirlar) ekle(it.urunAdi, it.adet)
+    siparisler.push({ musteriAdi: veri.musteriAdi || '—', satirlar })
   }
+  siparisler.sort((a, b) => a.musteriAdi.localeCompare(b.musteriAdi, 'tr-TR'))
 
   const [okullarSnap, okulOrdersSnap] = await Promise.all([
     db.collection('okul_schools').get(),
@@ -211,7 +213,7 @@ export const uretimOzetiGetir = onCall<UretimOzetiData>({ region: 'europe-west1'
     })
     .sort((a, b) => b.toplam - a.toplam)
 
-  return { urunler, okullar }
+  return { urunler, siparisler, okullar }
 })
 
 // --- Manuel yedekleme / geri yükleme (Ayarlar) ---
