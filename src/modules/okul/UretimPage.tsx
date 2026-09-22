@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
-import { useOkullar } from './data'
+import { useOkullar, okullariGrupla } from './data'
 import { useOkulOrders } from './orderData'
+import { useMusteriler } from '../musteriler/data'
 import BosDurum from '../../shared/BosDurum'
 
 function yarinStr() {
@@ -11,6 +12,7 @@ function yarinStr() {
 
 export default function UretimPage() {
   const { okullar } = useOkullar()
+  const { musteriler } = useMusteriler()
   const [tarih, setTarih] = useState(yarinStr())
   const { orders, yukleniyor } = useOkulOrders(tarih)
 
@@ -41,6 +43,30 @@ export default function UretimPage() {
       .filter((x) => x.satirlar.length > 0)
   }, [orders, okullar])
 
+  // Aynı Veresiye hesabını paylaşan okullar (ör. "Yeniçeri") için tek tek okul
+  // toplamlarını elle toplamak zorunda kalınmasın diye hesap bazında birleşik
+  // toplam — yalnızca gerçekten birden fazla okulun paylaştığı hesaplar için.
+  const ortakHesapToplamlari = useMemo(() => {
+    const gruplar = okullariGrupla(okullar, musteriler)
+    return gruplar
+      .filter((g) => g.anahtar !== '__okul_disi__' && g.anahtar !== '__diger__')
+      .map((g) => {
+        const okulIdSeti = new Set(g.okullar.map((o) => o.id))
+        const urunMap = new Map<string, number>()
+        let toplam = 0
+        for (const d of okulDagilimi) {
+          if (!okulIdSeti.has(d.okul.id)) continue
+          for (const s of d.satirlar) {
+            urunMap.set(s.urunAdi, (urunMap.get(s.urunAdi) ?? 0) + s.adet)
+            toplam += s.adet
+          }
+        }
+        const urunler = [...urunMap.entries()].map(([urunAdi, adet]) => ({ urunAdi, adet })).sort((a, b) => b.adet - a.adet)
+        return { baslik: g.baslik, urunler, toplam }
+      })
+      .filter((g) => g.toplam > 0)
+  }, [okullar, musteriler, okulDagilimi])
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -70,6 +96,29 @@ export default function UretimPage() {
               ))}
             </div>
           </div>
+
+          {ortakHesapToplamlari.length > 0 && (
+            <div className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
+              <h3 className="mb-3 text-sm font-semibold text-bakery-ink-800">Ortak Hesap Bazında Toplam</h3>
+              <div className="space-y-3">
+                {ortakHesapToplamlari.map((h) => (
+                  <div key={h.baslik}>
+                    <p className="mb-1 text-sm font-medium text-bakery-ink-900">
+                      {h.baslik} <span className="text-xs font-normal text-bakery-ink-500">({h.toplam} adet)</span>
+                    </p>
+                    <ul className="pl-2 text-sm text-bakery-ink-600">
+                      {h.urunler.map((u) => (
+                        <li key={u.urunAdi} className="flex items-center justify-between">
+                          <span>{u.urunAdi}</span>
+                          <span className="font-medium text-bakery-ink-900">{u.adet} adet</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="rounded-xl bg-bakery-surface p-4 shadow-sm shadow-bakery-coffee-900/5">
             <h3 className="mb-3 text-sm font-semibold text-bakery-ink-800">Okul Bazında Dağılım</h3>
