@@ -89,6 +89,13 @@ export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Pr
               onSec={(m) => {
                 setMusteriId(m.id)
                 setMusteriAdi(m.ad)
+                // Ürün (ör. otomatik seçilen Baston) müşteriden ÖNCE seçilmiş
+                // olabilir — o an liste fiyatı yazılmıştı, müşterinin özel
+                // fiyatı varsa şimdi ona çekilir.
+                if (productId) {
+                  const urun = urunler.find((u) => u.id === productId)
+                  setBirimFiyat(m.ozelFiyatlar?.[productId] ?? urun?.fiyat ?? 0)
+                }
               }}
             />
           </div>
