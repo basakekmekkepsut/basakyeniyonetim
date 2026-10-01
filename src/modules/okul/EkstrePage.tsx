@@ -36,6 +36,7 @@ export default function EkstrePage() {
   const toast = useToast()
 
   const [acikTarih, setAcikTarih] = useState<string | null>(null)
+  const [acikKapananTarih, setAcikKapananTarih] = useState<string | null>(null)
   const [acikOkulId, setAcikOkulId] = useState<string | null>(null)
   const [kapatilacakTarih, setKapatilacakTarih] = useState<string | null>(null)
   const [kapatiliyor, setKapatiliyor] = useState(false)
@@ -225,24 +226,65 @@ export default function EkstrePage() {
         <div>
           <h2 className="mb-3 text-lg font-semibold text-bakery-ink-900">Son Kapatılan Günler</h2>
           <div className="space-y-2">
-            {sonKapanan.map((k) => (
-              <div
-                key={k.tarih}
-                className="flex items-center justify-between rounded-xl bg-bakery-surface px-4 py-3 shadow-sm shadow-bakery-coffee-900/5"
-              >
-                <div>
-                  <p className="font-medium text-bakery-ink-900">{k.tarih}</p>
-                  <p className="text-xs text-bakery-ink-500">{k.satirSayisi} satır kesinleşti</p>
+            {sonKapanan.map((k) => {
+              const acik = acikKapananTarih === k.tarih
+              const gunTeslimatlari = teslimatlar
+                .filter((t) => t.tarih === k.tarih)
+                .map((t) => ({ ...t, okulAdi: okullar.find((o) => o.id === t.schoolId)?.ad ?? '—' }))
+                .sort((a, b) => a.okulAdi.localeCompare(b.okulAdi, 'tr-TR'))
+              const gunToplami = gunTeslimatlari.reduce((s, t) => s + t.tutar, 0)
+              return (
+                <div key={k.tarih} className="rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
+                  <button
+                    onClick={() => setAcikKapananTarih(acik ? null : k.tarih)}
+                    className="flex w-full items-center justify-between px-4 py-3 text-left"
+                  >
+                    <div>
+                      <p className="font-medium text-bakery-ink-900">{k.tarih}</p>
+                      <p className="text-xs text-bakery-ink-500">
+                        {k.satirSayisi} satır kesinleşti{k.kapatanUid === 'otomatik' ? ' — otomatik kapatıldı' : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-semibold text-bakery-ink-700">
+                        <TutarGoster tutar={gunToplami} />
+                      </span>
+                      <ChevronDown size={18} className={`text-bakery-ink-400 transition ${acik ? 'rotate-180' : ''}`} />
+                    </div>
+                  </button>
+                  {acik && (
+                    <div className="border-t border-bakery-cream-100 px-4 py-3">
+                      {gunTeslimatlari.length === 0 ? (
+                        <p className="mb-3 text-sm text-bakery-ink-400">Bu gün için kesinleşmiş teslimat yok.</p>
+                      ) : (
+                        <ul className="mb-3 space-y-1 text-sm text-bakery-ink-600">
+                          {gunTeslimatlari.map((t) => (
+                            <li key={t.id} className="flex items-center justify-between gap-2">
+                              <span>
+                                {t.okulAdi} — {t.urunAdi}
+                              </span>
+                              <span className="shrink-0 text-right">
+                                {t.adet} × ₺{t.birimFiyat.toLocaleString('tr-TR')} ={' '}
+                                <span className="font-medium text-bakery-ink-800">
+                                  <TutarGoster tutar={t.tutar} />
+                                </span>
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <button
+                        onClick={() => setAcilacakTarih(k.tarih)}
+                        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-bakery-ink-500 hover:bg-bakery-cream-100"
+                      >
+                        <LockOpen size={14} />
+                        Yeniden Aç
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <button
-                  onClick={() => setAcilacakTarih(k.tarih)}
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-bakery-ink-500 hover:bg-bakery-cream-100"
-                >
-                  <LockOpen size={14} />
-                  Yeniden Aç
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
