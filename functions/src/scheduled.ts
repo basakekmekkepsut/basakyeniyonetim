@@ -1,6 +1,6 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { defineSecret } from 'firebase-functions/params'
-import { getFirestore } from 'firebase-admin/firestore'
+import { FieldValue, getFirestore } from 'firebase-admin/firestore'
 
 const telegramBotToken = defineSecret('TELEGRAM_BOT_TOKEN')
 const TIME_ZONE = 'Europe/Istanbul'
@@ -161,18 +161,150 @@ export const okulSiparisiAksamGonder = onSchedule(
   }
 )
 
-/** Her akşam 17:00 (İstanbul) — bugünün okul siparişlerinde hâlâ kapanmamış satır
- * varsa, Okul modülünün Telegram sohbetine günü kapatmayı hatırlatan bir mesaj
- * gönderir (eskiden push'tu — push bildirimleri tamamen kaldırıldığı için
- * Telegram'a taşındı). Bugün için hiç bekleyen satır yoksa gönderilmez. */
+// --- Okul günü kapatma: hatırlatma + otomatik kapanış ---
+//
+// Akış (D = sipariş günü): D günü 16:00 hatırlatma → D+1 sabah 07:30 ikinci
+// hatırlatma → D+1 12:00'de hâlâ kapatılmamışsa sunucu günü kendisi kapatır.
+
+/** "2026-09-30" -> "30.09.2026" */
+function tarihTr(tarihStr: string): string {
+  const [y, m, d] = tarihStr.split('-')
+  return `${d}.${m}.${y}`
+}
+
+/** Henüz kapatılmamış (kapandiMi:false) okul siparişlerinin, verilen üst sınıra
+ * kadarki (dahil) tarihlerini sıralı döner — ileri tarihler (yarının siparişi
+ * vb.) hariç tutulur, onlar zaten henüz kapatılamaz. */
+async function acikOkulGunleri(sonTarihDahil: string): Promise<string[]> {
+  const snap = await getFirestore().collection('okul_orders').where('kapandiMi', '==', false).get()
+  const tarihler = new Set<string>()
+  for (const d of snap.docs) {
+    const tarih = d.data().tarih as string
+    if (tarih <= sonTarihDahil) tarihler.add(tarih)
+  }
+  return [...tarihler].sort()
+}
+
+interface OkulKapanisSonucu {
+  satirSayisi: number
+  toplamTutar: number
+  veresiyeYansimayan: number
+}
+
+/**
+ * src/modules/okul/orderData.ts gunuKapat'ın sunucu (admin SDK) karşılığı —
+ * aynı fiyat mantığı: ürünün liste fiyatı, okulun bağlı olduğu Veresiye
+ * müşterisinde o ürün için özel fiyat varsa o. İkisi birbirinden ayrışmasın
+ * diye değişiklik yapılırsa her iki yerde de yapılmalı.
+ *
+ * Gün daha önce kapatılmış olsa bile kapanış sonrası eklenmiş açık satırlar
+ * varsa onları da kesinleştirip mevcut kapanış kaydına ekler.
+ */
+async function okulGunuKapatSunucu(tarih: string, kapatanUid: string): Promise<OkulKapanisSonucu> {
+  const db = getFirestore()
+  const [ordersSnap, okullarSnap, urunlerSnap, kapanisSnap] = await Promise.all([
+    db.collection('okul_orders').where('tarih', '==', tarih).where('kapandiMi', '==', false).get(),
+    db.collection('okul_schools').get(),
+    db.collection('products').get(),
+    db.doc(`okul_kapanislar/${tarih}`).get()
+  ])
+  const okullar = new Map(okullarSnap.docs.map((d) => [d.id, d.data()]))
+  const urunler = new Map(urunlerSnap.docs.map((d) => [d.id, d.data()]))
+
+  const musteriIdler = [...new Set(okullarSnap.docs.map((d) => d.data().musteriId as string | null).filter((id): id is string => !!id))]
+  const musteriler = new Map<string, { ad: string; ozelFiyatlar: Record<string, number> }>()
+  await Promise.all(
+    musteriIdler.map(async (id) => {
+      const s = await db.doc(`musteriler/${id}`).get()
+      if (s.exists) musteriler.set(id, { ad: (s.data()?.ad as string) ?? '—', ozelFiyatlar: (s.data()?.ozelFiyatlar as Record<string, number>) ?? {} })
+    })
+  )
+
+  const batch = db.batch()
+  let satirSayisi = 0
+  let toplamTutar = 0
+  let veresiyeYansimayan = 0
+  const bakiyeDeltalari = new Map<string, number>()
+
+  for (const d of ordersSnap.docs) {
+    const order = d.data() as { schoolId: string; lineId: string; productId: string; adet: number }
+    const okul = okullar.get(order.schoolId)
+    const hat = (okul?.lines as { id: string }[] | undefined)?.find((l) => l.id === order.lineId)
+    const urun = urunler.get(order.productId)
+    // 0 adetli ya da okulu/hattı/ürünü silinmiş satırlar teslimat üretmez ama
+    // kapatılır — yoksa "Beklemede" listesinde sonsuza kadar asılı kalırlar.
+    batch.update(d.ref, { kapandiMi: true })
+    if (order.adet <= 0 || !okul || !hat || !urun) continue
+
+    const veresiyeMusteriId = (okul.musteriId as string | null) ?? null
+    const ozelFiyat = veresiyeMusteriId ? musteriler.get(veresiyeMusteriId)?.ozelFiyatlar[order.productId] : undefined
+    const birimFiyat = ozelFiyat ?? (urun.fiyat as number)
+    const tutar = order.adet * birimFiyat
+    const veresiyeRef = veresiyeMusteriId ? db.collection('veresiye_kayitlar').doc() : null
+    if (!veresiyeMusteriId) veresiyeYansimayan += 1
+
+    batch.set(db.collection('okul_teslimatlar').doc(), {
+      tarih,
+      schoolId: order.schoolId,
+      lineId: order.lineId,
+      productId: order.productId,
+      urunAdi: urun.ad,
+      adet: order.adet,
+      birimFiyat,
+      tutar,
+      kapanisZamani: FieldValue.serverTimestamp(),
+      kapatanUid,
+      veresiyeKayitId: veresiyeRef?.id ?? null
+    })
+    satirSayisi += 1
+    toplamTutar += tutar
+
+    if (veresiyeRef && veresiyeMusteriId) {
+      batch.set(veresiyeRef, {
+        musteriId: veresiyeMusteriId,
+        musteriAdi: musteriler.get(veresiyeMusteriId)?.ad ?? '—',
+        productId: order.productId,
+        urunAdi: `${okul.ad} — ${urun.ad}`,
+        adet: order.adet,
+        birimFiyat,
+        tutar,
+        tarih,
+        durum: 'veresiye',
+        girisYontemi: 'okul',
+        kaynakSiparisId: null,
+        esdegerAdet: 0,
+        olusturanUid: kapatanUid,
+        olusturmaTarihi: FieldValue.serverTimestamp(),
+        guncellenmeTarihi: FieldValue.serverTimestamp()
+      })
+      bakiyeDeltalari.set(veresiyeMusteriId, (bakiyeDeltalari.get(veresiyeMusteriId) ?? 0) + tutar)
+    }
+  }
+
+  for (const [musteriId, delta] of bakiyeDeltalari) {
+    batch.update(db.doc(`musteriler/${musteriId}`), { veresiyeBakiye: FieldValue.increment(delta) })
+  }
+
+  const oncedenKapali = kapanisSnap.exists && kapanisSnap.data()?.kapandi === true
+  if (oncedenKapali) {
+    batch.update(kapanisSnap.ref, { satirSayisi: FieldValue.increment(satirSayisi) })
+  } else {
+    batch.set(kapanisSnap.ref, { tarih, kapandi: true, kapanisZamani: FieldValue.serverTimestamp(), kapatanUid, satirSayisi })
+  }
+
+  await batch.commit()
+  return { satirSayisi, toplamTutar, veresiyeYansimayan }
+}
+
+/** Her gün 16:00 (İstanbul) — bugün (ve varsa önceki günler) için okul ekstresi
+ * hâlâ kapatılmamışsa Okul Telegram sohbetine hatırlatma gönderir. */
 export const okulHatirlatmaGonder = onSchedule(
-  { schedule: '0 17 * * *', timeZone: TIME_ZONE, region: REGION, secrets: [telegramBotToken] },
+  { schedule: '0 16 * * *', timeZone: TIME_ZONE, region: REGION, secrets: [telegramBotToken] },
   async () => {
     const bugun = istanbulTarihStr(new Date())
-    const db = getFirestore()
-    const snap = await db.collection('okul_orders').where('tarih', '==', bugun).where('kapandiMi', '==', false).get()
-    if (snap.empty) {
-      console.log(`[okulHatirlatmaGonder] ${bugun} için bekleyen sipariş yok, atlanıyor.`)
+    const gunler = await acikOkulGunleri(bugun)
+    if (gunler.length === 0) {
+      console.log(`[okulHatirlatmaGonder] ${bugun} ve öncesinde kapatılmamış gün yok, atlanıyor.`)
       return
     }
     const chatId = await telegramChatIdGetir('okul')
@@ -180,11 +312,78 @@ export const okulHatirlatmaGonder = onSchedule(
       console.log('[okulHatirlatmaGonder] Okul için Telegram chat ID tanımlı değil, atlanıyor.')
       return
     }
-    await telegramMesajGonder(
-      telegramBotToken.value().trim(),
-      chatId,
-      '⏰ Bugünün okul siparişlerini gözden geçirip günü kapatmayı unutmayın.'
-    )
+    const mesaj = [
+      '⏰ Okul ekstresinde günü kapatmayı unutmayın.',
+      '',
+      `Kapatılmamış gün(ler): ${gunler.map(tarihTr).join(', ')}`,
+      '',
+      'Kapatılmazsa ertesi gün saat 12:00\'de otomatik kapatılacak.'
+    ].join('\n')
+    await telegramMesajGonder(telegramBotToken.value().trim(), chatId, mesaj)
+  }
+)
+
+/** Her sabah 07:30 (İstanbul) — dün (veya daha önce) kapatılmamış okul günü
+ * varsa, öğlen otomatik kapanıştan önce son bir hatırlatma gönderir. */
+export const okulHatirlatmaSabahGonder = onSchedule(
+  { schedule: '30 7 * * *', timeZone: TIME_ZONE, region: REGION, secrets: [telegramBotToken] },
+  async () => {
+    const dun = gunEkle(istanbulTarihStr(new Date()), -1)
+    const gunler = await acikOkulGunleri(dun)
+    if (gunler.length === 0) {
+      console.log(`[okulHatirlatmaSabahGonder] ${dun} ve öncesinde kapatılmamış gün yok, atlanıyor.`)
+      return
+    }
+    const chatId = await telegramChatIdGetir('okul')
+    if (!chatId) {
+      console.log('[okulHatirlatmaSabahGonder] Okul için Telegram chat ID tanımlı değil, atlanıyor.')
+      return
+    }
+    const mesaj = [
+      '⚠️ Okul ekstresinde kapatılmamış gün var!',
+      '',
+      `Gün(ler): ${gunler.map(tarihTr).join(', ')}`,
+      '',
+      'Bugün saat 12:00\'ye kadar kapatılmazsa sistem otomatik kapatacak.'
+    ].join('\n')
+    await telegramMesajGonder(telegramBotToken.value().trim(), chatId, mesaj)
+  }
+)
+
+/** Her gün 12:00 (İstanbul) — dün ve öncesine ait hâlâ kapatılmamış okul
+ * günlerini (bugün hariç) otomatik kapatır ve sonucu Telegram'a bildirir. */
+export const okulGunuOtomatikKapat = onSchedule(
+  { schedule: '0 12 * * *', timeZone: TIME_ZONE, region: REGION, secrets: [telegramBotToken] },
+  async () => {
+    const dun = gunEkle(istanbulTarihStr(new Date()), -1)
+    const gunler = await acikOkulGunleri(dun)
+    if (gunler.length === 0) {
+      console.log(`[okulGunuOtomatikKapat] ${dun} ve öncesinde kapatılmamış gün yok, atlanıyor.`)
+      return
+    }
+
+    const satirlar: string[] = []
+    for (const tarih of gunler) {
+      try {
+        const sonuc = await okulGunuKapatSunucu(tarih, 'otomatik')
+        const tutarStr = sonuc.toplamTutar.toLocaleString('tr-TR', { maximumFractionDigits: 2 })
+        satirlar.push(
+          `✅ ${tarihTr(tarih)} — ${sonuc.satirSayisi} satır, ₺${tutarStr}` +
+            (sonuc.veresiyeYansimayan > 0 ? ` (${sonuc.veresiyeYansimayan} satır Veresiye'ye bağlı değil)` : '')
+        )
+      } catch (err) {
+        console.error(`[okulGunuOtomatikKapat] ${tarih} kapatılamadı`, err)
+        satirlar.push(`❌ ${tarihTr(tarih)} — kapatılamadı: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
+
+    const chatId = await telegramChatIdGetir('okul')
+    if (!chatId) {
+      console.log('[okulGunuOtomatikKapat] Okul için Telegram chat ID tanımlı değil, mesaj gönderilmedi.')
+      return
+    }
+    const mesaj = ['🔒 Okul ekstresi otomatik kapatıldı', '', ...satirlar, '', 'Hata varsa Ekstre > Son Kapatılan Günler\'den "Yeniden Aç" ile düzeltebilirsiniz.'].join('\n')
+    await telegramMesajGonder(telegramBotToken.value().trim(), chatId, mesaj)
   }
 )
 

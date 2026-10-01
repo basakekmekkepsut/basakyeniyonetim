@@ -267,13 +267,16 @@ export async function gunuKapat(
   const db = requireDb()
   const kapanisRef = doc(db, KAPANISLAR, tarih)
   const kapanisSnap = await getDoc(kapanisRef)
-  if (kapanisSnap.exists() && (kapanisSnap.data() as OkulKapanis).kapandi) {
-    throw new Error('Bu tarih zaten kapatılmış.')
-  }
+  const oncedenKapali = kapanisSnap.exists() && (kapanisSnap.data() as OkulKapanis).kapandi
 
   const ordersSnap = await getDocs(
     query(collection(db, ORDERS), where('tarih', '==', tarih), where('kapandiMi', '==', false))
   )
+  // Kapanıştan sonra eklenmiş açık satırlar (ör. o tarihe sonradan eklenen bir
+  // hat) mevcut kapanışa eklenebilsin diye yalnızca kapatacak satır yoksa hata.
+  if (oncedenKapali && ordersSnap.empty) {
+    throw new Error('Bu tarih zaten kapatılmış.')
+  }
 
   interface TeslimatTaslak {
     orderRef: (typeof ordersSnap.docs)[number]['ref']
@@ -297,7 +300,7 @@ export async function gunuKapat(
     const okul = okullar.find((o) => o.id === order.schoolId)
     const hat = okul?.lines.find((l) => l.id === order.lineId)
     const urun = urunler.find((u) => u.id === order.productId)
-    if (!okul || !hat || !urun) continue // silinmiş okul/hat/ürün — atla
+    if (!okul || !hat || !urun) continue // silinmiş okul/hat/ürün — teslimat yok, aşağıda yalnızca kapatılır
 
     const veresiyeMusteriId = okul.musteriId ?? null
     if (!veresiyeMusteriId) veresiyeYansimayan += 1
@@ -342,9 +345,11 @@ export async function gunuKapat(
   let satirSayisi = 0
   const bakiyeDeltalari = new Map<string, number>()
 
+  // Teslimat üretmeyen satırlar (0 adet ya da okulu/hattı/ürünü silinmiş) da
+  // kapatılır — yoksa "Beklemede" listesinde sonsuza kadar asılı kalırlar.
+  const taslakRefleri = new Set(taslaklar.map((t) => t.orderRef.path))
   for (const d of ordersSnap.docs) {
-    const order = d.data() as OkulOrder
-    if (order.adet <= 0) batch.update(d.ref, { kapandiMi: true })
+    if (!taslakRefleri.has(d.ref.path)) batch.update(d.ref, { kapandiMi: true })
   }
 
   for (const t of taslaklar) {
@@ -395,13 +400,17 @@ export async function gunuKapat(
     batch.update(doc(db, 'musteriler', musteriId), { veresiyeBakiye: increment(delta) })
   }
 
-  batch.set(kapanisRef, {
-    tarih,
-    kapandi: true,
-    kapanisZamani: serverTimestamp(),
-    kapatanUid: kullanici.uid,
-    satirSayisi
-  })
+  if (oncedenKapali) {
+    batch.update(kapanisRef, { satirSayisi: increment(satirSayisi) })
+  } else {
+    batch.set(kapanisRef, {
+      tarih,
+      kapandi: true,
+      kapanisZamani: serverTimestamp(),
+      kapatanUid: kullanici.uid,
+      satirSayisi
+    })
+  }
 
   await batch.commit()
   return { satirSayisi, veresiyeYansimayan }

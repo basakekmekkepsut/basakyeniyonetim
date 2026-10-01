@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { ChevronDown, Lock, LockOpen, Trash2 } from 'lucide-react'
 import { useOkullar } from './data'
 import { useUrunler } from '../urunler/data'
+import { useMusteriler } from '../musteriler/data'
 import {
   useAcikOkulOrders,
   useOkulTeslimatlar,
@@ -26,6 +27,7 @@ function bugunStr() {
 export default function EkstrePage() {
   const { okullar } = useOkullar()
   const { urunler } = useUrunler()
+  const { musteriler } = useMusteriler()
   const { orders: acikOrders } = useAcikOkulOrders()
   const { teslimatlar } = useOkulTeslimatlar()
   const { payments } = useOkulPayments()
@@ -47,15 +49,19 @@ export default function EkstrePage() {
   const beklemedeGunler = useMemo(() => {
     const map = new Map<string, { tarih: string; tutar: number; satirlar: typeof acikOrders }>()
     for (const o of acikOrders) {
+      // Günü Kapat'ın kullanacağı fiyatla aynı: okulun bağlı Veresiye
+      // müşterisinde ürüne özel fiyat varsa o, yoksa liste fiyatı.
       const urun = urunler.find((u) => u.id === o.productId)
-      const tutar = o.adet * (urun?.fiyat ?? 0)
+      const musteriId = okullar.find((ok) => ok.id === o.schoolId)?.musteriId
+      const ozelFiyat = musteriId ? musteriler.find((m) => m.id === musteriId)?.ozelFiyatlar?.[o.productId] : undefined
+      const tutar = o.adet * (ozelFiyat ?? urun?.fiyat ?? 0)
       const g = map.get(o.tarih) ?? { tarih: o.tarih, tutar: 0, satirlar: [] }
       g.tutar += tutar
       g.satirlar.push(o)
       map.set(o.tarih, g)
     }
     return [...map.values()].sort((a, b) => a.tarih.localeCompare(b.tarih))
-  }, [acikOrders, urunler])
+  }, [acikOrders, urunler, okullar, musteriler])
 
   const sonKapanan = useMemo(
     () => [...kapanislar].filter((k) => k.kapandi).sort((a, b) => b.tarih.localeCompare(a.tarih)).slice(0, 10),
