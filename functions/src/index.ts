@@ -196,7 +196,8 @@ export const uretimOzetiGetir = onCall<UretimOzetiData>({ region: 'europe-west1'
   for (const d of okulOrdersSnap.docs) {
     const veri = d.data() as UretimOzetiOkulOrderVerisi
     if (veri.adet <= 0) continue
-    const urunAdi = okulHatlari.get(veri.schoolId)?.get(veri.lineId) ?? '—'
+    const urunAdi = okulHatlari.get(veri.schoolId)?.get(veri.lineId)
+    if (!urunAdi) continue // silinmiş okul/hat — üretime girmez
     ekle(urunAdi, veri.adet)
     const satirlar = okulSatirlari.get(veri.schoolId) ?? []
     satirlar.push({ urunAdi, adet: veri.adet, not: veri.not || undefined })

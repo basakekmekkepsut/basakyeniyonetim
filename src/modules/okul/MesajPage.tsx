@@ -23,7 +23,8 @@ function okulMesajOlustur(tarih: string, okullar: OkulSchool[], orders: OkulOrde
     for (const o of orders.filter((x) => x.schoolId === okul.id)) {
       if (o.adet <= 0) continue
       const hat = okul.lines.find((l) => l.id === o.lineId)
-      const urunAdi = hat?.urunAdi ?? '—'
+      if (!hat) continue // silinmiş hat — gönderilmez
+      const urunAdi = hat.urunAdi
       const notEki = o.not ? ` — ${o.not}` : ''
       satirlar.push(`${okul.ad}: ${o.adet} adet (${urunAdi})${notEki}`)
       urunToplamlari.set(urunAdi, (urunToplamlari.get(urunAdi) ?? 0) + o.adet)

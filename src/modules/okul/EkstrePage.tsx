@@ -50,6 +50,9 @@ export default function EkstrePage() {
   const beklemedeGunler = useMemo(() => {
     const map = new Map<string, { tarih: string; tutar: number; satirlar: typeof acikOrders }>()
     for (const o of acikOrders) {
+      // Silinmiş okul/hat satırları Günü Kapat'ta ücretlendirilmez — tahmine de girmesin.
+      const hatVarMi = okullar.find((ok) => ok.id === o.schoolId)?.lines.some((l) => l.id === o.lineId)
+      if (!hatVarMi) continue
       // Günü Kapat'ın kullanacağı fiyatla aynı: okulun bağlı Veresiye
       // müşterisinde ürüne özel fiyat varsa o, yoksa liste fiyatı.
       const urun = urunler.find((u) => u.id === o.productId)

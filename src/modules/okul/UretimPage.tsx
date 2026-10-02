@@ -21,7 +21,8 @@ export default function UretimPage() {
     for (const o of orders) {
       const okul = okullar.find((s) => s.id === o.schoolId)
       const hat = okul?.lines.find((l) => l.id === o.lineId)
-      const urunAdi = hat?.urunAdi ?? '—'
+      if (!hat) continue // silinmiş okul/hat — üretime girmez
+      const urunAdi = hat.urunAdi
       const g = map.get(o.productId) ?? { urunAdi, adet: 0 }
       g.adet += o.adet
       map.set(o.productId, g)
@@ -33,10 +34,10 @@ export default function UretimPage() {
     return okullar
       .map((okul) => {
         const satirlar = orders
-          .filter((o) => o.schoolId === okul.id)
+          .filter((o) => o.schoolId === okul.id && okul.lines.some((l) => l.id === o.lineId))
           .map((o) => {
-            const hat = okul.lines.find((l) => l.id === o.lineId)
-            return { urunAdi: hat?.urunAdi ?? '—', adet: o.adet, not: o.not }
+            const hat = okul.lines.find((l) => l.id === o.lineId)!
+            return { urunAdi: hat.urunAdi, adet: o.adet, not: o.not }
           })
         return { okul, satirlar, toplam: satirlar.reduce((s, x) => s + x.adet, 0) }
       })

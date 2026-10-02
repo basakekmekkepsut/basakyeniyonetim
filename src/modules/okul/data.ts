@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy, query, updateDoc, where, writeBatch } from 'firebase/firestore'
 import { requireDb } from '../../lib/firebase'
 import type { Musteri, OkulSchool, OkulSchoolFormVerisi } from '../../lib/types'
 
@@ -33,12 +33,34 @@ export async function okulEkle(veri: OkulSchoolFormVerisi): Promise<void> {
   await addDoc(collection(requireDb(), OKULLAR), veri)
 }
 
+// Silinen bir hattın (ya da okulun) önceden hazırlanmış, henüz kapanmamış
+// siparişleri kalırsa Mesaj/Üretim/Ekstre'de "—" ürünüyle görünmeye ve
+// toplamlara karışmaya devam eder — bu yüzden onlar da birlikte silinir.
+// Kapanmış (kesinleşmiş) siparişlere dokunulmaz.
+async function acikSiparisleriSil(schoolId: string, lineIdler: Set<string> | null): Promise<void> {
+  const db = requireDb()
+  const snap = await getDocs(query(collection(db, 'okul_orders'), where('schoolId', '==', schoolId), where('kapandiMi', '==', false)))
+  const silinecek = snap.docs.filter((d) => lineIdler === null || lineIdler.has(d.data().lineId as string))
+  for (let i = 0; i < silinecek.length; i += 400) {
+    const batch = writeBatch(db)
+    silinecek.slice(i, i + 400).forEach((d) => batch.delete(d.ref))
+    await batch.commit()
+  }
+}
+
 export async function okulGuncelle(id: string, veri: OkulSchoolFormVerisi): Promise<void> {
-  await updateDoc(doc(requireDb(), OKULLAR, id), { ...veri })
+  const ref = doc(requireDb(), OKULLAR, id)
+  const eskiSnap = await getDoc(ref)
+  const eskiHatlar = ((eskiSnap.data()?.lines as { id: string }[] | undefined) ?? []).map((l) => l.id)
+  const yeniHatlar = new Set(veri.lines.map((l) => l.id))
+  const silinenHatlar = new Set(eskiHatlar.filter((hatId) => !yeniHatlar.has(hatId)))
+  await updateDoc(ref, { ...veri })
+  if (silinenHatlar.size > 0) await acikSiparisleriSil(id, silinenHatlar)
 }
 
 export async function okulSil(id: string): Promise<void> {
   await deleteDoc(doc(requireDb(), OKULLAR, id))
+  await acikSiparisleriSil(id, null)
 }
 
 export function yeniHatId(): string {
