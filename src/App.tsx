@@ -33,6 +33,7 @@ const EkstrePage = lazy(() => import('./modules/okul/EkstrePage'))
 const OkulMesajPage = lazy(() => import('./modules/okul/MesajPage'))
 
 const AyarlarLayout = lazy(() => import('./modules/ayarlar/AyarlarLayout'))
+const MusteriUrunLayout = lazy(() => import('./modules/musteriler/MusteriUrunLayout'))
 const MusterilerPage = lazy(() => import('./modules/musteriler/MusterilerPage'))
 const UrunlerPage = lazy(() => import('./modules/urunler/UrunlerPage'))
 const KullanicilarPage = lazy(() => import('./modules/ayarlar/kullanicilar/KullanicilarPage'))
@@ -110,10 +111,17 @@ function SessionGate() {
                 <Route path="mesaj" element={<OkulMesajPage />} />
               </Route>
               {admin && (
-                <Route path="/ayarlar" element={<AyarlarLayout />}>
-                  <Route index element={<Navigate to="musteriler" replace />} />
-                  <Route path="musteriler" element={<MusterilerPage />} />
+                <Route path="/musteriler" element={<MusteriUrunLayout />}>
+                  <Route index element={<MusterilerPage />} />
                   <Route path="urunler" element={<UrunlerPage />} />
+                </Route>
+              )}
+              {admin && (
+                <Route path="/ayarlar" element={<AyarlarLayout />}>
+                  <Route index element={<Navigate to="kullanicilar" replace />} />
+                  {/* Eski adresler (yer imi / alışkanlık) yeni sekmeye yönlenir */}
+                  <Route path="musteriler" element={<Navigate to="/musteriler" replace />} />
+                  <Route path="urunler" element={<Navigate to="/musteriler/urunler" replace />} />
                   <Route path="kullanicilar" element={<KullanicilarPage />} />
                   <Route path="telegram" element={<TelegramAyarlariPage />} />
                   <Route path="log" element={<HaftalikLogPage />} />

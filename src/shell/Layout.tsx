@@ -1,7 +1,7 @@
 import { type ReactNode, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
-import { ClipboardList, HandCoins, School, LogOut, Moon, RefreshCw, Settings, Sun, User } from 'lucide-react'
+import { ClipboardList, HandCoins, School, LogOut, Moon, RefreshCw, Settings, Sun, User, Users } from 'lucide-react'
 import { requireAuth } from '../lib/firebase'
 import { hasModule, isAdmin, useSession } from '../lib/session'
 import { temaBaslat, temaDegistir, yaziBoyutuBaslat, yaziBoyutuDegistir, type Tema, type YaziBoyutu } from '../shared/gorunum'
@@ -37,6 +37,10 @@ export default function Layout() {
   const { profile } = session
 
   const gorunurModuller = MODUL_TANIMLARI.filter((m) => hasModule(profile, m.key))
+  // Müşteri/Ürün kartları bir modül değil — Ayarlar'da olduğu gibi yalnızca yöneticiye görünür.
+  const menuOgeleri: { key: string; yol: string; etiket: string; Icon: typeof ClipboardList }[] = isAdmin(profile)
+    ? [...gorunurModuller, { key: 'musteriler', yol: '/musteriler', etiket: 'Müşteriler', Icon: Users }]
+    : gorunurModuller
 
   return (
     <div className="flex min-h-screen flex-col bg-bakery-cream-50">
@@ -48,7 +52,7 @@ export default function Layout() {
           </Link>
 
           <nav className="hidden gap-1 md:flex">
-            {gorunurModuller.map(({ key, yol, etiket, Icon }) => (
+            {menuOgeleri.map(({ key, yol, etiket, Icon }) => (
               <NavLink key={key} to={yol} className={({ isActive }) => navLinkClass(isActive)}>
                 <Icon size={16} />
                 {etiket}
@@ -135,7 +139,7 @@ export default function Layout() {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 flex gap-1 border-t border-bakery-cream-200 bg-bakery-surface/90 px-2 pt-1.5 pb-[calc(env(safe-area-inset-bottom,0px)+0.375rem)] shadow-elevated backdrop-blur-md md:hidden">
-        {gorunurModuller.map(({ key, yol, etiket, Icon }) => (
+        {menuOgeleri.map(({ key, yol, etiket, Icon }) => (
           <NavLink key={key} to={yol} className={({ isActive }) => bottomNavLinkClass(isActive)}>
             {({ isActive }) => (
               <>

@@ -1,8 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 
 const SEKMELER = [
-  { yol: '/ayarlar/musteriler', etiket: 'Müşteriler' },
-  { yol: '/ayarlar/urunler', etiket: 'Ürünler' },
   { yol: '/ayarlar/kullanicilar', etiket: 'Kullanıcılar' },
   { yol: '/ayarlar/telegram', etiket: 'Telegram' },
   { yol: '/ayarlar/log', etiket: 'Haftalık Log' },
