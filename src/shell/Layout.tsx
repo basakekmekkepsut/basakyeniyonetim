@@ -1,11 +1,13 @@
 import { type ReactNode, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
-import { ClipboardList, HandCoins, School, LogOut, Moon, Settings, Sun, User } from 'lucide-react'
+import { ClipboardList, HandCoins, School, LogOut, Moon, RefreshCw, Settings, Sun, User } from 'lucide-react'
 import { requireAuth } from '../lib/firebase'
 import { hasModule, isAdmin, useSession } from '../lib/session'
 import { temaBaslat, temaDegistir, yaziBoyutuBaslat, yaziBoyutuDegistir, type Tema, type YaziBoyutu } from '../shared/gorunum'
 import type { Modul } from '../lib/types'
+import { useToast } from '../shared/Toast'
+import { useGuncelleme } from './useGuncelleme'
 
 const MODUL_TANIMLARI: { key: Modul; yol: string; etiket: string; Icon: typeof ClipboardList }[] = [
   { key: 'siparis', yol: '/siparis', etiket: 'Sipariş', Icon: ClipboardList },
@@ -28,6 +30,8 @@ export default function Layout() {
   const [menuAcik, setMenuAcik] = useState(false)
   const [tema, setTema] = useState<Tema>(() => temaBaslat())
   const [yaziBoyutu, setYaziBoyutu] = useState<YaziBoyutu>(() => yaziBoyutuBaslat())
+  const { guncellemeVar, kontrolEdiliyor, guncelle } = useGuncelleme()
+  const toast = useToast()
 
   if (session.status !== 'signed-in') return null
   const { profile } = session
@@ -53,6 +57,23 @@ export default function Layout() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                const yenileniyor = await guncelle()
+                if (!yenileniyor) toast.basari(`Uygulama güncel (v${__APP_VERSION__}).`)
+              }}
+              disabled={kontrolEdiliyor}
+              className={
+                guncellemeVar
+                  ? 'flex animate-pulse items-center gap-1.5 rounded-full bg-bakery-amber-500 p-2.5 ring-2 ring-white/70 sm:px-3 text-xs font-bold text-white shadow-soft hover:bg-bakery-amber-600'
+                  : 'rounded-full bg-bakery-surface/10 p-2.5 text-white hover:bg-bakery-surface/20 disabled:opacity-60'
+              }
+              aria-label={guncellemeVar ? 'Yeni sürüm hazır — güncelle' : 'Güncelleme kontrol et'}
+              title={guncellemeVar ? 'Yeni sürüm hazır — güncellemek için tıklayın' : 'Güncelleme kontrol et'}
+            >
+              <RefreshCw size={16} className={kontrolEdiliyor ? 'animate-spin' : ''} />
+              {guncellemeVar && <span className="hidden sm:inline">Güncelle</span>}
+            </button>
             <button
               onClick={() => setYaziBoyutu((v) => yaziBoyutuDegistir(v))}
               className="rounded-full bg-bakery-surface/10 px-2.5 py-2 text-xs font-bold text-white hover:bg-bakery-surface/20"
