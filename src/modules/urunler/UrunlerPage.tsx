@@ -85,69 +85,55 @@ export default function UrunlerPage() {
           aciklama={urunler.length === 0 ? 'İlk ürünü eklemek için yukarıdaki butonu kullanın.' : undefined}
         />
       ) : (
-        <div className="overflow-x-auto rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-bakery-cream-100 text-left text-bakery-ink-500">
-                <th className="px-4 py-3 font-medium">Ürün</th>
-                <th className="px-4 py-3 font-medium">Fiyat</th>
-                <th className="px-4 py-3 font-medium">Modüller</th>
-                <th className="px-4 py-3 font-medium">Durum</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtrelenmis.map((u) => (
-                <tr key={u.id} className="border-b border-bakery-cream-100 last:border-0">
-                  <td className="px-4 py-3 font-medium text-bakery-ink-900">{u.ad}</td>
-                  <td className="px-4 py-3">
+        <ul className="divide-y divide-bakery-cream-100 overflow-hidden rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
+          {filtrelenmis.map((u) => (
+            <li key={u.id} className="flex items-center gap-2 px-3 py-2.5">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="truncate font-medium text-bakery-ink-900">{u.ad}</p>
+                  <span className="shrink-0 text-sm font-semibold text-bakery-ink-900">
                     <TutarGoster tutar={u.fiyat} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      {u.modules.map((m) => (
-                        <span key={m} className="rounded-full bg-bakery-cream-100 px-2 py-0.5 text-xs text-bakery-ink-600">
-                          {MODUL_ETIKETI[m] ?? m}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => urunAktifDurumDegistir(u.id, !u.aktif)}
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        u.aktif ? 'bg-bakery-success/10 text-bakery-success' : 'bg-bakery-cream-100 text-bakery-ink-500'
-                      }`}
-                    >
-                      {u.aktif ? 'Aktif' : 'Pasif'}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-1">
-                      <button
-                        onClick={() => {
-                          setDuzenlenen(u)
-                          setFormAcik(true)
-                        }}
-                        className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
-                        aria-label="Düzenle"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => setSilinecek(u)}
-                        className="rounded-lg p-1.5 text-bakery-danger hover:bg-bakery-danger/10"
-                        aria-label="Sil"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </span>
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-1">
+                  <button
+                    onClick={() => urunAktifDurumDegistir(u.id, !u.aktif)}
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      u.aktif ? 'bg-bakery-success/10 text-bakery-success' : 'bg-bakery-cream-100 text-bakery-ink-500'
+                    }`}
+                    title="Aktif/Pasif değiştir"
+                  >
+                    {u.aktif ? 'Aktif' : 'Pasif'}
+                  </button>
+                  {u.modules.map((m) => (
+                    <span key={m} className="rounded-full bg-bakery-cream-100 px-2 py-0.5 text-xs text-bakery-ink-600">
+                      {MODUL_ETIKETI[m] ?? m}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex shrink-0 gap-0.5">
+                <button
+                  onClick={() => {
+                    setDuzenlenen(u)
+                    setFormAcik(true)
+                  }}
+                  className="rounded-lg p-1.5 text-bakery-ink-500 hover:bg-bakery-cream-100"
+                  aria-label="Düzenle"
+                >
+                  <Pencil size={16} />
+                </button>
+                <button
+                  onClick={() => setSilinecek(u)}
+                  className="rounded-lg p-1.5 text-bakery-danger hover:bg-bakery-danger/10"
+                  aria-label="Sil"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
 
       {formAcik && (
