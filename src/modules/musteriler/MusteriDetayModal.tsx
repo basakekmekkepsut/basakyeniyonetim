@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { X, Pencil, Phone, MapPin, Share2, Wallet } from 'lucide-react'
 import { useVeresiyeKayitlar } from '../veresiye/data'
 import { useVeresiyeOdemeler } from '../veresiye/odemeData'
 import { unHesabiAktifMi, cuvalGoster } from '../../shared/unHesabi'
-import { bakiyeMesajOlustur, musteriHitabi, portalMesajOlustur } from '../../shared/musteriYardimci'
+import { musteriHitabi, portalMesajOlustur } from '../../shared/musteriYardimci'
+import BakiyeGonderModal from './BakiyeGonderModal'
 import DurumRozeti from '../../shared/DurumRozeti'
 import { formatTutar } from '../../shared/TutarGoster'
 import { isAdmin, useSession } from '../../lib/session'
@@ -69,11 +70,7 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
     window.open(`https://wa.me/${numara}?text=${encodeURIComponent(mesaj)}`, '_blank')
   }
 
-  function bakiyeGonder() {
-    const numara = m.telefon.replace(/\D/g, '')
-    if (!numara) return
-    window.open(`https://wa.me/${numara}?text=${encodeURIComponent(bakiyeMesajOlustur(m))}`, '_blank')
-  }
+  const [bakiyeAcik, setBakiyeAcik] = useState(false)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-bakery-coffee-900/40 backdrop-blur-sm animate-fade-in md:items-center">
@@ -108,7 +105,7 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
                   <div className="flex items-center gap-1.5">
                   {veresiyeSecili && (
                     <button
-                      onClick={bakiyeGonder}
+                      onClick={() => setBakiyeAcik(true)}
                       className="flex items-center gap-1 rounded-full bg-green-600/10 px-2.5 py-1 text-xs font-medium text-green-700 hover:bg-green-600/20"
                       title="Yalnızca güncel bakiyeyi WhatsApp'tan gönder"
                     >
@@ -219,6 +216,7 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
           )}
         </div>
       </div>
+      {bakiyeAcik && <BakiyeGonderModal musteri={m} onKapat={() => setBakiyeAcik(false)} />}
     </div>
   )
 }

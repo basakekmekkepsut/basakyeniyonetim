@@ -30,28 +30,55 @@ export function portalMesajOlustur(musteri: Pick<Musteri, 'id' | 'ad' | 'adSoyad
   return `Merhaba ${musteriHitabi(musteri)}, hesap ekstrenizi görüntülemek için:\n${link}\nŞifreniz: ${musteri.portalSifre}\n\nBu bir otomatik program mesajıdır.`
 }
 
-/** Yalnızca müşterinin güncel bakiyesini bildiren kısa WhatsApp mesajı — portal
- * linki ya da hareket dökümü içermez. Un hesabıyla çalışan müşterilerde çuval
- * bakiyesi, varsa ₺ bakiyesiyle birlikte gösterilir. */
+export interface DonemOzeti {
+  baslangic: string | null // YYYY-MM-DD, null = en baştan
+  bitis: string // YYYY-MM-DD
+  devreden: number
+  alis: number
+  odeme: number
+  donemSonu: number
+}
+
+function tarihTr(tarih: string): string {
+  const [y, m, d] = tarih.split('-')
+  return `${d}.${m}.${y}`
+}
+
+/** Müşteriye WhatsApp'tan gönderilecek bakiye mesajı — portal linki ya da
+ * kalem kalem döküm içermez. Dönem verilmezse yalnızca güncel bakiye; verilirse
+ * devreden / alışveriş / ödeme / dönem sonu bakiyesi özetlenir. Un hesabıyla
+ * çalışan müşterilerde güncel çuval bakiyesi de eklenir. */
 export function bakiyeMesajOlustur(
-  musteri: Pick<Musteri, 'ad' | 'adSoyad' | 'hitapSekli' | 'veresiyeBakiye' | 'unHesabi'>
+  musteri: Pick<Musteri, 'ad' | 'adSoyad' | 'hitapSekli' | 'veresiyeBakiye' | 'unHesabi'>,
+  donem?: DonemOzeti
 ): string {
-  const tarih = new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-  const tlSatiri = (bakiye: number) =>
-    bakiye > 0.004
-      ? `Güncel borç bakiyeniz: ${formatTutar(bakiye)}`
-      : bakiye < -0.004
-        ? `Alacak bakiyeniz: ${formatTutar(-bakiye)}`
-        : 'Borcunuz bulunmamaktadır.'
+  const bugun = new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const bakiyeYazi = (bakiye: number) =>
+    bakiye > 0.004 ? `${formatTutar(bakiye)} borç` : bakiye < -0.004 ? `${formatTutar(-bakiye)} alacak` : 'borç yok'
 
   const satirlar: string[] = []
+  if (donem) {
+    const aralik = donem.baslangic
+      ? donem.baslangic === donem.bitis
+        ? tarihTr(donem.bitis)
+        : `${tarihTr(donem.baslangic)} – ${tarihTr(donem.bitis)}`
+      : `${tarihTr(donem.bitis)} tarihine kadar`
+    satirlar.push(`Hesap özetiniz (${aralik}):`)
+    if (donem.baslangic) satirlar.push(`Devreden bakiye: ${bakiyeYazi(donem.devreden)}`)
+    satirlar.push(`Alışveriş: ${formatTutar(donem.alis)}`)
+    satirlar.push(`Ödeme: ${formatTutar(donem.odeme)}`)
+    satirlar.push(`Dönem sonu bakiye: ${bakiyeYazi(donem.donemSonu)}`)
+    if (Math.abs(donem.donemSonu - musteri.veresiyeBakiye) > 0.004) {
+      satirlar.push('', `Güncel bakiye (${bugun}): ${bakiyeYazi(musteri.veresiyeBakiye)}`)
+    }
+  } else {
+    satirlar.push(`${bugun} itibarıyla güncel bakiyeniz: ${bakiyeYazi(musteri.veresiyeBakiye)}`)
+  }
+
   if (unHesabiAktifMi(musteri)) {
     const un = musteri.unHesabi!
     satirlar.push(`Un hesabı bakiyeniz: ${cuvalGoster(un.birikenEsdegerAdet, un.adetPerCuval)}`)
-    if (Math.abs(musteri.veresiyeBakiye) > 0.004) satirlar.push(tlSatiri(musteri.veresiyeBakiye))
-  } else {
-    satirlar.push(tlSatiri(musteri.veresiyeBakiye))
   }
 
-  return [`Merhaba ${musteriHitabi(musteri)},`, '', `${tarih} itibarıyla:`, ...satirlar, '', 'Başak Ekmek Fırını', 'Bu bir otomatik program mesajıdır.'].join('\n')
+  return [`Merhaba ${musteriHitabi(musteri)},`, '', ...satirlar, '', 'Başak Ekmek Fırını', 'Bu bir otomatik program mesajıdır.'].join('\n')
 }

@@ -14,7 +14,8 @@ import BosDurum from '../../shared/BosDurum'
 import ConfirmModal from '../../shared/ConfirmModal'
 import { formatTutar } from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
-import { bakiyeMesajOlustur, portalMesajOlustur } from '../../shared/musteriYardimci'
+import { portalMesajOlustur } from '../../shared/musteriYardimci'
+import BakiyeGonderModal from './BakiyeGonderModal'
 import { unHesabiAktifMi, cuvalKisaGoster } from '../../shared/unHesabi'
 import { useSession, isAdmin } from '../../lib/session'
 import type { Musteri, MusteriGirisi } from '../../lib/types'
@@ -31,6 +32,7 @@ export default function MusterilerPage() {
   const [gosterilen, setGosterilen] = useState<Musteri | undefined>()
   const [copeTasinacak, setCopeTasinacak] = useState<Musteri | undefined>()
   const [kaliciSilinecek, setKaliciSilinecek] = useState<Musteri | undefined>()
+  const [bakiyeMusteri, setBakiyeMusteri] = useState<Musteri | undefined>()
 
   const geciciSayisi = musteriler.filter((m) => m.gecici).length
 
@@ -98,15 +100,6 @@ export default function MusterilerPage() {
       return
     }
     window.open(`https://wa.me/${numara}?text=${encodeURIComponent(mesaj)}`, '_blank')
-  }
-
-  function bakiyeGonder(m: Musteri) {
-    const numara = m.telefon.replace(/\D/g, '')
-    if (!numara) {
-      toast.hata('Bu müşterinin telefon numarası kayıtlı değil.')
-      return
-    }
-    window.open(`https://wa.me/${numara}?text=${encodeURIComponent(bakiyeMesajOlustur(m))}`, '_blank')
   }
 
   const admin = session.status === 'signed-in' && isAdmin(session.profile)
@@ -230,7 +223,7 @@ export default function MusterilerPage() {
                     <>
                       {m.moduller.includes('veresiye') && (
                         <button
-                          onClick={() => bakiyeGonder(m)}
+                          onClick={() => setBakiyeMusteri(m)}
                           className="rounded-lg p-1.5 text-green-600 hover:bg-green-600/10"
                           aria-label="Bakiyeyi WhatsApp'tan gönder"
                           title="Bakiyeyi WhatsApp'tan gönder"
@@ -315,6 +308,7 @@ export default function MusterilerPage() {
           onVazgec={() => setKaliciSilinecek(undefined)}
         />
       )}
+      {bakiyeMusteri && <BakiyeGonderModal musteri={bakiyeMusteri} onKapat={() => setBakiyeMusteri(undefined)} />}
     </div>
   )
 }
