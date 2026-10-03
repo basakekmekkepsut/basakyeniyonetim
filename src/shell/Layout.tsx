@@ -4,7 +4,7 @@ import { signOut } from 'firebase/auth'
 import { ClipboardList, HandCoins, School, LogOut, Moon, RefreshCw, Settings, Sun, User, Users, Package } from 'lucide-react'
 import { requireAuth } from '../lib/firebase'
 import { hasModule, isAdmin, useSession } from '../lib/session'
-import { temaBaslat, temaDegistir, yaziBoyutuBaslat, yaziBoyutuDegistir, type Tema, type YaziBoyutu } from '../shared/gorunum'
+import { temaBaslat, temaDegistir, yaziBoyutuBaslat, yaziBoyutuSec, YAZI_ETIKETLERI, YAZI_SIRASI, type Tema, type YaziBoyutu } from '../shared/gorunum'
 import type { Modul } from '../lib/types'
 import { useToast } from '../shared/Toast'
 import { useGuncelleme } from './useGuncelleme'
@@ -30,6 +30,7 @@ export default function Layout() {
   const [menuAcik, setMenuAcik] = useState(false)
   const [tema, setTema] = useState<Tema>(() => temaBaslat())
   const [yaziBoyutu, setYaziBoyutu] = useState<YaziBoyutu>(() => yaziBoyutuBaslat())
+  const [yaziMenuAcik, setYaziMenuAcik] = useState(false)
   const { guncellemeVar, kontrolEdiliyor, guncelle } = useGuncelleme()
   const toast = useToast()
 
@@ -82,14 +83,42 @@ export default function Layout() {
               <RefreshCw size={16} className={kontrolEdiliyor ? 'animate-spin' : ''} />
               {guncellemeVar && <span className="hidden sm:inline">Güncelle</span>}
             </button>
-            <button
-              onClick={() => setYaziBoyutu((v) => yaziBoyutuDegistir(v))}
-              className="rounded-full bg-bakery-surface/10 px-2.5 py-2 text-xs font-bold text-white hover:bg-bakery-surface/20"
-              aria-label="Yazı boyutu"
-              title={`Yazı boyutu: ${yaziBoyutu === 'normal' ? 'Normal' : yaziBoyutu === 'buyuk' ? 'Büyük' : 'Ekstra Büyük'} — değiştirmek için tıklayın`}
-            >
-              Aa
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setYaziMenuAcik((v) => !v)}
+                className="rounded-full bg-bakery-surface/10 px-2.5 py-2 text-xs font-bold text-white hover:bg-bakery-surface/20"
+                aria-label="Yazı boyutu"
+                title={`Yazı boyutu: ${YAZI_ETIKETLERI[yaziBoyutu]}`}
+              >
+                Aa
+              </button>
+              {yaziMenuAcik && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setYaziMenuAcik(false)} />
+                  <div className="absolute right-0 top-full z-40 mt-2 w-44 origin-top-right animate-pop-in rounded-2xl bg-bakery-surface p-1.5 shadow-elevated">
+                    <div className="px-3 py-1.5 text-xs font-medium text-bakery-ink-500">Yazı boyutu</div>
+                    {YAZI_SIRASI.map((b, i) => (
+                      <button
+                        key={b}
+                        onClick={() => {
+                          setYaziBoyutu(yaziBoyutuSec(b))
+                          setYaziMenuAcik(false)
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-medium ${
+                          b === yaziBoyutu ? 'bg-bakery-amber-500/15 text-bakery-amber-600' : 'text-bakery-ink-700 hover:bg-bakery-cream-100'
+                        }`}
+                      >
+                        {YAZI_ETIKETLERI[b]}
+                        {/* Önizleme: menü kökü (rem) ölçeğinden bağımsız sabit px ile */}
+                        <span style={{ fontSize: `${11 + i * 2}px` }} className="font-bold">
+                          A
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             <button
               onClick={() => setTema((v) => temaDegistir(v))}
               className="rounded-full bg-bakery-surface/10 p-2.5 text-white hover:bg-bakery-surface/20"

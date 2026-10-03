@@ -3,12 +3,21 @@
 // üzerinden TÜM uygulamaya (hem ana uygulama hem müşteri portalı) yansır.
 
 export type Tema = 'acik' | 'koyu'
-export type YaziBoyutu = 'normal' | 'buyuk' | 'ekstra'
+export type YaziBoyutu = 'cok_kucuk' | 'kucuk' | 'normal' | 'buyuk' | 'ekstra'
 
 const TEMA_KEY = 'basak-tema'
 const YAZI_KEY = 'basak-yazi-boyutu'
-const YAZI_SIRASI: YaziBoyutu[] = ['normal', 'buyuk', 'ekstra']
+export const YAZI_SIRASI: YaziBoyutu[] = ['cok_kucuk', 'kucuk', 'normal', 'buyuk', 'ekstra']
+export const YAZI_ETIKETLERI: Record<YaziBoyutu, string> = {
+  cok_kucuk: 'Çok Küçük',
+  kucuk: 'Küçük',
+  normal: 'Normal',
+  buyuk: 'Büyük',
+  ekstra: 'Ekstra Büyük'
+}
 const YAZI_OLCEKLERI: Record<YaziBoyutu, string> = {
+  cok_kucuk: '81.25%',
+  kucuk: '90%',
   normal: '100%',
   buyuk: '112.5%',
   ekstra: '125%'
@@ -62,15 +71,13 @@ export function yaziBoyutuUygula(boyut: YaziBoyutu) {
 
 export function yaziBoyutuBaslat(): YaziBoyutu {
   const kayitli = guvenliOku(YAZI_KEY)
-  const boyut: YaziBoyutu = kayitli === 'buyuk' || kayitli === 'ekstra' ? kayitli : 'normal'
+  const boyut: YaziBoyutu = YAZI_SIRASI.includes(kayitli as YaziBoyutu) ? (kayitli as YaziBoyutu) : 'normal'
   yaziBoyutuUygula(boyut)
   return boyut
 }
 
-/** "Aa" butonuna her basışta normal → büyük → ekstra → normal döngüsünde ilerler. */
-export function yaziBoyutuDegistir(mevcut: YaziBoyutu): YaziBoyutu {
-  const index = YAZI_SIRASI.indexOf(mevcut)
-  const yeni = YAZI_SIRASI[(index + 1) % YAZI_SIRASI.length]
+/** "Aa" menüsünden seçilen boyutu uygular ve kalıcı kaydeder. */
+export function yaziBoyutuSec(yeni: YaziBoyutu): YaziBoyutu {
   guvenliYaz(YAZI_KEY, yeni)
   yaziBoyutuUygula(yeni)
   return yeni
