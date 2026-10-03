@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { collection, getDocs, orderBy, query, where } from 'firebase/firestore'
-import { Download, RefreshCw } from 'lucide-react'
+import { ChevronDown, Download, RefreshCw } from 'lucide-react'
 import { requireDb } from '../../lib/firebase'
 import { useKullanicilar } from './kullanicilar/data'
 import { formatTutar } from '../../shared/TutarGoster'
@@ -52,6 +52,8 @@ export default function HaftalikLogPage() {
   const { kullanicilar } = useKullanicilar()
   const [gunSayisi, setGunSayisi] = useState(VARSAYILAN_GUN_SAYISI)
   const [modulFiltre, setModulFiltre] = useState<Modul | 'tumu'>('tumu')
+  const [kullaniciFiltre, setKullaniciFiltre] = useState<string>('tumu')
+  const [acikSatir, setAcikSatir] = useState<number | null>(null)
   const [hareketler, setHareketler] = useState<Hareket[]>([])
   const [yukleniyor, setYukleniyor] = useState(true)
   const [hata, setHata] = useState<string | null>(null)
@@ -187,16 +189,33 @@ export default function HaftalikLogPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gunSayisi])
 
+  // Modül sayıları seçili kullanıcıya göre, kullanıcı listesi de seçili modüle göre
+  // hesaplanır — iki filtre birlikte kullanılınca sayılar ekrandakiyle tutarlı kalsın.
+  const kullaniciyaGore = useMemo(
+    () => (kullaniciFiltre === 'tumu' ? hareketler : hareketler.filter((h) => h.olusturanUid === kullaniciFiltre)),
+    [hareketler, kullaniciFiltre]
+  )
   const gorunen = useMemo(
-    () => (modulFiltre === 'tumu' ? hareketler : hareketler.filter((h) => h.modul === modulFiltre)),
-    [hareketler, modulFiltre]
+    () => (modulFiltre === 'tumu' ? kullaniciyaGore : kullaniciyaGore.filter((h) => h.modul === modulFiltre)),
+    [kullaniciyaGore, modulFiltre]
   )
 
   const modulSayilari = useMemo(() => {
     const sayi: Record<Modul, number> = { veresiye: 0, siparis: 0, okul: 0 }
-    for (const h of hareketler) sayi[h.modul] += 1
+    for (const h of kullaniciyaGore) sayi[h.modul] += 1
     return sayi
-  }, [hareketler])
+  }, [kullaniciyaGore])
+
+  const kullaniciSecenekleri = useMemo(() => {
+    const sayi = new Map<string, number>()
+    for (const h of hareketler) {
+      if (modulFiltre !== 'tumu' && h.modul !== modulFiltre) continue
+      sayi.set(h.olusturanUid, (sayi.get(h.olusturanUid) ?? 0) + 1)
+    }
+    return [...sayi.entries()]
+      .map(([uid, adet]) => ({ uid, ad: kullaniciAdi(uid), adet }))
+      .sort((a, b) => a.ad.localeCompare(b.ad, 'tr-TR'))
+  }, [hareketler, modulFiltre, kullaniciAdi])
 
   function csvIndir() {
     const basliklar = ['Tarih', 'Modül', 'Tür', 'Müşteri / Okul', 'Açıklama', 'Tutar', 'Kullanıcı']
@@ -228,7 +247,7 @@ export default function HaftalikLogPage() {
   }
 
   const filtreSecenekleri: { key: Modul | 'tumu'; etiket: string }[] = [
-    { key: 'tumu', etiket: `Tümü (${hareketler.length})` },
+    { key: 'tumu', etiket: `Tümü (${kullaniciyaGore.length})` },
     { key: 'veresiye', etiket: `Veresiye (${modulSayilari.veresiye})` },
     { key: 'siparis', etiket: `Sipariş (${modulSayilari.siparis})` },
     { key: 'okul', etiket: `Okul (${modulSayilari.okul})` }
@@ -242,6 +261,22 @@ export default function HaftalikLogPage() {
           <p className="text-sm text-bakery-ink-500">Son {gunSayisi} güne ait Veresiye, Sipariş ve Okul hareketleri.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <select
+            value={kullaniciFiltre}
+            onChange={(e) => {
+              setKullaniciFiltre(e.target.value)
+              setAcikSatir(null)
+            }}
+            className="rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2.5 py-2 text-sm outline-none focus:border-bakery-amber-500"
+            aria-label="Kullanıcı"
+          >
+            <option value="tumu">Tüm kullanıcılar</option>
+            {kullaniciSecenekleri.map((k) => (
+              <option key={k.uid} value={k.uid}>
+                {k.ad} ({k.adet})
+              </option>
+            ))}
+          </select>
           <select
             value={gunSayisi}
             onChange={(e) => setGunSayisi(Number(e.target.value))}
@@ -277,7 +312,10 @@ export default function HaftalikLogPage() {
           <button
             key={s.key}
             type="button"
-            onClick={() => setModulFiltre(s.key)}
+            onClick={() => {
+              setModulFiltre(s.key)
+              setAcikSatir(null)
+            }}
             className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition ${
               modulFiltre === s.key ? 'bg-bakery-surface text-bakery-ink-900 shadow-sm' : 'text-bakery-ink-500 hover:text-bakery-ink-700'
             }`}
@@ -296,36 +334,40 @@ export default function HaftalikLogPage() {
           Son {gunSayisi} günde herhangi bir hareket bulunamadı.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-bakery-cream-100 text-left text-xs font-medium uppercase text-bakery-ink-400">
-                <th className="px-3 py-2.5">Tarih</th>
-                <th className="px-3 py-2.5">Modül</th>
-                <th className="px-3 py-2.5">Tür</th>
-                <th className="px-3 py-2.5">Müşteri / Okul</th>
-                <th className="px-3 py-2.5">Açıklama</th>
-                <th className="px-3 py-2.5 text-right">Tutar</th>
-                <th className="px-3 py-2.5">Kullanıcı</th>
-              </tr>
-            </thead>
-            <tbody>
-              {gorunen.map((h, i) => (
-                <tr key={i} className="border-b border-bakery-cream-50 last:border-0">
-                  <td className="whitespace-nowrap px-3 py-2 text-bakery-ink-600">{h.tarih}</td>
-                  <td className="px-3 py-2 text-xs font-medium text-bakery-ink-500">{MODUL_ETIKET[h.modul]}</td>
-                  <td className="px-3 py-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TUR_STIL[h.tur]}`}>{TUR_ETIKET[h.tur]}</span>
-                  </td>
-                  <td className="px-3 py-2 font-medium text-bakery-ink-900">{h.musteriAdi}</td>
-                  <td className="px-3 py-2 text-bakery-ink-600">{h.aciklama}</td>
-                  <td className="whitespace-nowrap px-3 py-2 text-right text-bakery-ink-900">{h.tutar ? formatTutar(h.tutar) : '—'}</td>
-                  <td className="px-3 py-2 text-xs text-bakery-ink-500">{kullaniciAdi(h.olusturanUid)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="divide-y divide-bakery-cream-100 overflow-hidden rounded-xl bg-bakery-surface shadow-sm shadow-bakery-coffee-900/5">
+          {gorunen.map((h, i) => {
+            const acik = acikSatir === i
+            return (
+              <li key={i}>
+                <button onClick={() => setAcikSatir(acik ? null : i)} className="flex w-full items-center gap-2 px-3 py-2.5 text-left">
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${TUR_STIL[h.tur]}`}>{TUR_ETIKET[h.tur]}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-bakery-ink-900">{h.musteriAdi}</p>
+                    <p className="truncate text-xs text-bakery-ink-500">
+                      {h.tarih.slice(8, 10)}.{h.tarih.slice(5, 7)} · {MODUL_ETIKET[h.modul]} · {kullaniciAdi(h.olusturanUid)}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-sm font-semibold text-bakery-ink-900">{h.tutar ? formatTutar(h.tutar) : '—'}</span>
+                  <ChevronDown size={16} className={`shrink-0 text-bakery-ink-400 transition ${acik ? 'rotate-180' : ''}`} />
+                </button>
+                {acik && (
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 bg-bakery-cream-50 px-3 py-2.5 text-sm">
+                    <dt className="text-bakery-ink-400">Tarih</dt>
+                    <dd className="text-bakery-ink-700">{h.tarih.split('-').reverse().join('.')}</dd>
+                    <dt className="text-bakery-ink-400">Modül</dt>
+                    <dd className="text-bakery-ink-700">
+                      {MODUL_ETIKET[h.modul]} — {TUR_ETIKET[h.tur]}
+                    </dd>
+                    <dt className="text-bakery-ink-400">Açıklama</dt>
+                    <dd className="text-bakery-ink-700">{h.aciklama}</dd>
+                    <dt className="text-bakery-ink-400">Kullanıcı</dt>
+                    <dd className="text-bakery-ink-700">{kullaniciAdi(h.olusturanUid)}</dd>
+                  </dl>
+                )}
+              </li>
+            )
+          })}
+        </ul>
       )}
     </div>
   )
