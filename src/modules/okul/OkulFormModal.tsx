@@ -147,7 +147,7 @@ export default function OkulFormModal({ mevcut, onKaydet, onKapat }: Props) {
           <div>
             <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Veresiye Hesabı</label>
             <MusteriSecici
-              modul="okul"
+              modul="veresiye"
               seciliMusteriId={musteriId}
               hepsiSecenegi
               onHepsiSec={() => setMusteriId(null)}
