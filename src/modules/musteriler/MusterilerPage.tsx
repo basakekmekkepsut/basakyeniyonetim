@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Pencil, Plus, RotateCcw, Search, Share2, Trash2 } from 'lucide-react'
+import { Pencil, Plus, RotateCcw, Search, Share2, Trash2, Wallet } from 'lucide-react'
 import {
   useMusteriler,
   musteriEkle,
@@ -14,7 +14,7 @@ import BosDurum from '../../shared/BosDurum'
 import ConfirmModal from '../../shared/ConfirmModal'
 import { formatTutar } from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
-import { portalMesajOlustur } from '../../shared/musteriYardimci'
+import { bakiyeMesajOlustur, portalMesajOlustur } from '../../shared/musteriYardimci'
 import { unHesabiAktifMi, cuvalKisaGoster } from '../../shared/unHesabi'
 import { useSession, isAdmin } from '../../lib/session'
 import type { Musteri, MusteriGirisi } from '../../lib/types'
@@ -98,6 +98,15 @@ export default function MusterilerPage() {
       return
     }
     window.open(`https://wa.me/${numara}?text=${encodeURIComponent(mesaj)}`, '_blank')
+  }
+
+  function bakiyeGonder(m: Musteri) {
+    const numara = m.telefon.replace(/\D/g, '')
+    if (!numara) {
+      toast.hata('Bu müşterinin telefon numarası kayıtlı değil.')
+      return
+    }
+    window.open(`https://wa.me/${numara}?text=${encodeURIComponent(bakiyeMesajOlustur(m))}`, '_blank')
   }
 
   const admin = session.status === 'signed-in' && isAdmin(session.profile)
@@ -219,6 +228,16 @@ export default function MusterilerPage() {
                     </>
                   ) : (
                     <>
+                      {m.moduller.includes('veresiye') && (
+                        <button
+                          onClick={() => bakiyeGonder(m)}
+                          className="rounded-lg p-1.5 text-green-600 hover:bg-green-600/10"
+                          aria-label="Bakiyeyi WhatsApp'tan gönder"
+                          title="Bakiyeyi WhatsApp'tan gönder"
+                        >
+                          <Wallet size={16} />
+                        </button>
+                      )}
                       <button
                         onClick={() => whatsappGonder(m)}
                         className="rounded-lg p-1.5 text-green-600 hover:bg-green-600/10"

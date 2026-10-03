@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
-import { X, Pencil, Phone, MapPin, Share2 } from 'lucide-react'
+import { X, Pencil, Phone, MapPin, Share2, Wallet } from 'lucide-react'
 import { useVeresiyeKayitlar } from '../veresiye/data'
 import { useVeresiyeOdemeler } from '../veresiye/odemeData'
 import { unHesabiAktifMi, cuvalGoster } from '../../shared/unHesabi'
-import { musteriHitabi, portalMesajOlustur } from '../../shared/musteriYardimci'
+import { bakiyeMesajOlustur, musteriHitabi, portalMesajOlustur } from '../../shared/musteriYardimci'
 import DurumRozeti from '../../shared/DurumRozeti'
 import { formatTutar } from '../../shared/TutarGoster'
 import { isAdmin, useSession } from '../../lib/session'
@@ -69,6 +69,12 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
     window.open(`https://wa.me/${numara}?text=${encodeURIComponent(mesaj)}`, '_blank')
   }
 
+  function bakiyeGonder() {
+    const numara = m.telefon.replace(/\D/g, '')
+    if (!numara) return
+    window.open(`https://wa.me/${numara}?text=${encodeURIComponent(bakiyeMesajOlustur(m))}`, '_blank')
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-bakery-coffee-900/40 backdrop-blur-sm animate-fade-in md:items-center">
       <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-bakery-surface shadow-elevated animate-slide-up md:rounded-2xl">
@@ -99,6 +105,17 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
                     <Phone size={14} className="text-bakery-ink-400" />
                     {m.telefon}
                   </span>
+                  <div className="flex items-center gap-1.5">
+                  {veresiyeSecili && (
+                    <button
+                      onClick={bakiyeGonder}
+                      className="flex items-center gap-1 rounded-full bg-green-600/10 px-2.5 py-1 text-xs font-medium text-green-700 hover:bg-green-600/20"
+                      title="Yalnızca güncel bakiyeyi WhatsApp'tan gönder"
+                    >
+                      <Wallet size={12} />
+                      Bakiye Gönder
+                    </button>
+                  )}
                   <button
                     onClick={whatsappGonder}
                     className="flex items-center gap-1 rounded-full bg-green-600/10 px-2.5 py-1 text-xs font-medium text-green-700 hover:bg-green-600/20"
@@ -107,6 +124,7 @@ export default function MusteriDetayModal({ musteri: m, onDuzenle, onKapat }: Pr
                     <Share2 size={12} />
                     Portal Linki
                   </button>
+                  </div>
                 </div>
               )}
               {m.adres && (

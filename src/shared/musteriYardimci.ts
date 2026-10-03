@@ -1,4 +1,6 @@
 import type { Musteri } from '../lib/types'
+import { formatTutar } from './TutarGoster'
+import { cuvalGoster, unHesabiAktifMi } from './unHesabi'
 
 /** WhatsApp mesajlarında kullanılacak hitap: "Ahmet Bey", "Ayşe Hanım" gibi. */
 export function musteriHitabi(musteri: Pick<Musteri, 'ad' | 'adSoyad' | 'hitapSekli'>): string {
@@ -26,4 +28,30 @@ export function portalMesajOlustur(musteri: Pick<Musteri, 'id' | 'ad' | 'adSoyad
   if (!musteri.portalSifre) return null
   const link = `${PORTAL_SITE_URL}/portal.html?kod=${musteri.id}`
   return `Merhaba ${musteriHitabi(musteri)}, hesap ekstrenizi görüntülemek için:\n${link}\nŞifreniz: ${musteri.portalSifre}\n\nBu bir otomatik program mesajıdır.`
+}
+
+/** Yalnızca müşterinin güncel bakiyesini bildiren kısa WhatsApp mesajı — portal
+ * linki ya da hareket dökümü içermez. Un hesabıyla çalışan müşterilerde çuval
+ * bakiyesi, varsa ₺ bakiyesiyle birlikte gösterilir. */
+export function bakiyeMesajOlustur(
+  musteri: Pick<Musteri, 'ad' | 'adSoyad' | 'hitapSekli' | 'veresiyeBakiye' | 'unHesabi'>
+): string {
+  const tarih = new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const tlSatiri = (bakiye: number) =>
+    bakiye > 0.004
+      ? `Güncel borç bakiyeniz: ${formatTutar(bakiye)}`
+      : bakiye < -0.004
+        ? `Alacak bakiyeniz: ${formatTutar(-bakiye)}`
+        : 'Borcunuz bulunmamaktadır.'
+
+  const satirlar: string[] = []
+  if (unHesabiAktifMi(musteri)) {
+    const un = musteri.unHesabi!
+    satirlar.push(`Un hesabı bakiyeniz: ${cuvalGoster(un.birikenEsdegerAdet, un.adetPerCuval)}`)
+    if (Math.abs(musteri.veresiyeBakiye) > 0.004) satirlar.push(tlSatiri(musteri.veresiyeBakiye))
+  } else {
+    satirlar.push(tlSatiri(musteri.veresiyeBakiye))
+  }
+
+  return [`Merhaba ${musteriHitabi(musteri)},`, '', `${tarih} itibarıyla:`, ...satirlar, '', 'Başak Ekmek Fırını', 'Bu bir otomatik program mesajıdır.'].join('\n')
 }
