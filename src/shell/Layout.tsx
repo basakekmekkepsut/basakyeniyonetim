@@ -1,7 +1,7 @@
 import { type ReactNode, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
-import { ClipboardList, HandCoins, School, LogOut, Moon, RefreshCw, Settings, Sun, User, Users } from 'lucide-react'
+import { ClipboardList, HandCoins, School, LogOut, Moon, RefreshCw, Settings, Sun, User, Users, Package } from 'lucide-react'
 import { requireAuth } from '../lib/firebase'
 import { hasModule, isAdmin, useSession } from '../lib/session'
 import { temaBaslat, temaDegistir, yaziBoyutuBaslat, yaziBoyutuDegistir, type Tema, type YaziBoyutu } from '../shared/gorunum'
@@ -37,9 +37,13 @@ export default function Layout() {
   const { profile } = session
 
   const gorunurModuller = MODUL_TANIMLARI.filter((m) => hasModule(profile, m.key))
-  // Müşteri/Ürün kartları bir modül değil — Ayarlar'da olduğu gibi yalnızca yöneticiye görünür.
+  // Müşteri ve Ürün kartları bir modül değil — Ayarlar'da olduğu gibi yalnızca yöneticiye görünür.
   const menuOgeleri: { key: string; yol: string; etiket: string; Icon: typeof ClipboardList }[] = isAdmin(profile)
-    ? [...gorunurModuller, { key: 'musteriler', yol: '/musteriler', etiket: 'Müşteriler', Icon: Users }]
+    ? [
+        ...gorunurModuller,
+        { key: 'musteriler', yol: '/musteriler', etiket: 'Müşteriler', Icon: Users },
+        { key: 'urunler', yol: '/urunler', etiket: 'Ürünler', Icon: Package }
+      ]
     : gorunurModuller
 
   return (
@@ -53,9 +57,9 @@ export default function Layout() {
 
           <nav className="hidden gap-1 md:flex">
             {menuOgeleri.map(({ key, yol, etiket, Icon }) => (
-              <NavLink key={key} to={yol} className={({ isActive }) => navLinkClass(isActive)}>
+              <NavLink key={key} to={yol} className={({ isActive }) => navLinkClass(isActive)} title={etiket}>
                 <Icon size={16} />
-                {etiket}
+                <span className="hidden lg:inline">{etiket}</span>
               </NavLink>
             ))}
           </nav>
