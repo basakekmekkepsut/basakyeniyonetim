@@ -8,6 +8,7 @@ import { temaBaslat, temaDegistir, yaziBoyutuBaslat, yaziBoyutuSec, YAZI_ETIKETL
 import type { Modul } from '../lib/types'
 import { useToast } from '../shared/Toast'
 import { useGuncelleme } from './useGuncelleme'
+import CiftKayitBanner from './CiftKayitBanner'
 
 const MODUL_TANIMLARI: { key: Modul; yol: string; etiket: string; Icon: typeof ClipboardList }[] = [
   { key: 'siparis', yol: '/siparis', etiket: 'Sipariş', Icon: ClipboardList },
@@ -168,6 +169,7 @@ export default function Layout() {
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-4 pb-24 md:pb-6">
+        {(isAdmin(profile) || hasModule(profile, 'veresiye')) && <CiftKayitBanner />}
         <Outlet />
       </main>
 

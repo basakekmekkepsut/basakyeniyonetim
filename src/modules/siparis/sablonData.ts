@@ -5,11 +5,13 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
+  where,
   writeBatch
 } from 'firebase/firestore'
 import { requireDb } from '../../lib/firebase'
@@ -55,8 +57,23 @@ export async function sablonGuncelle(id: string, veri: SiparisSablonuFormVerisi)
   await updateDoc(doc(requireDb(), KOLEKSIYON, id), { ...veri })
 }
 
-export async function sablonSil(id: string): Promise<void> {
-  await deleteDoc(doc(requireDb(), KOLEKSIYON, id))
+/** Şablonu ve onun ileriye dönük ürettiği, henüz teslim günü gelmemiş
+ * ('planlandi') siparişleri siler — bunlar veresiyeye henüz yansımadığı için
+ * güvenle silinebilir. Eskiden yalnızca şablon siliniyordu; geride kalan planlı
+ * siparişler her hafta aktifleşip veresiyeye yazmaya devam ediyordu (Baraj BRJ
+ * simidi). Dönen değer: silinen planlı sipariş sayısı. */
+export async function sablonSil(id: string): Promise<number> {
+  const db = requireDb()
+  const snap = await getDocs(
+    query(collection(db, 'siparis_orders'), where('kaynakSablonId', '==', id), where('durum', '==', 'planlandi'))
+  )
+  for (let i = 0; i < snap.docs.length; i += 400) {
+    const batch = writeBatch(db)
+    snap.docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref))
+    await batch.commit()
+  }
+  await deleteDoc(doc(db, KOLEKSIYON, id))
+  return snap.size
 }
 
 export function sablonBugunDueMu(sablon: SiparisSablonu, bugun: string): boolean {

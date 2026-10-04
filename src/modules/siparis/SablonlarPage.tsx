@@ -78,8 +78,8 @@ export default function SablonlarPage() {
   async function handleSil() {
     if (!silinecek) return
     try {
-      await sablonSil(silinecek.id)
-      toast.basari('Şablon silindi.')
+      const planliSayisi = await sablonSil(silinecek.id)
+      toast.basari(planliSayisi > 0 ? `Şablon ve ileriye dönük ${planliSayisi} planlı siparişi silindi.` : 'Şablon silindi.')
     } catch (err) {
       toast.hata(err instanceof Error ? err.message : 'Silinemedi.')
     } finally {
@@ -202,7 +202,7 @@ export default function SablonlarPage() {
       {silinecek && (
         <ConfirmModal
           baslik="Şablonu sil"
-          mesaj={`"${silinecek.musteriAdi}" şablonunu silmek istediğinize emin misiniz?`}
+          mesaj={`"${silinecek.musteriAdi}" şablonunu silmek istediğinize emin misiniz? Bu şablondan ileriye dönük oluşturulmuş, henüz teslim günü gelmemiş siparişler de silinecek.`}
           onayEtiketi="Sil"
           tehlikeli
           onOnayla={handleSil}

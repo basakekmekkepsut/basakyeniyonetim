@@ -13,6 +13,7 @@ import { useSession } from '../../lib/session'
 import { unHesabiAktifMi } from '../../shared/unHesabi'
 import { veresiyeBildirimGonder } from '../../shared/veresiyeBildirim'
 import { tarihGunAdiIle } from '../../shared/tarih'
+import { otomatikCakismaBul } from '../../shared/ciftKayit'
 import type { Musteri } from '../../lib/types'
 
 function bugunStr() {
@@ -201,7 +202,20 @@ export default function GunlukGirisPage() {
       return
     }
 
+    // Sipariş/Okul aynı müşteriye aynı gün aynı adeti zaten yazdıysa elle tekrar girilmesin.
     setKaydediliyor(true)
+    try {
+      const uyarilar = await otomatikCakismaBul(
+        gonderilecek.flatMap((s) => s.kalemler.map((k) => ({ musteriId: s.musteriId, musteriAdi: s.musteriAdi, tarih: s.tarih, ...k })))
+      )
+      if (uyarilar.length > 0 && !window.confirm(`Olası çift kayıt:\n\n${uyarilar.join('\n')}\n\nYine de hepsi kaydedilsin mi?`)) {
+        setKaydediliyor(false)
+        return
+      }
+    } catch {
+      // kontrol yapılamazsa kayıt engellenmez
+    }
+
     try {
       const sayisi = gonderilecek.length
         ? await gunlukGirisKaydet(gonderilecek, veresiyeMusterileri, veresiyeUrunleri, { uid: session.user.uid })

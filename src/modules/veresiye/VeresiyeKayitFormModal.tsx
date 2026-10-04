@@ -4,6 +4,7 @@ import MusteriSecici from '../../shared/MusteriSecici'
 import { useUrunler } from '../urunler/data'
 import { useMusteriler } from '../musteriler/data'
 import { unHesabiAktifMi } from '../../shared/unHesabi'
+import { otomatikCakismaBul } from '../../shared/ciftKayit'
 import type { VeresiyeDurumu, VeresiyeKaydi } from '../../lib/types'
 import type { VeresiyeKaydiFormVerisi } from './data'
 
@@ -61,6 +62,13 @@ export default function VeresiyeKayitFormModal({ mevcut, onKaydet, onKapat }: Pr
     setHata(null)
     setGonderiliyor(true)
     try {
+      if (!mevcut) {
+        const uyarilar = await otomatikCakismaBul([{ musteriId, musteriAdi, tarih, productId, urunAdi, adet: adetSayi }])
+        if (uyarilar.length > 0 && !window.confirm(`Olası çift kayıt:\n\n${uyarilar.join('\n')}\n\nYine de kaydedilsin mi?`)) {
+          setGonderiliyor(false)
+          return
+        }
+      }
       await onKaydet({ musteriId, musteriAdi, productId, urunAdi, adet: adetSayi, birimFiyat, tarih, durum })
       onKapat()
     } catch (err) {
