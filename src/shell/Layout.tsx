@@ -69,6 +69,7 @@ export default function Layout() {
           <div className="flex items-center gap-2">
             <button
               onClick={async () => {
+                if (kontrolEdiliyor) return
                 const yenileniyor = await guncelle()
                 if (!yenileniyor) toast.basari(`Uygulama güncel (v${__APP_VERSION__}).`)
               }}
