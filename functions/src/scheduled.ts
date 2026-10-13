@@ -119,10 +119,9 @@ async function okulMesajiOlustur(tarih: string): Promise<string> {
   if (gruplar.size === 0) return ''
 
   // Ekmek çeşidine göre gruplu: başlıkta ürün + toplam, altında okullar
-  const bloklar = [...gruplar.entries()].map(([urun, g]) =>
-    [`${urun} — ${g.toplam} adet`, ...siraliSatirlar(g.satirlar)].join('\n')
-  )
-  return [`Ekmek Siparişi — ${tarihGunAdiIle(tarih)}`, '', bloklar.join('\n\n')].join('\n')
+  const bloklar = [...gruplar.entries()].map(([urun, g]) => [urun, ...siraliSatirlar(g.satirlar)].join('\n'))
+  const toplamSatirlari = [...gruplar.entries()].map(([urun, g]) => `${urun}: ${g.toplam} adet`)
+  return [`Ekmek Siparişi — ${tarihGunAdiIle(tarih)}`, '', bloklar.join('\n\n'), '', 'Ürün bazında toplam:', ...toplamSatirlari].join('\n')
 }
 
 // --- Sipariş (müşteri) mesajı (bkz. src/modules/siparis/MesajPage.tsx siparisMesajOlustur ile aynı format) ---

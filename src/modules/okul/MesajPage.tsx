@@ -41,10 +41,9 @@ function okulMesajOlustur(tarih: string, okullar: OkulSchool[], orders: OkulOrde
 
   if (gruplar.size === 0) return ''
 
-  const bloklar = [...gruplar.entries()].map(([urun, g]) =>
-    [`${urun} — ${g.toplam} adet`, ...siraliSatirlar(g.satirlar)].join('\n')
-  )
-  return [`Ekmek Siparişi — ${tarihGunAdiIle(tarih)}`, '', bloklar.join('\n\n')].join('\n')
+  const bloklar = [...gruplar.entries()].map(([urun, g]) => [urun, ...siraliSatirlar(g.satirlar)].join('\n'))
+  const toplamSatirlari = [...gruplar.entries()].map(([urun, g]) => `${urun}: ${g.toplam} adet`)
+  return [`Ekmek Siparişi — ${tarihGunAdiIle(tarih)}`, '', bloklar.join('\n\n'), '', 'Ürün bazında toplam:', ...toplamSatirlari].join('\n')
 }
 
 function waAc(mesaj: string) {
