@@ -24,7 +24,8 @@ function siparisMesajOlustur(tarih: string, siparisler: Siparis[]): string {
   const satirlar = gecerliSiparisler.map((s) => {
     const urunler = s.items.map((it) => `${it.adet}x ${it.urunAdi}`).join(', ')
     for (const it of s.items) urunToplamlari.set(it.urunAdi, (urunToplamlari.get(it.urunAdi) ?? 0) + it.adet)
-    return `• ${s.musteriAdi} — ${urunler}`
+    const notEki = s.not?.trim() ? ` — Not: ${s.not.trim()}` : ''
+    return `• ${s.musteriAdi} — ${urunler}${notEki}`
   })
   const toplamSatirlari = [...urunToplamlari.entries()].map(([urun, adet]) => `${urun}: ${adet} adet`)
   return [`📋 ${tarihGunAdiIle(tarih)} Sipariş Listesi`, '', ...satirlar, '', 'Ürün bazında toplam:', ...toplamSatirlari].join('\n')

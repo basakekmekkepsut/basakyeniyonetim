@@ -122,6 +122,7 @@ interface SiparisItemOzet {
 interface SiparisOzet {
   musteriAdi: string
   items: SiparisItemOzet[]
+  not?: string
   durum: string
 }
 
@@ -135,7 +136,8 @@ async function siparisMesajiOlustur(tarih: string): Promise<string> {
   const satirlar = siparisler.map((s) => {
     const urunler = s.items.map((it) => `${it.adet}x ${it.urunAdi}`).join(', ')
     for (const it of s.items) urunToplamlari.set(it.urunAdi, (urunToplamlari.get(it.urunAdi) ?? 0) + it.adet)
-    return `• ${s.musteriAdi} — ${urunler}`
+    const notEki = s.not?.trim() ? ` — Not: ${s.not.trim()}` : ''
+    return `• ${s.musteriAdi} — ${urunler}${notEki}`
   })
   const toplamSatirlari = [...urunToplamlari.entries()].map(([urun, adet]) => `${urun}: ${adet} adet`)
   return [`📋 ${tarihGunAdiIle(tarih)} Sipariş Listesi`, '', ...satirlar, '', 'Ürün bazında toplam:', ...toplamSatirlari].join('\n')
