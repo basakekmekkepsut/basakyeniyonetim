@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { useOkullar } from './data'
+import { useMusteriler } from '../musteriler/data'
 import { useOkulOrders } from './orderData'
 import BosDurum from '../../shared/BosDurum'
 import TelegramGonderButonu from '../../shared/TelegramGonderButonu'
@@ -13,36 +14,37 @@ function yarinStr() {
   return d.toISOString().slice(0, 10)
 }
 
-function okulMesajOlustur(tarih: string, okullar: OkulSchool[], orders: OkulOrder[]): string {
+const trSirala = (a: string, b: string) => a.localeCompare(b, 'tr')
+const siraliSatirlar = (satirlar: { hesap: string; okul: string; metin: string }[]) =>
+  [...satirlar].sort((a, b) => trSirala(a.hesap, b.hesap) || trSirala(a.okul, b.okul)).map((x) => x.metin)
+
+function okulMesajOlustur(tarih: string, okullar: OkulSchool[], orders: OkulOrder[], musteriAdlari: Map<string, string>): string {
   if (orders.length === 0) return ''
 
-  const satirlar: string[] = []
-  const urunToplamlari = new Map<string, number>()
+  // Ekmek çeşidine göre gruplu: başlıkta ürün + toplam, altında okullar
+  const gruplar = new Map<string, { toplam: number; satirlar: { hesap: string; okul: string; metin: string }[] }>()
 
   for (const okul of okullar) {
     for (const o of orders.filter((x) => x.schoolId === okul.id)) {
       if (o.adet <= 0) continue
       const hat = okul.lines.find((l) => l.id === o.lineId)
       if (!hat) continue // silinmiş hat — gönderilmez
-      const urunAdi = hat.urunAdi
       const notEki = o.not ? ` — ${o.not}` : ''
-      satirlar.push(`${okul.ad}: ${o.adet} adet (${urunAdi})${notEki}`)
-      urunToplamlari.set(urunAdi, (urunToplamlari.get(urunAdi) ?? 0) + o.adet)
+      const grup = gruplar.get(hat.urunAdi) ?? { toplam: 0, satirlar: [] }
+      grup.toplam += o.adet
+      // Sıralama: ekmek türü → veresiye hesabı (bağlı değilse okul adı) → okul adı
+      const hesap = (okul.musteriId && musteriAdlari.get(okul.musteriId)) || okul.ad
+      grup.satirlar.push({ hesap, okul: okul.ad, metin: `${okul.ad}: ${o.adet} adet${notEki}` })
+      gruplar.set(hat.urunAdi, grup)
     }
   }
 
-  if (satirlar.length === 0) return ''
+  if (gruplar.size === 0) return ''
 
-  const toplamSatirlari = [...urunToplamlari.entries()].map(([urun, adet]) => `${urun}: ${adet} adet`)
-
-  return [
-    `Ekmek Siparişi — ${tarihGunAdiIle(tarih)}`,
-    '',
-    ...satirlar,
-    '',
-    'Ürün bazında toplam:',
-    ...toplamSatirlari
-  ].join('\n')
+  const bloklar = [...gruplar.entries()].map(([urun, g]) =>
+    [`${urun} — ${g.toplam} adet`, ...siraliSatirlar(g.satirlar)].join('\n')
+  )
+  return [`Ekmek Siparişi — ${tarihGunAdiIle(tarih)}`, '', bloklar.join('\n\n')].join('\n')
 }
 
 function waAc(mesaj: string) {
@@ -51,10 +53,12 @@ function waAc(mesaj: string) {
 
 export default function MesajPage() {
   const { okullar } = useOkullar()
+  const { musteriler } = useMusteriler()
+  const musteriAdlari = useMemo(() => new Map(musteriler.map((m) => [m.id, m.ad])), [musteriler])
   const [tarih, setTarih] = useState(yarinStr())
   const { orders, yukleniyor } = useOkulOrders(tarih)
 
-  const mesajMetni = useMemo(() => okulMesajOlustur(tarih, okullar, orders), [tarih, okullar, orders])
+  const mesajMetni = useMemo(() => okulMesajOlustur(tarih, okullar, orders, musteriAdlari), [tarih, okullar, orders, musteriAdlari])
   const waLink = `https://wa.me/?text=${encodeURIComponent(mesajMetni)}`
 
   // Seçili tarih zaten varsayılan olarak yarın ama personel önizleme için başka
@@ -62,7 +66,7 @@ export default function MesajPage() {
   // doğrudan yarının listesini WhatsApp'ta açar.
   const yarin = yarinStr()
   const { orders: yarinOrders, yukleniyor: yarinYukleniyor } = useOkulOrders(yarin)
-  const yarinMesaj = useMemo(() => okulMesajOlustur(yarin, okullar, yarinOrders), [yarin, okullar, yarinOrders])
+  const yarinMesaj = useMemo(() => okulMesajOlustur(yarin, okullar, yarinOrders, musteriAdlari), [yarin, okullar, yarinOrders, musteriAdlari])
 
   return (
     <div className="space-y-4">

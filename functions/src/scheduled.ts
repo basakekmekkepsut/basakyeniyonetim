@@ -74,6 +74,7 @@ interface OkulHatOzet {
 interface OkulSchoolOzet {
   id: string
   ad: string
+  musteriId?: string | null
   lines: OkulHatOzet[]
 }
 interface OkulOrderOzet {
@@ -83,34 +84,45 @@ interface OkulOrderOzet {
   not?: string
 }
 
+const trSirala = (a: string, b: string) => a.localeCompare(b, 'tr')
+const siraliSatirlar = (satirlar: { hesap: string; okul: string; metin: string }[]) =>
+  [...satirlar].sort((a, b) => trSirala(a.hesap, b.hesap) || trSirala(a.okul, b.okul)).map((x) => x.metin)
+
 async function okulMesajiOlustur(tarih: string): Promise<string> {
   const db = getFirestore()
-  const [okullarSnap, ordersSnap] = await Promise.all([
+  const [okullarSnap, ordersSnap, musterilerSnap] = await Promise.all([
     db.collection('okul_schools').get(),
-    db.collection('okul_orders').where('tarih', '==', tarih).get()
+    db.collection('okul_orders').where('tarih', '==', tarih).get(),
+    db.collection('musteriler').get()
   ])
+  const musteriAdlari = new Map(musterilerSnap.docs.map((d) => [d.id, (d.data().ad as string) ?? ''] as const))
   const okullar = okullarSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as OkulSchoolOzet)
   const orders = ordersSnap.docs.map((d) => d.data() as OkulOrderOzet)
 
-  const satirlar: string[] = []
-  const urunToplamlari = new Map<string, number>()
+  const gruplar = new Map<string, { toplam: number; satirlar: { hesap: string; okul: string; metin: string }[] }>()
 
   for (const okul of okullar) {
     for (const o of orders.filter((x) => x.schoolId === okul.id)) {
       if (o.adet <= 0) continue
       const hat = okul.lines.find((l) => l.id === o.lineId)
       if (!hat) continue // silinmiş hat — gönderilmez
-      const urunAdi = hat.urunAdi
       const notEki = o.not ? ` — ${o.not}` : ''
-      satirlar.push(`${okul.ad}: ${o.adet} adet (${urunAdi})${notEki}`)
-      urunToplamlari.set(urunAdi, (urunToplamlari.get(urunAdi) ?? 0) + o.adet)
+      const grup = gruplar.get(hat.urunAdi) ?? { toplam: 0, satirlar: [] }
+      grup.toplam += o.adet
+      // Sıralama: ekmek türü → veresiye hesabı (bağlı değilse okul adı) → okul adı
+      const hesap = (okul.musteriId && musteriAdlari.get(okul.musteriId)) || okul.ad
+      grup.satirlar.push({ hesap, okul: okul.ad, metin: `${okul.ad}: ${o.adet} adet${notEki}` })
+      gruplar.set(hat.urunAdi, grup)
     }
   }
 
-  if (satirlar.length === 0) return ''
+  if (gruplar.size === 0) return ''
 
-  const toplamSatirlari = [...urunToplamlari.entries()].map(([urun, adet]) => `${urun}: ${adet} adet`)
-  return [`Ekmek Siparişi — ${tarihGunAdiIle(tarih)}`, '', ...satirlar, '', 'Ürün bazında toplam:', ...toplamSatirlari].join('\n')
+  // Ekmek çeşidine göre gruplu: başlıkta ürün + toplam, altında okullar
+  const bloklar = [...gruplar.entries()].map(([urun, g]) =>
+    [`${urun} — ${g.toplam} adet`, ...siraliSatirlar(g.satirlar)].join('\n')
+  )
+  return [`Ekmek Siparişi — ${tarihGunAdiIle(tarih)}`, '', bloklar.join('\n\n')].join('\n')
 }
 
 // --- Sipariş (müşteri) mesajı (bkz. src/modules/siparis/MesajPage.tsx siparisMesajOlustur ile aynı format) ---
