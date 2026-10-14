@@ -185,7 +185,7 @@ export default function OkulFormModal({ mevcut, onKaydet, onKapat }: Props) {
 
           <div>
             <div className="mb-1.5 flex items-center justify-between">
-              <label className="text-sm font-medium text-bakery-ink-800">Hatlar (ürün + günlük adet)</label>
+              <label className="text-sm font-medium text-bakery-ink-800">Hatlar (ürün + günlük adet — 0 = sadece sipariş gelince elle girilir)</label>
               <button type="button" onClick={hatEkle} className="flex items-center gap-1 text-sm font-medium text-bakery-amber-600 hover:text-bakery-amber-500">
                 <Plus size={14} />
                 Hat Ekle
@@ -213,7 +213,7 @@ export default function OkulFormModal({ mevcut, onKaydet, onKapat }: Props) {
                       </select>
                       <input
                         type="number"
-                        min={1}
+                        min={0}
                         value={l.adet}
                         onChange={(e) => hatGuncelle(l.id, { adet: Number(e.target.value) })}
                         className="w-16 rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2 py-1.5 text-center text-sm outline-none focus:border-bakery-amber-500"
