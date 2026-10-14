@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { MessageSquarePlus, MessageSquareText } from 'lucide-react'
 import { useOkullar, okulGuncelle, yeniHatId, okullariGrupla } from './data'
 import {
   useOkulOrders,
@@ -30,6 +31,8 @@ export default function SiparisPage() {
 
   const [degerler, setDegerler] = useState<Record<string, number>>({})
   const [notlar, setNotlar] = useState<Record<string, string>>({})
+  // Not kutusu varsayılan kapalı (sayfa kısa kalsın); notu olan satırda otomatik açık görünür.
+  const [acikNotlar, setAcikNotlar] = useState<Set<string>>(new Set())
   const okulUrunleri = urunler.filter((u) => u.aktif && u.modules.includes('okul'))
 
   // "+ Ürün Ekle": okulun sabit hat listesinde olmayan bir ürünü o okula, adet 0
@@ -136,19 +139,55 @@ export default function SiparisPage() {
                     )
                     return (
                       <div key={okul.id}>
-                        <p className="mb-1.5 text-sm font-medium text-bakery-ink-900">{okul.ad}</p>
-                        <div className="space-y-1.5 pl-2">
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-bakery-ink-900">{okul.ad}</p>
+                          {!kapanis?.kapandi && eklenebilirUrunler.length > 0 && (
+                            <select
+                              value=""
+                              onChange={(e) => urunEkle(okul, e.target.value)}
+                              className="w-28 rounded-lg border border-dashed border-bakery-cream-300 bg-transparent px-1.5 py-0.5 text-xs text-bakery-ink-500 outline-none focus:border-bakery-amber-500"
+                            >
+                              <option value="">+ Ürün</option>
+                              {eklenebilirUrunler.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.ad}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                        <div className="space-y-1 pl-2">
                           {okul.lines
                             .filter((l) => l.aktif)
                             .map((l) => {
                               const order = lineOrder(l.id)
                               const kapali = order?.kapandiMi ?? false
+                              const notVar = !!notlar[l.id]
+                              const notAcik = notVar || acikNotlar.has(l.id)
                               return (
                                 <div key={l.id} className="flex flex-col gap-1">
                                   <div className="flex items-center justify-between gap-3 text-sm">
-                                    <span className="text-bakery-ink-600">{l.urunAdi}</span>
-                                    <div className="flex items-center gap-2">
+                                    <span className="min-w-0 flex-1 truncate text-bakery-ink-600">{l.urunAdi}</span>
+                                    <div className="flex items-center gap-1.5">
                                       {kapali && <span className="text-xs text-bakery-ink-400">Kapandı</span>}
+                                      {!kapali && (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setAcikNotlar((prev) => {
+                                              const yeni = new Set(prev)
+                                              if (yeni.has(l.id)) yeni.delete(l.id)
+                                              else yeni.add(l.id)
+                                              return yeni
+                                            })
+                                          }
+                                          className={`rounded-lg p-1.5 ${notVar ? 'text-bakery-amber-600' : 'text-bakery-ink-400'} hover:bg-bakery-cream-100`}
+                                          aria-label="Not ekle"
+                                          title="Not ekle"
+                                        >
+                                          {notVar ? <MessageSquareText size={16} /> : <MessageSquarePlus size={16} />}
+                                        </button>
+                                      )}
                                       <input
                                         type="number"
                                         min={0}
@@ -159,36 +198,24 @@ export default function SiparisPage() {
                                           setDegerler((prev) => ({ ...prev, [l.id]: Number(e.target.value) }))
                                         }
                                         onBlur={(e) => commit(okul.id, l.id, l.productId, Number(e.target.value) || 0)}
-                                        className="w-20 rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-2 py-1.5 text-center outline-none focus:border-bakery-amber-500 disabled:bg-bakery-cream-100 disabled:text-bakery-ink-400"
+                                        className="w-20 rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-2 py-1 text-center outline-none focus:border-bakery-amber-500 disabled:bg-bakery-cream-100 disabled:text-bakery-ink-400"
                                       />
                                     </div>
                                   </div>
-                                  <input
-                                    type="text"
-                                    disabled={kapali}
-                                    value={notlar[l.id] ?? ''}
-                                    placeholder="Not ekle… (ör. dilimli, sabaha)"
-                                    onChange={(e) => setNotlar((prev) => ({ ...prev, [l.id]: e.target.value }))}
-                                    onBlur={(e) => commitNot(okul.id, l.id, l.productId, e.target.value)}
-                                    className="w-full rounded-lg border border-dashed border-bakery-cream-200 bg-transparent px-2 py-1 text-xs text-bakery-ink-500 outline-none focus:border-bakery-amber-500 disabled:bg-bakery-cream-100"
-                                  />
+                                  {notAcik && (
+                                    <input
+                                      type="text"
+                                      disabled={kapali}
+                                      value={notlar[l.id] ?? ''}
+                                      placeholder="Not ekle… (ör. dilimli, sabaha)"
+                                      onChange={(e) => setNotlar((prev) => ({ ...prev, [l.id]: e.target.value }))}
+                                      onBlur={(e) => commitNot(okul.id, l.id, l.productId, e.target.value)}
+                                      className="w-full rounded-lg border border-dashed border-bakery-cream-200 bg-transparent px-2 py-1 text-xs text-bakery-ink-500 outline-none focus:border-bakery-amber-500 disabled:bg-bakery-cream-100"
+                                    />
+                                  )}
                                 </div>
                               )
                             })}
-                          {!kapanis?.kapandi && eklenebilirUrunler.length > 0 && (
-                            <select
-                              value=""
-                              onChange={(e) => urunEkle(okul, e.target.value)}
-                              className="w-full rounded-lg border border-dashed border-bakery-cream-300 bg-transparent px-2 py-1 text-xs text-bakery-ink-500 outline-none focus:border-bakery-amber-500"
-                            >
-                              <option value="">+ Ürün Ekle</option>
-                              {eklenebilirUrunler.map((u) => (
-                                <option key={u.id} value={u.id}>
-                                  {u.ad}
-                                </option>
-                              ))}
-                            </select>
-                          )}
                         </div>
                       </div>
                     )
