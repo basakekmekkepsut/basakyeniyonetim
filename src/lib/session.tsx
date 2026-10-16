@@ -36,8 +36,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
         unsubProfile = onSnapshot(
           doc(requireDb(), 'users', user.uid),
+          { includeMetadataChanges: true },
           (snap) => {
             if (!snap.exists()) {
+              // Önbellekten (henüz sunucuya ulaşmadan) gelen boş yanıt "profil yok" demek değildir;
+              // önbellek temizlenmiş/çevrimdışı telefonlarda yanlış uyarı çıkıyordu.
+              if (snap.metadata.fromCache) return
               setState({ status: 'no-profile', user })
               return
             }
