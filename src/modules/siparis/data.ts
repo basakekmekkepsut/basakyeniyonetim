@@ -14,6 +14,7 @@ import {
   runTransaction,
   serverTimestamp,
   where,
+  writeBatch,
   type Unsubscribe
 } from 'firebase/firestore'
 import { requireDb } from '../../lib/firebase'
@@ -295,10 +296,63 @@ export async function siparisOdemeDurumuGuncelle(
     items: mevcut.items,
     odemeSekli: mevcut.odemeSekli
   }
+  // Kısmi ödeme alınmışsa tam ödemeye geçerken (ya da geri alırken) o ödemeyi kaldır — çift düşülmesin.
+  if (mevcut.kismiOdemeId) await kismiOdemeyiKaldir(mevcut)
   await kaydetVeSenkronizeEt(mevcut, veri, { durum: mevcut.durum, odemeDurumu: yeniOdemeDurumu, silindi: mevcut.silindi }, kullanici)
 }
 
+async function kismiOdemeyiKaldir(mevcut: Siparis): Promise<void> {
+  if (!mevcut.kismiOdemeId) return
+  const db = requireDb()
+  const batch = writeBatch(db)
+  batch.delete(doc(db, 'veresiye_odemeler', mevcut.kismiOdemeId))
+  batch.update(doc(db, 'musteriler', mevcut.musteriId), { veresiyeBakiye: increment(mevcut.odenenTutar ?? 0) })
+  batch.update(doc(db, KOLEKSIYON, mevcut.id), { odenenTutar: 0, kismiOdemeId: null })
+  await batch.commit()
+}
+
+/**
+ * Veresiye siparişte kısmi ödeme: `toplamOdenen` şimdiye kadar alınan TOPLAM tutardır.
+ * Tek bir veresiye_odemeler belgesi tutulur ve her güncellemede bakiye farkı kadar düzeltilir.
+ * Tutar sipariş toplamına ulaşırsa sipariş tam "Ödendi" olur; 0 girilirse ödeme geri alınır.
+ */
+export async function siparisKismiOdemeAyarla(
+  mevcut: Siparis,
+  toplamOdenen: number,
+  kullanici: { uid: string; ad: string }
+): Promise<'tam' | 'kismi' | 'kaldirildi'> {
+  if (toplamOdenen >= mevcut.toplamTutar) {
+    await siparisOdemeDurumuGuncelle(mevcut, 'odendi', kullanici)
+    return 'tam'
+  }
+  if (toplamOdenen <= 0) {
+    await kismiOdemeyiKaldir(mevcut)
+    return 'kaldirildi'
+  }
+  const db = requireDb()
+  const eskiTutar = mevcut.kismiOdemeId ? (mevcut.odenenTutar ?? 0) : 0
+  const batch = writeBatch(db)
+  const odemeRef = mevcut.kismiOdemeId
+    ? doc(db, 'veresiye_odemeler', mevcut.kismiOdemeId)
+    : doc(collection(db, 'veresiye_odemeler'))
+  const odemeVerisi = {
+    musteriId: mevcut.musteriId,
+    musteriAdi: mevcut.musteriAdi,
+    tutar: toplamOdenen,
+    tarih: mevcut.teslimatTarihi,
+    not: `Sipariş kısmi ödeme (${mevcut.teslimatTarihi})`
+  }
+  if (mevcut.kismiOdemeId) batch.set(odemeRef, odemeVerisi, { merge: true })
+  else batch.set(odemeRef, { ...odemeVerisi, olusturanUid: kullanici.uid, olusturmaTarihi: serverTimestamp() })
+  batch.update(doc(db, 'musteriler', mevcut.musteriId), { veresiyeBakiye: increment(-(toplamOdenen - eskiTutar)) })
+  batch.update(doc(db, KOLEKSIYON, mevcut.id), { odenenTutar: toplamOdenen, kismiOdemeId: odemeRef.id })
+  await batch.commit()
+  return 'kismi'
+}
+
 export async function siparisCopeTasi(mevcut: Siparis, kullanici: { uid: string; ad: string }): Promise<void> {
+  // Sipariş veresiyeden düşerken ona bağlı kısmi ödeme de geri alınır (yoksa bakiye fazla düşer).
+  if (mevcut.kismiOdemeId) await kismiOdemeyiKaldir(mevcut)
   const veri: SiparisFormVerisi = {
     musteriId: mevcut.musteriId,
     musteriAdi: mevcut.musteriAdi,

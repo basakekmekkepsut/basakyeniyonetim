@@ -5,6 +5,7 @@ import {
   siparisEkle,
   siparisGuncelle,
   siparisOdemeDurumuGuncelle,
+  siparisKismiOdemeAyarla,
   siparisCopeTasi,
   siparisGeriYukle,
   siparisKaliciSil,
@@ -15,7 +16,7 @@ import SiparisFormModal from './SiparisFormModal'
 import DonemFiltre, { donemAraligiHesapla, GuneGit, type DonemAnahtari } from '../../shared/DonemFiltre'
 import BosDurum from '../../shared/BosDurum'
 import ConfirmModal from '../../shared/ConfirmModal'
-import TutarGoster from '../../shared/TutarGoster'
+import TutarGoster, { formatTutar } from '../../shared/TutarGoster'
 import { useToast } from '../../shared/Toast'
 import { useUrunler } from '../urunler/data'
 import { useSession, isAdmin } from '../../lib/session'
@@ -45,6 +46,8 @@ export default function SiparislerPage() {
   const [duzenlenen, setDuzenlenen] = useState<Siparis | undefined>()
   const [kopyaKaynagi, setKopyaKaynagi] = useState<Siparis | undefined>()
   const [kaliciSilinecek, setKaliciSilinecek] = useState<Siparis | undefined>()
+  const [kismiOdemeSiparis, setKismiOdemeSiparis] = useState<Siparis | undefined>()
+  const [kismiTutar, setKismiTutar] = useState('')
 
   const { baslangic, bitis } = donemAraligiHesapla(donem, ozelBaslangic, ozelBitis)
   const signedIn = session.status === 'signed-in'
@@ -110,6 +113,18 @@ export default function SiparislerPage() {
     } else {
       await siparisEkle(veri, kullanici)
       toast.basari('Sipariş eklendi ve veresiye hesabına yansıtıldı.')
+    }
+  }
+
+  async function handleKismiOdeme() {
+    if (!kismiOdemeSiparis) return
+    const tutar = Number(kismiTutar.replace(',', '.')) || 0
+    try {
+      const sonuc = await siparisKismiOdemeAyarla(kismiOdemeSiparis, tutar, kullanici)
+      toast.basari(sonuc === 'tam' ? 'Sipariş tamamen ödendi.' : sonuc === 'kismi' ? 'Kısmi ödeme kaydedildi.' : 'Kısmi ödeme geri alındı.')
+      setKismiOdemeSiparis(undefined)
+    } catch (err) {
+      toast.hata(err instanceof Error ? err.message : 'Ödeme kaydedilemedi.')
     }
   }
 
@@ -259,9 +274,24 @@ export default function SiparislerPage() {
                             className="h-3.5 w-3.5 accent-bakery-success"
                           />
                           <span className={s.odemeDurumu === 'odendi' ? 'text-bakery-success' : ''}>
-                            {s.odemeDurumu === 'odendi' ? 'Ödendi' : 'Ödeme bekliyor'}
+                            {s.odemeDurumu === 'odendi'
+                              ? 'Ödendi'
+                              : s.odenenTutar
+                                ? `Kısmi: ${formatTutar(s.odenenTutar)} / kalan ${formatTutar(s.toplamTutar - s.odenenTutar)}`
+                                : 'Ödeme bekliyor'}
                           </span>
                         </label>
+                      )}
+                      {s.odemeSekli !== 'nakit' && s.odemeDurumu !== 'odendi' && s.durum !== 'planlandi' && (
+                        <button
+                          onClick={() => {
+                            setKismiOdemeSiparis(s)
+                            setKismiTutar(s.odenenTutar ? String(s.odenenTutar) : '')
+                          }}
+                          className="rounded-lg bg-bakery-amber-500/10 px-2 py-1 text-xs font-medium text-bakery-amber-600 hover:bg-bakery-amber-500/20"
+                        >
+                          Kısmi
+                        </button>
                       )}
                       <button
                         onClick={() => {
@@ -318,6 +348,36 @@ export default function SiparislerPage() {
             setKopyaKaynagi(undefined)
           }}
         />
+      )}
+
+      {kismiOdemeSiparis && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setKismiOdemeSiparis(undefined)}>
+          <div className="w-full max-w-sm space-y-3 rounded-2xl bg-bakery-surface p-5 shadow-soft" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-semibold text-bakery-ink-900">Kısmi ödeme — {kismiOdemeSiparis.musteriAdi}</h3>
+            <p className="text-sm text-bakery-ink-500">
+              Sipariş tutarı {formatTutar(kismiOdemeSiparis.toplamTutar)}. Şimdiye kadar alınan <b>toplam</b> tutarı girin
+              (0 = ödemeyi geri al, tutara eşitse sipariş "Ödendi" olur). Tutar müşterinin veresiye bakiyesinden düşer.
+            </p>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              autoFocus
+              value={kismiTutar}
+              onChange={(e) => setKismiTutar(e.target.value)}
+              placeholder="₺ alınan toplam"
+              className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 outline-none focus:border-bakery-amber-500"
+            />
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setKismiOdemeSiparis(undefined)} className="rounded-lg px-3 py-2 text-sm text-bakery-ink-500 hover:bg-bakery-cream-100">
+                Vazgeç
+              </button>
+              <button onClick={handleKismiOdeme} className="rounded-lg bg-bakery-coffee-700 px-4 py-2 text-sm font-medium text-white hover:bg-bakery-coffee-600">
+                Kaydet
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {kaliciSilinecek && (

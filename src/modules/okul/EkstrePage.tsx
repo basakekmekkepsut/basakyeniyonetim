@@ -83,6 +83,25 @@ export default function EkstrePage() {
     return map
   }, [teslimatlar, payments])
 
+  // Mesajdaki gibi: ürüne göre grup, içinde veresiye hesabı → okul adı sıralı.
+  function urunGruplari(satirlar: OkulOrder[]) {
+    const map = new Map<string, { urunAdi: string; toplam: number; satirlar: (OkulOrder & { okulAdi: string; hesap: string })[] }>()
+    for (const s of satirlar) {
+      const okul = okullar.find((o) => o.id === s.schoolId)
+      const urunAdi = urunler.find((u) => u.id === s.productId)?.ad ?? '—'
+      const okulAdi = okul?.ad ?? '—'
+      const hesap = (okul?.musteriId && musteriler.find((m) => m.id === okul.musteriId)?.ad) || okulAdi
+      const g = map.get(urunAdi) ?? { urunAdi, toplam: 0, satirlar: [] }
+      g.toplam += s.adet
+      g.satirlar.push({ ...s, okulAdi, hesap })
+      map.set(urunAdi, g)
+    }
+    const tr = (a: string, b: string) => a.localeCompare(b, 'tr')
+    return [...map.values()]
+      .map((g) => ({ ...g, satirlar: g.satirlar.sort((a, b) => tr(a.hesap, b.hesap) || tr(a.okulAdi, b.okulAdi)) }))
+      .sort((a, b) => tr(a.urunAdi, b.urunAdi))
+  }
+
   if (session.status !== 'signed-in') return null
   const admin = isAdmin(session.profile)
   const kullanici = { uid: session.user.uid }
@@ -179,29 +198,33 @@ export default function EkstrePage() {
                   </button>
                   {acik && (
                     <div className="border-t border-bakery-cream-100 px-4 py-3">
-                      <ul className="mb-3 space-y-1 text-sm text-bakery-ink-600">
-                        {g.satirlar.map((s) => {
-                          const okul = okullar.find((o) => o.id === s.schoolId)
-                          const urun = urunler.find((u) => u.id === s.productId)
-                          return (
-                            <li key={s.id} className="flex items-center justify-between gap-2">
-                              <span>
-                                {okul?.ad ?? '—'} — {urun?.ad ?? '—'}
-                              </span>
-                              <div className="flex shrink-0 items-center gap-2">
-                                <span>{s.adet} adet</span>
-                                <button
-                                  onClick={() => setSilinecekSatir(s)}
-                                  className="rounded-lg p-1 text-bakery-danger hover:bg-bakery-danger/10"
-                                  aria-label="Satırı sil"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            </li>
-                          )
-                        })}
-                      </ul>
+                      <div className="mb-3 space-y-3 text-sm text-bakery-ink-600">
+                        {urunGruplari(g.satirlar).map((ug) => (
+                          <div key={ug.urunAdi}>
+                            <p className="mb-1 flex justify-between font-semibold text-bakery-ink-800">
+                              <span>{ug.urunAdi}</span>
+                              <span>{ug.toplam} adet</span>
+                            </p>
+                            <ul className="space-y-1">
+                              {ug.satirlar.map((s) => (
+                                <li key={s.id} className="flex items-center justify-between gap-2">
+                                  <span>{s.okulAdi}</span>
+                                  <div className="flex shrink-0 items-center gap-2">
+                                    <span>{s.adet} adet</span>
+                                    <button
+                                      onClick={() => setSilinecekSatir(s)}
+                                      className="rounded-lg p-1 text-bakery-danger hover:bg-bakery-danger/10"
+                                      aria-label="Satırı sil"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
                       {admin &&
                         (g.tarih > bugunStr() ? (
                           <p className="text-xs text-bakery-ink-400">

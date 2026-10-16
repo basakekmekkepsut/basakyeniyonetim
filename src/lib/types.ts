@@ -132,6 +132,8 @@ export interface Siparis {
   durum: SiparisDurumu
   odemeSekli: OdemeSekli
   odemeDurumu: OdemeDurumu
+  odenenTutar?: number // kısmi ödeme: şimdiye kadar alınan toplam (odemeDurumu 'odenmedi' iken)
+  kismiOdemeId?: string | null // bu kısmi ödemeyi yansıtan veresiye_odemeler belgesi
   veresiyeKayitIdler: string[]
   silindi: boolean
   olusturanUid: string
