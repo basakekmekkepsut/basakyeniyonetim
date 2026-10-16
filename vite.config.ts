@@ -11,6 +11,13 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    // Güncelle butonu sunucudaki sürümü bu dosyadan okur (service worker'a güvenmeden).
+    {
+      name: 'surum-dosyasi',
+      generateBundle() {
+        this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ version: pkg.version }) })
+      }
+    },
     VitePWA({
       registerType: 'autoUpdate',
       // Push bildirimi (FCM) arka planda mesaj almak için kendi service worker

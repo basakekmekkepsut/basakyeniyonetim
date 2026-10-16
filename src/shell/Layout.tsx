@@ -71,7 +71,8 @@ export default function Layout() {
               onClick={async () => {
                 if (kontrolEdiliyor) return
                 const yenileniyor = await guncelle()
-                if (!yenileniyor) toast.basari(`Uygulama güncel (v${__APP_VERSION__}).`)
+                if (yenileniyor === false) toast.basari(`Uygulama güncel (v${__APP_VERSION__}).`)
+                else if (yenileniyor === null) toast.hata('Sunucuya ulaşılamadı, güncelleme kontrol edilemedi.')
               }}
               disabled={kontrolEdiliyor}
               className={

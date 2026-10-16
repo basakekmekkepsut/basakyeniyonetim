@@ -2,31 +2,58 @@ import { useCallback, useEffect, useState } from 'react'
 
 const KONTROL_ARALIGI_MS = 10 * 60 * 1000
 
+/** Sunucuda yayında olan sürüm (build sırasında yazılan /version.json). Okunamazsa null. */
+async function sunucuSurumu(): Promise<string | null> {
+  try {
+    const r = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' })
+    if (!r.ok) return null
+    const veri = (await r.json()) as { version?: string }
+    return veri.version ?? null
+  } catch {
+    return null
+  }
+}
+
 /**
- * Yeni bir sürüm yayınlandığında bunu fark edip üst menüdeki Güncelle
- * butonunu vurgulamak için. Service worker (src/sw.ts) kendini hemen aktif
- * ediyor (skipWaiting + clientsClaim), ama açık sayfa hâlâ eski JS'i
- * çalıştırıyor — sayfa yenilenene kadar yeni sürüm görünmez. Bu hook yeni
- * service worker'ın devraldığını yakalar; butona basınca sayfa yenilenir.
+ * Service worker'ı ve tüm önbellekleri silip sayfayı yeniden yükler — telefonda
+ * eski sürümde takılı kalmış bir service worker olsa bile yeni sürüm doğrudan
+ * sunucudan gelir (sonraki açılışta service worker yeniden kurulur).
+ */
+async function zorlaYenile(): Promise<void> {
+  try {
+    if ('serviceWorker' in navigator) {
+      const kayitlar = await navigator.serviceWorker.getRegistrations()
+      await Promise.all(kayitlar.map((r) => r.unregister()))
+    }
+    if ('caches' in window) {
+      const anahtarlar = await caches.keys()
+      await Promise.all(anahtarlar.map((k) => caches.delete(k)))
+    }
+  } catch {
+    // temizlik başarısız olsa da yenilemeyi dene
+  }
+  window.location.reload()
+}
+
+/**
+ * Yeni sürüm yayınlandığında üst menüdeki Güncelle butonunu vurgular ve
+ * basınca yeni sürümü yükler. Karar service worker'a değil, sunucudaki
+ * /version.json ile çalışan sürümün (__APP_VERSION__) karşılaştırılmasına
+ * dayanır — service worker güncellemesi telefonda takılsa bile çalışır.
  */
 export function useGuncelleme() {
   const [guncellemeVar, setGuncellemeVar] = useState(false)
   const [kontrolEdiliyor, setKontrolEdiliyor] = useState(false)
 
   useEffect(() => {
-    if (!('serviceWorker' in navigator)) return
-    const sw = navigator.serviceWorker
-    // İlk kurulumda da controllerchange tetiklenir — o bir "güncelleme" değil.
-    let oncedenKontrolVardi = !!sw.controller
-
-    const kontrolDegisti = () => {
-      if (oncedenKontrolVardi) setGuncellemeVar(true)
-      oncedenKontrolVardi = true
-    }
-    sw.addEventListener('controllerchange', kontrolDegisti)
-
-    const kontrolEt = () => {
-      sw.getRegistration().then((r) => r?.update()).catch(() => {})
+    const kontrolEt = async () => {
+      // Service worker'a da yeni sürümü kurmasını söyle (arka planda hazırlansın).
+      navigator.serviceWorker
+        ?.getRegistration()
+        .then((r) => r?.update())
+        .catch(() => {})
+      const surum = await sunucuSurumu()
+      if (surum && surum !== __APP_VERSION__) setGuncellemeVar(true)
     }
     const gorunurOldu = () => {
       if (document.visibilityState === 'visible') kontrolEt()
@@ -36,51 +63,26 @@ export function useGuncelleme() {
     kontrolEt()
 
     return () => {
-      sw.removeEventListener('controllerchange', kontrolDegisti)
       document.removeEventListener('visibilitychange', gorunurOldu)
       window.clearInterval(zamanlayici)
     }
   }, [])
 
-  /** Güncelleme hazırsa sayfayı yeniler; değilse sunucuda yeni sürüm var mı
-   * diye bakar. Dönen değer: true = yenileniyor, false = zaten güncel. */
-  const guncelle = useCallback(async (): Promise<boolean> => {
-    if (guncellemeVar) {
-      window.location.reload()
-      return true
-    }
-    if (!('serviceWorker' in navigator)) {
-      window.location.reload()
-      return true
-    }
+  /** Dönen değer: true = yenileniyor, false = zaten güncel, null = sunucuya ulaşılamadı. */
+  const guncelle = useCallback(async (): Promise<boolean | null> => {
     setKontrolEdiliyor(true)
     try {
-      const r = await navigator.serviceWorker.getRegistration()
-      await r?.update()
-      // Yeni sürüm bulunduysa kurulup devralması birkaç saniye sürer.
-      const yeniVar = await new Promise<boolean>((resolve) => {
-        if (!r?.installing && !r?.waiting) return resolve(false)
-        const sure = window.setTimeout(() => resolve(true), 8000)
-        navigator.serviceWorker.addEventListener(
-          'controllerchange',
-          () => {
-            window.clearTimeout(sure)
-            resolve(true)
-          },
-          { once: true }
-        )
-      })
-      if (yeniVar) {
-        window.location.reload()
+      const surum = await sunucuSurumu()
+      if (surum === null) return null
+      if (surum !== __APP_VERSION__) {
+        await zorlaYenile()
         return true
       }
-      return false
-    } catch {
       return false
     } finally {
       setKontrolEdiliyor(false)
     }
-  }, [guncellemeVar])
+  }, [])
 
   return { guncellemeVar, kontrolEdiliyor, guncelle }
 }

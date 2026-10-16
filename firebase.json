@@ -16,7 +16,7 @@
     "rewrites": [{ "source": "**", "destination": "/index.html" }],
     "headers": [
       {
-        "source": "{/,/index.html,/portal.html,/uretim.html,/sw.js,/registerSW.js,/manifest.webmanifest}",
+        "source": "{/,/index.html,/portal.html,/uretim.html,/sw.js,/registerSW.js,/manifest.webmanifest,/version.json}",
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       }
     ]
