@@ -9,6 +9,7 @@ const telegramBotToken = defineSecret('TELEGRAM_BOT_TOKEN')
 
 export * from './scheduled'
 export * from './ciftKayit'
+export * from './aylikRapor'
 
 async function cagiranAdminMi(uid: string): Promise<boolean> {
   const snap = await getFirestore().doc(`users/${uid}`).get()
