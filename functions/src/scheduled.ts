@@ -1,6 +1,7 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { defineSecret } from 'firebase-functions/params'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
+import { ciftKayitKontrol } from './ciftKayit'
 
 const telegramBotToken = defineSecret('TELEGRAM_BOT_TOKEN')
 const TIME_ZONE = 'Europe/Istanbul'
@@ -157,28 +158,25 @@ async function siparisMesajiOlustur(tarih: string): Promise<string> {
 // --- Zamanlanmış görevler ---
 
 /** Her akşam 21:00 (İstanbul) — yarının okul sipariş listesini Telegram'a gönderir. */
-export const okulSiparisiAksamGonder = onSchedule(
-  { schedule: '0 21 * * *', timeZone: TIME_ZONE, region: REGION, secrets: [telegramBotToken] },
-  async () => {
-    const chatId = await telegramChatIdGetir('okul')
-    if (!chatId) {
-      console.log('[okulSiparisiAksamGonder] Okul için Telegram chat ID tanımlı değil, atlanıyor.')
-      return
-    }
-    const yarin = gunEkle(istanbulTarihStr(new Date()), 1)
-    const mesaj = await okulMesajiOlustur(yarin)
-    if (!mesaj) {
-      console.log(`[okulSiparisiAksamGonder] ${yarin} için sipariş yok, mesaj gönderilmedi.`)
-      return
-    }
-    await telegramMesajGonder(telegramBotToken.value().trim(), chatId, mesaj)
+async function okulSiparisiAksamGonder(): Promise<void> {
+  const chatId = await telegramChatIdGetir('okul')
+  if (!chatId) {
+    console.log('[okulSiparisiAksamGonder] Okul için Telegram chat ID tanımlı değil, atlanıyor.')
+    return
   }
-)
+  const yarin = gunEkle(istanbulTarihStr(new Date()), 1)
+  const mesaj = await okulMesajiOlustur(yarin)
+  if (!mesaj) {
+    console.log(`[okulSiparisiAksamGonder] ${yarin} için sipariş yok, mesaj gönderilmedi.`)
+    return
+  }
+  await telegramMesajGonder(telegramBotToken.value().trim(), chatId, mesaj)
+}
 
 // --- Okul günü kapatma: hatırlatma + otomatik kapanış ---
 //
-// Akış (D = sipariş günü): D günü 16:00 hatırlatma → D+1 sabah 07:30 ikinci
-// hatırlatma → D+1 12:00'de hâlâ kapatılmamışsa sunucu günü kendisi kapatır.
+// Akış (D = sipariş günü): D+1 sabah 07:30 tek hatırlatma → D+1 12:00'de hâlâ
+// kapatılmamışsa sunucu günü kendisi kapatır.
 
 /** "2026-09-30" -> "30.09.2026" */
 function tarihTr(tarihStr: string): string {
@@ -310,98 +308,65 @@ async function okulGunuKapatSunucu(tarih: string, kapatanUid: string): Promise<O
   return { satirSayisi, toplamTutar, veresiyeYansimayan }
 }
 
-/** Her gün 16:00 (İstanbul) — bugün (ve varsa önceki günler) için okul ekstresi
- * hâlâ kapatılmamışsa Okul Telegram sohbetine hatırlatma gönderir. */
-export const okulHatirlatmaGonder = onSchedule(
-  { schedule: '0 16 * * *', timeZone: TIME_ZONE, region: REGION, secrets: [telegramBotToken] },
-  async () => {
-    const bugun = istanbulTarihStr(new Date())
-    const gunler = await acikOkulGunleri(bugun)
-    if (gunler.length === 0) {
-      console.log(`[okulHatirlatmaGonder] ${bugun} ve öncesinde kapatılmamış gün yok, atlanıyor.`)
-      return
-    }
-    const chatId = await telegramChatIdGetir('okul')
-    if (!chatId) {
-      console.log('[okulHatirlatmaGonder] Okul için Telegram chat ID tanımlı değil, atlanıyor.')
-      return
-    }
-    const mesaj = [
-      '⏰ Okul ekstresinde günü kapatmayı unutmayın.',
-      '',
-      `Kapatılmamış gün(ler): ${gunler.map(tarihTr).join(', ')}`,
-      '',
-      'Kapatılmazsa ertesi gün saat 12:00\'de otomatik kapatılacak.'
-    ].join('\n')
-    await telegramMesajGonder(telegramBotToken.value().trim(), chatId, mesaj)
-  }
-)
-
 /** Her sabah 07:30 (İstanbul) — dün (veya daha önce) kapatılmamış okul günü
  * varsa, öğlen otomatik kapanıştan önce son bir hatırlatma gönderir. */
-export const okulHatirlatmaSabahGonder = onSchedule(
-  { schedule: '30 7 * * *', timeZone: TIME_ZONE, region: REGION, secrets: [telegramBotToken] },
-  async () => {
-    const dun = gunEkle(istanbulTarihStr(new Date()), -1)
-    const gunler = await acikOkulGunleri(dun)
-    if (gunler.length === 0) {
-      console.log(`[okulHatirlatmaSabahGonder] ${dun} ve öncesinde kapatılmamış gün yok, atlanıyor.`)
-      return
-    }
-    const chatId = await telegramChatIdGetir('okul')
-    if (!chatId) {
-      console.log('[okulHatirlatmaSabahGonder] Okul için Telegram chat ID tanımlı değil, atlanıyor.')
-      return
-    }
-    const mesaj = [
-      '⚠️ Okul ekstresinde kapatılmamış gün var!',
-      '',
-      `Gün(ler): ${gunler.map(tarihTr).join(', ')}`,
-      '',
-      'Bugün saat 12:00\'ye kadar kapatılmazsa sistem otomatik kapatacak.'
-    ].join('\n')
-    await telegramMesajGonder(telegramBotToken.value().trim(), chatId, mesaj)
+async function okulHatirlatmaSabahGonder(): Promise<void> {
+  const dun = gunEkle(istanbulTarihStr(new Date()), -1)
+  const gunler = await acikOkulGunleri(dun)
+  if (gunler.length === 0) {
+    console.log(`[okulHatirlatmaSabahGonder] ${dun} ve öncesinde kapatılmamış gün yok, atlanıyor.`)
+    return
   }
-)
+  const chatId = await telegramChatIdGetir('okul')
+  if (!chatId) {
+    console.log('[okulHatirlatmaSabahGonder] Okul için Telegram chat ID tanımlı değil, atlanıyor.')
+    return
+  }
+  const mesaj = [
+    '⚠️ Okul ekstresinde kapatılmamış gün var!',
+    '',
+    `Gün(ler): ${gunler.map(tarihTr).join(', ')}`,
+    '',
+    'Bugün saat 12:00\'ye kadar kapatılmazsa sistem otomatik kapatacak.'
+  ].join('\n')
+  await telegramMesajGonder(telegramBotToken.value().trim(), chatId, mesaj)
+}
 
 /** Her gün 12:00 (İstanbul) — dün ve öncesine ait hâlâ kapatılmamış okul
  * günlerini (bugün hariç) otomatik kapatır ve sonucu Telegram'a bildirir. */
-export const okulGunuOtomatikKapat = onSchedule(
-  { schedule: '0 12 * * *', timeZone: TIME_ZONE, region: REGION, secrets: [telegramBotToken] },
-  async () => {
-    const dun = gunEkle(istanbulTarihStr(new Date()), -1)
-    const gunler = await acikOkulGunleri(dun)
-    if (gunler.length === 0) {
-      console.log(`[okulGunuOtomatikKapat] ${dun} ve öncesinde kapatılmamış gün yok, atlanıyor.`)
-      return
-    }
-
-    const satirlar: string[] = []
-    for (const tarih of gunler) {
-      try {
-        const sonuc = await okulGunuKapatSunucu(tarih, 'otomatik')
-        const tutarStr = sonuc.toplamTutar.toLocaleString('tr-TR', { maximumFractionDigits: 2 })
-        satirlar.push(
-          `✅ ${tarihTr(tarih)} — ${sonuc.satirSayisi} satır, ₺${tutarStr}` +
-            (sonuc.veresiyeYansimayan > 0 ? ` (${sonuc.veresiyeYansimayan} satır Veresiye'ye bağlı değil)` : '')
-        )
-      } catch (err) {
-        console.error(`[okulGunuOtomatikKapat] ${tarih} kapatılamadı`, err)
-        satirlar.push(`❌ ${tarihTr(tarih)} — kapatılamadı: ${err instanceof Error ? err.message : String(err)}`)
-      }
-    }
-
-    const chatId = await telegramChatIdGetir('okul')
-    if (!chatId) {
-      console.log('[okulGunuOtomatikKapat] Okul için Telegram chat ID tanımlı değil, mesaj gönderilmedi.')
-      return
-    }
-    const mesaj = ['🔒 Okul ekstresi otomatik kapatıldı', '', ...satirlar, '', 'Hata varsa Ekstre > Son Kapatılan Günler\'den "Yeniden Aç" ile düzeltebilirsiniz.'].join('\n')
-    await telegramMesajGonder(telegramBotToken.value().trim(), chatId, mesaj)
+async function okulGunuOtomatikKapat(): Promise<void> {
+  const dun = gunEkle(istanbulTarihStr(new Date()), -1)
+  const gunler = await acikOkulGunleri(dun)
+  if (gunler.length === 0) {
+    console.log(`[okulGunuOtomatikKapat] ${dun} ve öncesinde kapatılmamış gün yok, atlanıyor.`)
+    return
   }
-)
 
-/** Sipariş modülü için ortak mantık — yarın + öbür günün listelerini ayrı ayrı gönderir. */
+  const satirlar: string[] = []
+  for (const tarih of gunler) {
+    try {
+      const sonuc = await okulGunuKapatSunucu(tarih, 'otomatik')
+      const tutarStr = sonuc.toplamTutar.toLocaleString('tr-TR', { maximumFractionDigits: 2 })
+      satirlar.push(
+        `✅ ${tarihTr(tarih)} — ${sonuc.satirSayisi} satır, ₺${tutarStr}` +
+          (sonuc.veresiyeYansimayan > 0 ? ` (${sonuc.veresiyeYansimayan} satır Veresiye'ye bağlı değil)` : '')
+      )
+    } catch (err) {
+      console.error(`[okulGunuOtomatikKapat] ${tarih} kapatılamadı`, err)
+      satirlar.push(`❌ ${tarihTr(tarih)} — kapatılamadı: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  const chatId = await telegramChatIdGetir('okul')
+  if (!chatId) {
+    console.log('[okulGunuOtomatikKapat] Okul için Telegram chat ID tanımlı değil, mesaj gönderilmedi.')
+    return
+  }
+  const mesaj = ['🔒 Okul ekstresi otomatik kapatıldı', '', ...satirlar, '', 'Hata varsa Ekstre > Son Kapatılan Günler\'den "Yeniden Aç" ile düzeltebilirsiniz.'].join('\n')
+  await telegramMesajGonder(telegramBotToken.value().trim(), chatId, mesaj)
+}
+
+/** 07:45 ve 17:00 (bkz. zamanlayici) — Sipariş modülü için ortak mantık — yarın + öbür günün listelerini ayrı ayrı gönderir. */
 async function siparisListeleriniGonder(): Promise<void> {
   const chatId = await telegramChatIdGetir('siparis')
   if (!chatId) {
@@ -421,48 +386,69 @@ async function siparisListeleriniGonder(): Promise<void> {
   }
 }
 
-/** Her sabah 07:45 (İstanbul) — yarın ve öbür günün sipariş listelerini Telegram'a gönderir. */
-export const siparisListeleriSabahGonder = onSchedule(
-  { schedule: '45 7 * * *', timeZone: TIME_ZONE, region: REGION, secrets: [telegramBotToken] },
-  async () => {
-    await siparisListeleriniGonder()
-  }
-)
-
-/** Her akşam 17:00 (İstanbul) — yarın ve öbür günün sipariş listelerini tekrar gönderir (güncellemeler yansısın diye). */
-export const siparisListeleriAksamGonder = onSchedule(
-  { schedule: '0 17 * * *', timeZone: TIME_ZONE, region: REGION, secrets: [telegramBotToken] },
-  async () => {
-    await siparisListeleriniGonder()
-  }
-)
-
 // --- JSON yedekleme ---
 
-/** Her sabah 07:50 (İstanbul) — tüm Firestore koleksiyonlarını tek bir JSON dosyasına
+/** Her sabah 07:45 (İstanbul) — tüm Firestore koleksiyonlarını tek bir JSON dosyasına
  * yedekleyip Okul modülünün Telegram sohbetine dosya olarak gönderir. */
-export const jsonYedekGonder = onSchedule(
-  { schedule: '50 7 * * *', timeZone: TIME_ZONE, region: REGION, secrets: [telegramBotToken], memory: '512MiB', timeoutSeconds: 300 },
+async function jsonYedekGonder(): Promise<void> {
+  const chatId = await telegramChatIdGetir('okul')
+  if (!chatId) {
+    console.log('[jsonYedekGonder] Okul için Telegram chat ID tanımlı değil, atlanıyor.')
+    return
+  }
+  const db = getFirestore()
+  const koleksiyonlar = await db.listCollections()
+  const yedek: Record<string, Record<string, FirebaseFirestore.DocumentData>> = {}
+
+  for (const koleksiyon of koleksiyonlar) {
+    const snap = await koleksiyon.get()
+    const dokumanlar: Record<string, FirebaseFirestore.DocumentData> = {}
+    for (const d of snap.docs) dokumanlar[d.id] = d.data()
+    yedek[koleksiyon.id] = dokumanlar
+  }
+
+  const tarih = istanbulTarihStr(new Date())
+  const icerik = JSON.stringify(yedek, null, 2)
+  const dosyaAdi = `basak-yedek-${tarih}.json`
+  await telegramDosyaGonder(telegramBotToken.value().trim(), chatId, icerik, dosyaAdi, `${tarih} tarihli otomatik veritabanı yedeği`)
+}
+
+// --- Tek zamanlayıcı ---
+//
+// Cloud Scheduler iş başına ücretlendiriyor (ilk 3 iş ücretsiz), bu yüzden tüm
+// günlük görevler her 15 dakikada bir çalışan TEK işte toplandı; hangi görevin
+// çalışacağı İstanbul saatine göre burada seçilir. Saatler 15'in katı olmalı.
+
+const GOREVLER: [string, string, () => Promise<void>][] = [
+  ['07:30', 'okulHatirlatmaSabahGonder', okulHatirlatmaSabahGonder],
+  ['07:45', 'siparisListeleriniGonder', siparisListeleriniGonder],
+  ['07:45', 'jsonYedekGonder', jsonYedekGonder],
+  ['09:00', 'ciftKayitKontrol', ciftKayitKontrol],
+  ['12:00', 'okulGunuOtomatikKapat', okulGunuOtomatikKapat],
+  ['14:00', 'ciftKayitKontrol', ciftKayitKontrol],
+  ['17:00', 'siparisListeleriniGonder', siparisListeleriniGonder],
+  ['20:00', 'ciftKayitKontrol', ciftKayitKontrol],
+  ['21:00', 'okulSiparisiAksamGonder', okulSiparisiAksamGonder]
+]
+
+function istanbulDilimi(d: Date): string {
+  const parcalar = new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(d)
+  const saat = parcalar.find((p) => p.type === 'hour')?.value ?? '00'
+  const dakika = Number(parcalar.find((p) => p.type === 'minute')?.value ?? '0')
+  return `${saat}:${String(Math.floor(dakika / 15) * 15).padStart(2, '0')}`
+}
+
+export const zamanlayici = onSchedule(
+  { schedule: '*/15 * * * *', timeZone: TIME_ZONE, region: REGION, secrets: [telegramBotToken], memory: '512MiB', timeoutSeconds: 300 },
   async () => {
-    const chatId = await telegramChatIdGetir('okul')
-    if (!chatId) {
-      console.log('[jsonYedekGonder] Okul için Telegram chat ID tanımlı değil, atlanıyor.')
-      return
+    const dilim = istanbulDilimi(new Date())
+    for (const [saat, ad, calistir] of GOREVLER) {
+      if (saat !== dilim) continue
+      try {
+        await calistir()
+      } catch (err) {
+        console.error(`[zamanlayici] ${ad} (${saat}) başarısız:`, err)
+      }
     }
-    const db = getFirestore()
-    const koleksiyonlar = await db.listCollections()
-    const yedek: Record<string, Record<string, FirebaseFirestore.DocumentData>> = {}
-
-    for (const koleksiyon of koleksiyonlar) {
-      const snap = await koleksiyon.get()
-      const dokumanlar: Record<string, FirebaseFirestore.DocumentData> = {}
-      for (const d of snap.docs) dokumanlar[d.id] = d.data()
-      yedek[koleksiyon.id] = dokumanlar
-    }
-
-    const tarih = istanbulTarihStr(new Date())
-    const icerik = JSON.stringify(yedek, null, 2)
-    const dosyaAdi = `basak-yedek-${tarih}.json`
-    await telegramDosyaGonder(telegramBotToken.value().trim(), chatId, icerik, dosyaAdi, `${tarih} tarihli otomatik veritabanı yedeği`)
   }
 )
