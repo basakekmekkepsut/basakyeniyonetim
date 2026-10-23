@@ -246,6 +246,54 @@ export async function gunlukKaydiSil(mevcut: GunlukKaydi): Promise<void> {
   await batch.commit()
 }
 
+// --- Günlük Giriş: toplu kayıt (kartlardan tek seferde) ---
+
+export interface GunlukTopluSatir {
+  musteriId: string
+  musteriAdi: string
+  durum: GunlukDurumu
+  kalemler: GunlukKalem[]
+}
+
+/** Günlük Giriş ekranındaki tüm dolu kartları tek batch'te yazar; oluşan kayıt sayısını döner. */
+export async function gunlukTopluKaydet(satirlar: GunlukTopluSatir[], tarih: string, kullanici: { uid: string }): Promise<number> {
+  const db = requireDb()
+  const batch = writeBatch(db)
+  const bakiyeDeltalari = new Map<string, number>()
+  let kayitSayisi = 0
+
+  for (const satir of satirlar) {
+    for (const kalem of satir.kalemler) {
+      if (kalem.adet <= 0) continue
+      const tutar = kalem.adet * kalem.birimFiyat
+      batch.set(doc(collection(db, KAYIT_KOLEKSIYONU)), {
+        musteriId: satir.musteriId,
+        musteriAdi: satir.musteriAdi,
+        productId: kalem.productId,
+        urunAdi: kalem.urunAdi,
+        adet: kalem.adet,
+        birimFiyat: kalem.birimFiyat,
+        tutar,
+        tarih,
+        durum: satir.durum,
+        olusturanUid: kullanici.uid,
+        olusturmaTarihi: serverTimestamp(),
+        guncellenmeTarihi: serverTimestamp()
+      })
+      kayitSayisi += 1
+      const etki = bakiyeEtkisi(satir.durum, tutar)
+      if (etki !== 0) bakiyeDeltalari.set(satir.musteriId, (bakiyeDeltalari.get(satir.musteriId) ?? 0) + etki)
+    }
+  }
+
+  for (const [musteriId, delta] of bakiyeDeltalari) {
+    batch.update(doc(db, MUSTERI_KOLEKSIYONU, musteriId), { bakiye: increment(delta) })
+  }
+
+  if (kayitSayisi > 0) await batch.commit()
+  return kayitSayisi
+}
+
 // --- Ödemeler ---
 
 export function useGunlukOdemeler(filtre: GunlukFiltre) {

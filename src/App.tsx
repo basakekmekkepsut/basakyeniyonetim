@@ -35,6 +35,7 @@ const OkulMesajPage = lazy(() => import('./modules/okul/MesajPage'))
 const GunlukLayout = lazy(() => import('./modules/gunluk/GunlukLayout'))
 const GunlukVeresiyePage = lazy(() => import('./modules/gunluk/GunlukVeresiyePage'))
 const GunlukMusterilerPage = lazy(() => import('./modules/gunluk/GunlukMusterilerPage'))
+const GunlukGirisListesiPage = lazy(() => import('./modules/gunluk/GunlukGirisListesiPage'))
 
 const AyarlarLayout = lazy(() => import('./modules/ayarlar/AyarlarLayout'))
 const MusterilerPage = lazy(() => import('./modules/musteriler/MusterilerPage'))
@@ -117,6 +118,7 @@ function SessionGate() {
               {gunluk && (
                 <Route path="/gunluk" element={<GunlukLayout />}>
                   <Route index element={<GunlukVeresiyePage />} />
+                  <Route path="giris" element={<GunlukGirisListesiPage />} />
                   <Route path="musteriler" element={<GunlukMusterilerPage />} />
                   <Route path="urunler" element={<UrunlerPage modul="gunluk" />} />
                 </Route>

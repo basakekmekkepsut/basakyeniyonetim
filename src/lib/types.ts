@@ -315,6 +315,7 @@ export interface GunlukMusteri {
   acilisBakiyesi: number // sisteme geçmeden önceki devreden borç
   bakiye: number // denormalize güncel bakiye: acilisBakiyesi + veresiye kayıtlar − ödemeler
   portalSifre: string | null // 6 haneli portal parolası (link: portal.html?kod={id}&tur=gunluk)
+  sikUrunler?: string[] // Günlük Giriş kartında gösterilecek ürün ID'leri — boş/yoksa tüm "Günlük" ürünleri
 }
 
 export type GunlukMusteriGirisi = Omit<GunlukMusteri, 'id' | 'bakiye' | 'portalSifre'>

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
+import { useUrunler } from '../urunler/data'
 import type { GunlukMusteri, GunlukMusteriGirisi } from '../../lib/types'
 
 interface Props {
@@ -14,6 +15,13 @@ export default function GunlukMusteriFormModal({ mevcut, onKaydet, onKapat }: Pr
   const [not, setNot] = useState(mevcut?.not ?? '')
   const [acilisBakiyesi, setAcilisBakiyesi] = useState(mevcut?.acilisBakiyesi ?? 0)
   const [aktif, setAktif] = useState(mevcut?.aktif ?? true)
+  const [sikUrunler, setSikUrunler] = useState<string[]>(mevcut?.sikUrunler ?? [])
+  const { urunler } = useUrunler()
+  const gunlukUrunleri = urunler.filter((u) => u.aktif && u.modules.includes('gunluk'))
+
+  function sikUrunDegistir(id: string) {
+    setSikUrunler((liste) => (liste.includes(id) ? liste.filter((x) => x !== id) : [...liste, id]))
+  }
   const [gonderiliyor, setGonderiliyor] = useState(false)
   const [hata, setHata] = useState<string | null>(null)
 
@@ -28,7 +36,8 @@ export default function GunlukMusteriFormModal({ mevcut, onKaydet, onKapat }: Pr
         telefon: telefon.trim(),
         not: not.trim(),
         acilisBakiyesi: Number(acilisBakiyesi) || 0,
-        aktif
+        aktif,
+        sikUrunler
       })
       onKapat()
     } catch (err) {
@@ -92,6 +101,29 @@ export default function GunlukMusteriFormModal({ mevcut, onKaydet, onKapat }: Pr
               className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 outline-none focus:border-bakery-amber-500"
             />
           </div>
+
+          {gunlukUrunleri.length > 0 && (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-bakery-ink-800">Sık aldığı ürünler</label>
+              <div className="flex flex-wrap gap-1.5">
+                {gunlukUrunleri.map((u) => (
+                  <button
+                    type="button"
+                    key={u.id}
+                    onClick={() => sikUrunDegistir(u.id)}
+                    className={`rounded-full px-3 py-1 text-sm font-medium transition ${
+                      sikUrunler.includes(u.id)
+                        ? 'bg-bakery-amber-600 text-white'
+                        : 'bg-bakery-cream-100 text-bakery-ink-600 hover:bg-bakery-cream-200'
+                    }`}
+                  >
+                    {u.ad}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1 text-xs text-bakery-ink-500">Günlük Giriş kartında bunlar görünür. Hiçbiri seçilmezse tüm ürünler görünür.</p>
+            </div>
+          )}
 
           <label className="flex items-center gap-2 text-sm text-bakery-ink-800">
             <input type="checkbox" checked={aktif} onChange={(e) => setAktif(e.target.checked)} />
