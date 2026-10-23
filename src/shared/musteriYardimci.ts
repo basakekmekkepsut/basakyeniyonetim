@@ -30,6 +30,16 @@ export function portalMesajOlustur(musteri: Pick<Musteri, 'id' | 'ad' | 'adSoyad
   return `Merhaba ${musteriHitabi(musteri)}, hesap ekstrenizi görüntülemek için:\n${link}\nŞifreniz: ${musteri.portalSifre}\n\nBu bir otomatik program mesajıdır.`
 }
 
+/** Günlük Veresiye müşterisinin portal linki — aynı portal sayfası, `tur=gunluk` ile gunluk_* koleksiyonlarından okur. */
+export function gunlukPortalLinki(musteriId: string): string {
+  return `${PORTAL_SITE_URL}/portal.html?kod=${musteriId}&tur=gunluk`
+}
+
+export function gunlukPortalMesajOlustur(musteri: { id: string; ad: string; portalSifre: string | null }): string | null {
+  if (!musteri.portalSifre) return null
+  return `Merhaba ${musteri.ad}, kasadan aldığınız ürünleri ve hesabınızı görüntülemek için:\n${gunlukPortalLinki(musteri.id)}\nŞifreniz: ${musteri.portalSifre}\n\nBu bir otomatik program mesajıdır.`
+}
+
 export interface DonemOzeti {
   baslangic: string | null // YYYY-MM-DD, null = en baştan
   bitis: string // YYYY-MM-DD

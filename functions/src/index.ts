@@ -63,6 +63,13 @@ export const telegramNotify = onCall<TelegramNotifyData>(
 interface PortalGirisData {
   musteriId: string
   sifre: string
+  // 'gunluk' ise Günlük Veresiye defterinden (gunluk_*) okunur; yoksa ana Veresiye.
+  tur?: 'veresiye' | 'gunluk'
+}
+
+const PORTAL_KOLEKSIYONLARI = {
+  veresiye: { musteri: 'musteriler', kayit: 'veresiye_kayitlar', odeme: 'veresiye_odemeler' },
+  gunluk: { musteri: 'gunluk_musteriler', kayit: 'gunluk_kayitlar', odeme: 'gunluk_odemeler' }
 }
 
 /**
@@ -72,13 +79,15 @@ interface PortalGirisData {
  * kendi bakiyesi ve son hareketleri dışında hiçbir şey sızdırılmaz.
  */
 export const portalGiris = onCall<PortalGirisData>({ region: 'europe-west1' }, async (request) => {
-  const { musteriId, sifre } = request.data ?? {}
+  const { musteriId, sifre, tur } = request.data ?? {}
   if (!musteriId || typeof musteriId !== 'string' || !sifre || typeof sifre !== 'string') {
     throw new HttpsError('invalid-argument', 'Kod ve şifre gerekli.')
   }
+  const gunluk = tur === 'gunluk'
+  const koleksiyon = PORTAL_KOLEKSIYONLARI[gunluk ? 'gunluk' : 'veresiye']
 
   const db = getFirestore()
-  const musteriSnap = await db.doc(`musteriler/${musteriId}`).get()
+  const musteriSnap = await db.doc(`${koleksiyon.musteri}/${musteriId}`).get()
   const musteri = musteriSnap.data()
 
   // Kod ile şifre uyuşmazlığı ile "böyle bir müşteri yok" durumunu ayırt
@@ -93,8 +102,8 @@ export const portalGiris = onCall<PortalGirisData>({ region: 'europe-west1' }, a
   // yüzden 50/60 kaydıyla sınırlanmıyor (müşteri başına makul bir üst sınır
   // olarak 2000 kayıt/ödeme yeterince geniş, kötüye kullanımı da engelliyor).
   const [kayitlarSnap, odemelerSnap] = await Promise.all([
-    db.collection('veresiye_kayitlar').where('musteriId', '==', musteriId).orderBy('tarih', 'desc').limit(2000).get(),
-    db.collection('veresiye_odemeler').where('musteriId', '==', musteriId).orderBy('tarih', 'desc').limit(2000).get()
+    db.collection(koleksiyon.kayit).where('musteriId', '==', musteriId).orderBy('tarih', 'desc').limit(2000).get(),
+    db.collection(koleksiyon.odeme).where('musteriId', '==', musteriId).orderBy('tarih', 'desc').limit(2000).get()
   ])
 
   const kayitlar = kayitlarSnap.docs
@@ -114,8 +123,9 @@ export const portalGiris = onCall<PortalGirisData>({ region: 'europe-west1' }, a
     ad: musteri.ad as string,
     adSoyad: (musteri.adSoyad as string) || '',
     hitapSekli: musteri.hitapSekli ?? null,
-    veresiyeBakiye: musteri.veresiyeBakiye as number,
-    unHesabi: musteri.unHesabi ?? null,
+    // Günlük Veresiye müşterisinde bakiye alanı 'bakiye', un hesabı yok.
+    veresiyeBakiye: (gunluk ? musteri.bakiye : musteri.veresiyeBakiye) as number,
+    unHesabi: gunluk ? null : (musteri.unHesabi ?? null),
     kayitlar,
     odemeler
   }

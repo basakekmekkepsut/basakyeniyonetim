@@ -5,21 +5,25 @@ import type { Modul, Urun, UrunGirisi } from '../../lib/types'
 const MODUL_ETIKETLERI: { key: Modul; etiket: string }[] = [
   { key: 'siparis', etiket: 'Sipariş' },
   { key: 'veresiye', etiket: 'Veresiye' },
-  { key: 'okul', etiket: 'Okul' }
+  { key: 'okul', etiket: 'Okul' },
+  { key: 'gunluk', etiket: 'Günlük Veresiye' }
 ]
 
 interface Props {
   mevcut?: Urun
+  varsayilanModuller?: Modul[] // yeni üründe önceden işaretli modüller (ör. Günlük Veresiye > Ürünler)
   onKaydet: (girisi: UrunGirisi) => Promise<void>
   onKapat: () => void
 }
 
-export default function UrunFormModal({ mevcut, onKaydet, onKapat }: Props) {
+export default function UrunFormModal({ mevcut, varsayilanModuller, onKaydet, onKapat }: Props) {
   const [ad, setAd] = useState(mevcut?.ad ?? '')
   const [fiyat, setFiyat] = useState(mevcut?.fiyat ?? 0)
   const [aktif, setAktif] = useState(mevcut?.aktif ?? true)
-  const [modules, setModules] = useState<Modul[]>(mevcut?.modules ?? [])
+  const [modules, setModules] = useState<Modul[]>(mevcut?.modules ?? varsayilanModuller ?? [])
   const [unKatsayisi, setUnKatsayisi] = useState(mevcut?.unKatsayisi ?? 1)
+  // Boş bırakılırsa Günlük Veresiye'de normal fiyat kullanılır.
+  const [gunlukFiyat, setGunlukFiyat] = useState(mevcut?.gunlukFiyat != null ? String(mevcut.gunlukFiyat) : '')
   const [gonderiliyor, setGonderiliyor] = useState(false)
   const [hata, setHata] = useState<string | null>(null)
 
@@ -33,14 +37,21 @@ export default function UrunFormModal({ mevcut, onKaydet, onKapat }: Props) {
       setHata('Ürün adı zorunludur.')
       return
     }
-    if (fiyat < 0) {
+    if (fiyat < 0 || (gunlukFiyat !== '' && Number(gunlukFiyat) < 0)) {
       setHata('Fiyat negatif olamaz.')
       return
     }
     setHata(null)
     setGonderiliyor(true)
     try {
-      await onKaydet({ ad: ad.trim(), fiyat: Number(fiyat), aktif, modules, unKatsayisi: Number(unKatsayisi) || 1 })
+      await onKaydet({
+        ad: ad.trim(),
+        fiyat: Number(fiyat),
+        aktif,
+        modules,
+        unKatsayisi: Number(unKatsayisi) || 1,
+        gunlukFiyat: modules.includes('gunluk') && gunlukFiyat !== '' ? Number(gunlukFiyat) : null
+      })
       onKapat()
     } catch (err) {
       setHata(err instanceof Error ? err.message : 'Kaydedilemedi.')
@@ -106,6 +117,22 @@ export default function UrunFormModal({ mevcut, onKaydet, onKapat }: Props) {
               ))}
             </div>
           </div>
+
+          {modules.includes('gunluk') && (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Günlük Veresiye Fiyatı (₺)</label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={gunlukFiyat}
+                onChange={(e) => setGunlukFiyat(e.target.value)}
+                placeholder={`Boş = normal fiyat (${fiyat})`}
+                className="w-full rounded-lg border border-bakery-cream-200 bg-bakery-cream-50 px-3 py-2 outline-none focus:border-bakery-amber-500 focus:ring-2 focus:ring-bakery-amber-500/30"
+              />
+              <p className="mt-1 text-xs text-bakery-ink-500">Kasadan veresiye alan müşterilere uygulanacak fiyat.</p>
+            </div>
+          )}
 
           <div>
             <label className="mb-1 block text-sm font-medium text-bakery-ink-800">Un Eşdeğer Katsayısı</label>

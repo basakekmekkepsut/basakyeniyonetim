@@ -32,6 +32,10 @@ const OkullarPage = lazy(() => import('./modules/okul/OkullarPage'))
 const EkstrePage = lazy(() => import('./modules/okul/EkstrePage'))
 const OkulMesajPage = lazy(() => import('./modules/okul/MesajPage'))
 
+const GunlukLayout = lazy(() => import('./modules/gunluk/GunlukLayout'))
+const GunlukVeresiyePage = lazy(() => import('./modules/gunluk/GunlukVeresiyePage'))
+const GunlukMusterilerPage = lazy(() => import('./modules/gunluk/GunlukMusterilerPage'))
+
 const AyarlarLayout = lazy(() => import('./modules/ayarlar/AyarlarLayout'))
 const MusterilerPage = lazy(() => import('./modules/musteriler/MusterilerPage'))
 const UrunlerPage = lazy(() => import('./modules/urunler/UrunlerPage'))
@@ -43,7 +47,7 @@ const YedeklemePage = lazy(() => import('./modules/ayarlar/YedeklemePage'))
 // Uygulama açılışında varsayılan olarak Veresiye > Özet'e iniliyor (bkz.
 // ilkModul) — modülü olmayan kullanıcı için sıradaki ilk erişilebilir modüle
 // düşer. Bu sıra, alt gezinme çubuğunun görsel sırasını ETKİLEMEZ (bkz. Layout.tsx).
-const MODUL_SIRASI: Modul[] = ['veresiye', 'siparis', 'okul']
+const MODUL_SIRASI: Modul[] = ['veresiye', 'siparis', 'okul', 'gunluk']
 
 export default function App() {
   if (!isFirebaseConfigured) return <ConfigMissing />
@@ -81,6 +85,7 @@ function SessionGate() {
       }
 
       const admin = isAdmin(session.profile)
+      const gunluk = hasModule(session.profile, 'gunluk')
 
       return (
         <Suspense fallback={<FullscreenLoading />}>
@@ -109,6 +114,13 @@ function SessionGate() {
                 <Route path="urunler" element={<UrunlerPage />} />
                 <Route path="mesaj" element={<OkulMesajPage />} />
               </Route>
+              {gunluk && (
+                <Route path="/gunluk" element={<GunlukLayout />}>
+                  <Route index element={<GunlukVeresiyePage />} />
+                  <Route path="musteriler" element={<GunlukMusterilerPage />} />
+                  <Route path="urunler" element={<UrunlerPage modul="gunluk" />} />
+                </Route>
+              )}
               {admin && (
                 <>
                   <Route path="/musteriler" element={<MusterilerPage />} />

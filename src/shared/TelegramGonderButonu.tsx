@@ -3,9 +3,9 @@ import { Send } from 'lucide-react'
 import { useTelegramAyarlari } from '../modules/ayarlar/telegram/data'
 import { sendTelegramNotification } from './telegram'
 import { useToast } from './Toast'
-import type { Modul } from '../lib/types'
+import type { TelegramAyarlari } from '../lib/types'
 
-export default function TelegramGonderButonu({ modul, mesaj }: { modul: Modul; mesaj: string }) {
+export default function TelegramGonderButonu({ modul, mesaj }: { modul: keyof TelegramAyarlari['chatIds']; mesaj: string }) {
   const { ayarlar, yukleniyor } = useTelegramAyarlari()
   const toast = useToast()
   const [gonderiliyor, setGonderiliyor] = useState(false)

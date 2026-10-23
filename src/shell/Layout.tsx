@@ -1,7 +1,7 @@
 import { type ReactNode, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
-import { ClipboardList, HandCoins, School, LogOut, Moon, RefreshCw, Settings, Sun, User, Users, Package } from 'lucide-react'
+import { ClipboardList, HandCoins, School, LogOut, Moon, RefreshCw, Settings, Store, Sun, User, Users, Package } from 'lucide-react'
 import { requireAuth } from '../lib/firebase'
 import { hasModule, isAdmin, useSession } from '../lib/session'
 import { temaBaslat, temaDegistir, yaziBoyutuBaslat, yaziBoyutuSec, YAZI_ETIKETLERI, YAZI_SIRASI, type Tema, type YaziBoyutu } from '../shared/gorunum'
@@ -13,7 +13,8 @@ import CiftKayitBanner from './CiftKayitBanner'
 const MODUL_TANIMLARI: { key: Modul; yol: string; etiket: string; Icon: typeof ClipboardList }[] = [
   { key: 'siparis', yol: '/siparis', etiket: 'Sipariş', Icon: ClipboardList },
   { key: 'veresiye', yol: '/veresiye', etiket: 'Veresiye', Icon: HandCoins },
-  { key: 'okul', yol: '/okul', etiket: 'Okul', Icon: School }
+  { key: 'okul', yol: '/okul', etiket: 'Okul', Icon: School },
+  { key: 'gunluk', yol: '/gunluk', etiket: 'Günlük', Icon: Store }
 ]
 
 const navLinkClass = (aktif: boolean) =>

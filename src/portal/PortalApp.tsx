@@ -115,7 +115,10 @@ function hitapGoster(ad: string, adSoyad: string, hitapSekli: PortalSonuc['hitap
 }
 
 export default function PortalApp() {
-  const kod = new URLSearchParams(window.location.search).get('kod') ?? ''
+  const parametreler = new URLSearchParams(window.location.search)
+  const kod = parametreler.get('kod') ?? ''
+  // Günlük Veresiye (kasa) müşterilerinin linki: portal.html?kod=...&tur=gunluk
+  const tur = parametreler.get('tur') === 'gunluk' ? 'gunluk' : 'veresiye'
   const [sifre, setSifre] = useState('')
   const [yukleniyor, setYukleniyor] = useState(false)
   const [hata, setHata] = useState<string | null>(null)
@@ -139,8 +142,8 @@ export default function PortalApp() {
     setHataKodu(null)
     setYukleniyor(true)
     try {
-      const cagir = httpsCallable<{ musteriId: string; sifre: string }, PortalSonuc>(requireFunctions(), 'portalGiris')
-      const sonuc = await cagir({ musteriId: kod, sifre })
+      const cagir = httpsCallable<{ musteriId: string; sifre: string; tur: string }, PortalSonuc>(requireFunctions(), 'portalGiris')
+      const sonuc = await cagir({ musteriId: kod, sifre, tur })
       setVeri(sonuc.data)
     } catch (err) {
       // Tam hatayı konsola yaz (CORS, izin, bağlantı, fonksiyon bulunamadı vb. teşhis için) —

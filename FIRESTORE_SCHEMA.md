@@ -339,6 +339,24 @@ Sadece **üretim planı**, mali kayıt değil. Eski tasarımın "aynı gün ayn�
 
 ---
 
+## 8.1 Günlük Veresiye modülü (`gunluk_*`) — 2026-10-23
+
+Kasadan veresiye alan müşteriler için ana Veresiye'den **tamamen ayrı** defter. Ana Veresiye bakiyesine, Özet'ine ve Rapor'una hiç yansımaz. Ürünler ortak `products` katalogundan gelir (`modules` içinde `'gunluk'`). Erişim için `users.modules.gunluk` gerekir (admin her zaman erişir).
+
+```
+gunluk_musteriler/{id}: { ad, telefon, not, aktif, acilisBakiyesi, bakiye, portalSifre, olusturmaTarihi, guncellenmeTarihi }
+  // bakiye = acilisBakiyesi + Σ(durum='veresiye' kayıt tutarı) − Σ(ödeme), increment() ile canlı tutulur
+gunluk_kayitlar/{id}:   { musteriId, musteriAdi, productId, urunAdi, adet, birimFiyat, tutar, tarih, durum: 'veresiye'|'odendi', olusturanUid, olusturmaTarihi, guncellenmeTarihi }
+gunluk_odemeler/{id}:   { musteriId, musteriAdi, tutar, tarih, not, olusturanUid, olusturmaTarihi }
+```
+
+- **Fiyat:** `products.gunlukFiyat` (isteğe bağlı) — Günlük Veresiye'de bu fiyat önerilir; boşsa `fiyat` kullanılır.
+- **Portal:** müşteri `portal.html?kod={id}&tur=gunluk` + 6 haneli `portalSifre` ile kendi hareketlerini görür (`portalGiris` fonksiyonu `tur:'gunluk'` ile gunluk_* koleksiyonlarından okur).
+
+**Gerekli composite index:** `gunluk_kayitlar (musteriId ASC, tarih DESC)`, `gunluk_odemeler (musteriId ASC, tarih DESC)`.
+
+---
+
 ## 9. v1 Kapsamı Dışı Bırakılanlar (eski sistemde "tasarlandı ama hiç kodlanmadı")
 
 - **`veresiye_portal` / `okul_portal`** (müşteri/okul kendi kendine parola ile ekstre görüntüleme): eski sistemde şema var ama hiçbir yazma/okuma kodu yok, kullanıcının yeni spesifikasyonunda da istenmiyor. **v1'de hiç yok.** İleride istenirse ayrı bir faz olarak (gerçek kimlik doğrulama ile, düz metin parola değil) eklenir.

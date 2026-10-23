@@ -4,6 +4,8 @@ import type { KullaniciProfili, Rol } from '../../../lib/types'
 import { BOS_PROFIL, type KullaniciSatiri } from './data'
 import { useMusteriler } from '../../musteriler/data'
 
+const MODUL_ADLARI = { siparis: 'Sipariş', veresiye: 'Veresiye', okul: 'Okul', gunluk: 'Günlük Veresiye' } as const
+
 interface Props {
   mevcut?: KullaniciSatiri
   onKaydet: (uid: string, profil: KullaniciProfili) => Promise<void>
@@ -128,14 +130,14 @@ export default function KullaniciFormModal({ mevcut, onKaydet, onKapat }: Props)
               <div>
                 <p className="mb-1.5 text-sm font-medium text-bakery-ink-800">Görebileceği modüller</p>
                 <div className="flex flex-wrap gap-2">
-                  {(['siparis', 'veresiye', 'okul'] as const).map((m) => (
+                  {(['siparis', 'veresiye', 'okul', 'gunluk'] as const).map((m) => (
                     <label key={m} className="flex items-center gap-1.5 rounded-full bg-bakery-surface px-3 py-1.5 text-sm">
                       <input
                         type="checkbox"
-                        checked={profil.modules[m]}
+                        checked={profil.modules[m] ?? false}
                         onChange={(e) => alanGuncelle('modules', { ...profil.modules, [m]: e.target.checked })}
                       />
-                      {m === 'siparis' ? 'Sipariş' : m === 'veresiye' ? 'Veresiye' : 'Okul'}
+                      {MODUL_ADLARI[m]}
                     </label>
                   ))}
                 </div>

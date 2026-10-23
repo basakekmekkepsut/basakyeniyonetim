@@ -34,6 +34,22 @@
       ]
     },
     {
+      "collectionGroup": "gunluk_kayitlar",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "musteriId", "order": "ASCENDING" },
+        { "fieldPath": "tarih", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "gunluk_odemeler",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "musteriId", "order": "ASCENDING" },
+        { "fieldPath": "tarih", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "okul_orders",
       "queryScope": "COLLECTION",
       "fields": [

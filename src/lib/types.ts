@@ -8,6 +8,7 @@ export interface KullaniciProfili {
     siparis: boolean
     veresiye: boolean
     okul: boolean
+    gunluk?: boolean // sonradan eklendi — eski profillerde yok, yok = kapalı
   }
   permissions: {
     siparis: { orderAdd: boolean; orderViewAll: boolean; products: boolean }
@@ -23,7 +24,7 @@ export interface KullaniciProfili {
   aktif: boolean
 }
 
-export type Modul = 'siparis' | 'veresiye' | 'okul'
+export type Modul = 'siparis' | 'veresiye' | 'okul' | 'gunluk'
 
 export type HitapSekli = 'bay' | 'hanim' | null
 
@@ -70,6 +71,7 @@ export interface Urun {
   aktif: boolean
   modules: Modul[]
   unKatsayisi: number // Un Hesabı: bu üründen 1 adet, referans üründen kaç adete eşdeğer (varsayılan 1)
+  gunlukFiyat?: number | null // Günlük Veresiye (kasa) fiyatı — yok/null ise `fiyat` kullanılır (bkz. shared/gunlukFiyat.ts)
 }
 
 export type UrunGirisi = Omit<Urun, 'id'>
@@ -297,3 +299,50 @@ export interface OkulPayment {
 }
 
 export type OkulPaymentFormVerisi = Omit<OkulPayment, 'id' | 'olusturanUid'>
+
+// --- Günlük Veresiye modülü ---
+// Kasadan veresiye alan müşteriler için ayrı defter: müşteriler (gunluk_musteriler),
+// kayıtlar (gunluk_kayitlar) ve ödemeler (gunluk_odemeler) ana Veresiye'den TAMAMEN
+// bağımsızdır — ana Veresiye bakiyesine/Özet'ine/Rapor'una hiç yansımaz. Ürünler
+// ortak katalogdan gelir (products.modules içinde 'gunluk').
+
+export interface GunlukMusteri {
+  id: string
+  ad: string
+  telefon: string
+  not: string
+  aktif: boolean
+  acilisBakiyesi: number // sisteme geçmeden önceki devreden borç
+  bakiye: number // denormalize güncel bakiye: acilisBakiyesi + veresiye kayıtlar − ödemeler
+  portalSifre: string | null // 6 haneli portal parolası (link: portal.html?kod={id}&tur=gunluk)
+}
+
+export type GunlukMusteriGirisi = Omit<GunlukMusteri, 'id' | 'bakiye' | 'portalSifre'>
+
+export type GunlukDurumu = 'veresiye' | 'odendi'
+
+export interface GunlukKaydi {
+  id: string
+  musteriId: string
+  musteriAdi: string
+  productId: string
+  urunAdi: string
+  adet: number
+  birimFiyat: number
+  tutar: number
+  tarih: string
+  durum: GunlukDurumu
+  olusturanUid: string
+}
+
+export interface GunlukOdeme {
+  id: string
+  musteriId: string
+  musteriAdi: string
+  tutar: number
+  tarih: string
+  not: string
+  olusturanUid: string
+}
+
+export type GunlukOdemeFormVerisi = Omit<GunlukOdeme, 'id' | 'olusturanUid'>

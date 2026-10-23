@@ -133,6 +133,33 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Günlük Veresiye — kasadan veresiye alan müşteriler için ana Veresiye'den
+    // tamamen ayrı defter. Modül izni olan personel müşteri ekleyip düzenleyebilir
+    // (kasada yeni müşteri hemen açılabilsin), silme yalnızca admin.
+    match /gunluk_musteriler/{id} {
+      allow read: if hasModule('gunluk');
+      allow create, update: if hasModule('gunluk')
+        && request.resource.data.ad is string && request.resource.data.ad.size() > 0
+        && request.resource.data.aktif is bool
+        && request.resource.data.acilisBakiyesi is number
+        && request.resource.data.bakiye is number;
+      allow delete: if isAdmin();
+    }
+
+    match /gunluk_kayitlar/{id} {
+      allow read: if hasModule('gunluk');
+      allow create, update: if hasModule('gunluk')
+        && request.resource.data.adet is number && request.resource.data.adet > 0
+        && request.resource.data.tutar is number && request.resource.data.tutar >= 0;
+      allow delete: if hasModule('gunluk');
+    }
+
+    match /gunluk_odemeler/{id} {
+      allow read: if hasModule('gunluk');
+      allow create, update: if hasModule('gunluk') && request.resource.data.tutar is number && request.resource.data.tutar > 0;
+      allow delete: if hasModule('gunluk');
+    }
+
     match /okul_schools/{id} {
       // Veresiye modülü de okuyabilir — Günlük Giriş, hangi müşterilerin Okul
       // senkronuyla (musteriId üzerinden) yönetildiğini bilip onları manuel

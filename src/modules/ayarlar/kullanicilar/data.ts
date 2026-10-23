@@ -35,7 +35,7 @@ export const BOS_PROFIL: KullaniciProfili = {
   ad: '',
   eposta: '',
   rol: 'personel',
-  modules: { siparis: false, veresiye: false, okul: false },
+  modules: { siparis: false, veresiye: false, okul: false, gunluk: false },
   permissions: {
     siparis: { orderAdd: false, orderViewAll: false, products: false },
     veresiye: { gorebilecegiMusteriler: 'all' },
