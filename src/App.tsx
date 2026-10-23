@@ -119,6 +119,7 @@ function SessionGate() {
                 <Route path="/gunluk" element={<GunlukLayout />}>
                   <Route index element={<GunlukVeresiyePage />} />
                   <Route path="giris" element={<GunlukGirisListesiPage />} />
+                  <Route path="giris-sablonu" element={<GirisSablonuPage gunluk />} />
                   <Route path="musteriler" element={<GunlukMusterilerPage />} />
                   <Route path="urunler" element={<UrunlerPage modul="gunluk" />} />
                 </Route>

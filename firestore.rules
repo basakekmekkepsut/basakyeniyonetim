@@ -154,6 +154,10 @@ service cloud.firestore {
       allow delete: if hasModule('gunluk');
     }
 
+    match /gunluk_sablonlar/{id} {
+      allow read, write: if hasModule('gunluk');
+    }
+
     match /gunluk_odemeler/{id} {
       allow read: if hasModule('gunluk');
       allow create, update: if hasModule('gunluk') && request.resource.data.tutar is number && request.resource.data.tutar > 0;

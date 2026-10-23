@@ -5,13 +5,17 @@ import type { VeresiyeSablon, VeresiyeSablonKalemi } from '../../lib/types'
 
 const KOLEKSIYON = 'veresiye_sablonlar'
 
-export function useVeresiyeSablonlar() {
+// Günlük Veresiye de aynı şablon yapısını kendi koleksiyonunda kullanır — tüm
+// fonksiyonlar son parametre olarak koleksiyon adını alır (varsayılan: Veresiye).
+export type SablonKoleksiyonu = 'veresiye_sablonlar' | 'gunluk_sablonlar'
+
+export function useVeresiyeSablonlar(koleksiyon: SablonKoleksiyonu = KOLEKSIYON) {
   const [sablonlar, setSablonlar] = useState<VeresiyeSablon[]>([])
   const [yukleniyor, setYukleniyor] = useState(true)
   const [hata, setHata] = useState<string | null>(null)
 
   useEffect(() => {
-    const q = query(collection(requireDb(), KOLEKSIYON))
+    const q = query(collection(requireDb(), koleksiyon))
     const unsub = onSnapshot(
       q,
       (snap) => {
@@ -24,7 +28,7 @@ export function useVeresiyeSablonlar() {
       }
     )
     return unsub
-  }, [])
+  }, [koleksiyon])
 
   return { sablonlar, yukleniyor, hata }
 }
@@ -74,36 +78,48 @@ export async function sablonSatiriEkle(
   musteriAdi: string,
   productId: string,
   urunAdi: string,
-  sira: number
+  sira: number,
+  koleksiyon: SablonKoleksiyonu = KOLEKSIYON
 ): Promise<void> {
   const mevcutSablon = sablonlar.find((s) => s.musteriId === musteriId)
   if (!mevcutSablon) {
     const kalemler: VeresiyeSablon['kalemler'] = [{ productId, urunAdi, aktif: true, sira }]
-    await addDoc(collection(requireDb(), KOLEKSIYON), { musteriId, musteriAdi, kalemler })
+    await addDoc(collection(requireDb(), koleksiyon), { musteriId, musteriAdi, kalemler })
     return
   }
   if (mevcutSablon.kalemler.some((k) => k.productId === productId)) {
     throw new Error('Bu müşteri için bu ekmek türü zaten şablonda var.')
   }
   const yeniKalemler = [...mevcutSablon.kalemler, { productId, urunAdi, aktif: true, sira }]
-  await updateDoc(doc(requireDb(), KOLEKSIYON, mevcutSablon.id), { kalemler: yeniKalemler })
+  await updateDoc(doc(requireDb(), koleksiyon, mevcutSablon.id), { kalemler: yeniKalemler })
 }
 
-export async function sablonSatiriAktifDegistir(sablonlar: VeresiyeSablon[], sablonId: string, kalemIndex: number, aktif: boolean): Promise<void> {
+export async function sablonSatiriAktifDegistir(
+  sablonlar: VeresiyeSablon[],
+  sablonId: string,
+  kalemIndex: number,
+  aktif: boolean,
+  koleksiyon: SablonKoleksiyonu = KOLEKSIYON
+): Promise<void> {
   const sablon = sablonlar.find((s) => s.id === sablonId)
   if (!sablon) return
   const yeniKalemler = sablon.kalemler.map((k, i) => (i === kalemIndex ? { ...k, aktif } : k))
-  await updateDoc(doc(requireDb(), KOLEKSIYON, sablonId), { kalemler: yeniKalemler })
+  await updateDoc(doc(requireDb(), koleksiyon, sablonId), { kalemler: yeniKalemler })
 }
 
-export async function sablonSatiriSil(sablonlar: VeresiyeSablon[], sablonId: string, kalemIndex: number): Promise<void> {
+export async function sablonSatiriSil(
+  sablonlar: VeresiyeSablon[],
+  sablonId: string,
+  kalemIndex: number,
+  koleksiyon: SablonKoleksiyonu = KOLEKSIYON
+): Promise<void> {
   const sablon = sablonlar.find((s) => s.id === sablonId)
   if (!sablon) return
   const yeniKalemler = sablon.kalemler.filter((_, i) => i !== kalemIndex)
   if (yeniKalemler.length === 0) {
-    await deleteDoc(doc(requireDb(), KOLEKSIYON, sablonId))
+    await deleteDoc(doc(requireDb(), koleksiyon, sablonId))
   } else {
-    await updateDoc(doc(requireDb(), KOLEKSIYON, sablonId), { kalemler: yeniKalemler })
+    await updateDoc(doc(requireDb(), koleksiyon, sablonId), { kalemler: yeniKalemler })
   }
 }
 
@@ -111,7 +127,12 @@ export async function sablonSatiriSil(sablonlar: VeresiyeSablon[], sablonId: str
 // Firestore, dizi (array) alanlarında tek bir elemanı nokta-yollu (kalemler.0.sira) kısmi
 // güncelleme ile değiştirmeyi desteklemez — bu yüzden her iki dokümanın kalemler dizisi
 // tamamen yeniden yazılır.
-export async function sablonSatiriSiraDegistir(sablonlar: VeresiyeSablon[], bu: SablonSatiri, digeri: SablonSatiri): Promise<void> {
+export async function sablonSatiriSiraDegistir(
+  sablonlar: VeresiyeSablon[],
+  bu: SablonSatiri,
+  digeri: SablonSatiri,
+  koleksiyon: SablonKoleksiyonu = KOLEKSIYON
+): Promise<void> {
   const buSablon = sablonlar.find((s) => s.id === bu.sablonId)
   const digeriSablon = sablonlar.find((s) => s.id === digeri.sablonId)
   if (!buSablon || !digeriSablon) return
@@ -122,14 +143,14 @@ export async function sablonSatiriSiraDegistir(sablonlar: VeresiyeSablon[], bu: 
       if (i === digeri.kalemIndex) return { ...k, sira: bu.sira }
       return k
     })
-    await updateDoc(doc(requireDb(), KOLEKSIYON, buSablon.id), { kalemler: yeniKalemler })
+    await updateDoc(doc(requireDb(), koleksiyon, buSablon.id), { kalemler: yeniKalemler })
     return
   }
 
   const buKalemler = buSablon.kalemler.map((k, i) => (i === bu.kalemIndex ? { ...k, sira: digeri.sira } : k))
   const digeriKalemler = digeriSablon.kalemler.map((k, i) => (i === digeri.kalemIndex ? { ...k, sira: bu.sira } : k))
   await Promise.all([
-    updateDoc(doc(requireDb(), KOLEKSIYON, buSablon.id), { kalemler: buKalemler }),
-    updateDoc(doc(requireDb(), KOLEKSIYON, digeriSablon.id), { kalemler: digeriKalemler })
+    updateDoc(doc(requireDb(), koleksiyon, buSablon.id), { kalemler: buKalemler }),
+    updateDoc(doc(requireDb(), koleksiyon, digeriSablon.id), { kalemler: digeriKalemler })
   ])
 }

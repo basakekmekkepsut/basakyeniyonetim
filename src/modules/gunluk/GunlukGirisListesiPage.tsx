@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Minus, Plus, Search } from 'lucide-react'
 import { useUrunler } from '../urunler/data'
 import { useGunlukMusteriler, gunlukTopluKaydet, type GunlukTopluSatir } from './data'
+import { useVeresiyeSablonlar } from '../veresiye/sablonData'
 import BosDurum from '../../shared/BosDurum'
 import { formatTutar } from '../../shared/TutarGoster'
 import { gunlukFiyati } from '../../shared/gunlukFiyat'
@@ -20,14 +21,17 @@ interface SatirState {
 
 /**
  * Günlük Veresiye için kart kart hızlı giriş — veresiye/GunlukGirisPage'in
- * karşılığı (şablon/un hesabı yok). Kartta müşterinin "sık aldığı ürünler"i,
- * seçilmemişse tüm "Günlük" ürünleri görünür; "+ Ürün" ile o güne eklenir.
+ * karşılığı (un hesabı yok). Kartlar ve kart içindeki ürünler Günlük Veresiye >
+ * Giriş Şablonu'ndaki (gunluk_sablonlar) aktif satırlara göre, şablon sırasıyla
+ * listelenir. Şablonu olmayan müşteri sonda boş kartla çıkar ("+ Ürün" ile
+ * eklenir); tüm satırları pasif olan müşteri hiç görünmez.
  */
 export default function GunlukGirisListesiPage() {
   const session = useSession()
   const toast = useToast()
   const { musteriler, yukleniyor: musteriYukleniyor } = useGunlukMusteriler()
   const { urunler } = useUrunler()
+  const { sablonlar, yukleniyor: sablonYukleniyor } = useVeresiyeSablonlar('gunluk_sablonlar')
 
   const [tarih, setTarih] = useState(bugunStr())
   const [arama, setArama] = useState('')
@@ -54,7 +58,32 @@ export default function GunlukGirisListesiPage() {
     }
   }
 
-  const aktifMusteriler = useMemo(() => musteriler.filter((m) => m.aktif), [musteriler])
+  // Eski kayıtlarda kalem başına "aktif" alanı olmayabilir — yoksa açık kabul edilir.
+  function aktifKalemler(musteriId: string) {
+    return sablonlar.find((s) => s.musteriId === musteriId)?.kalemler.filter((k) => k.aktif !== false) ?? []
+  }
+
+  const aktifMusteriler = useMemo(() => {
+    const siraGetir = (m: GunlukMusteri) => {
+      const kalemler = aktifKalemler(m.id)
+      return kalemler.length > 0 ? Math.min(...kalemler.map((k) => k.sira ?? 0)) : undefined
+    }
+    const tumuPasif = (m: GunlukMusteri) => {
+      const sablon = sablonlar.find((s) => s.musteriId === m.id)
+      return Boolean(sablon && sablon.kalemler.length > 0 && aktifKalemler(m.id).length === 0)
+    }
+    return musteriler
+      .filter((m) => m.aktif && !tumuPasif(m))
+      .sort((a, b) => {
+        const sa = siraGetir(a)
+        const sb = siraGetir(b)
+        if (sa != null && sb != null) return sa - sb
+        if (sa != null) return -1
+        if (sb != null) return 1
+        return a.ad.localeCompare(b.ad, 'tr-TR')
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [musteriler, sablonlar])
   const gosterilenMusteriler = useMemo(() => {
     const q = arama.trim().toLocaleLowerCase('tr-TR')
     if (!q) return aktifMusteriler
@@ -82,8 +111,11 @@ export default function GunlukGirisListesiPage() {
   }
 
   function gorunurUrunler(m: GunlukMusteri) {
-    const sik = m.sikUrunler ?? []
-    const taban = sik.length > 0 ? gunlukUrunleri.filter((u) => sik.includes(u.id)) : gunlukUrunleri
+    // Şablon sırasıyla; şablonu olmayan müşteride boş başlar (+ Ürün ile eklenir).
+    const taban = [...aktifKalemler(m.id)]
+      .sort((a, b) => (a.sira ?? 0) - (b.sira ?? 0))
+      .map((k) => gunlukUrunleri.find((u) => u.id === k.productId))
+      .filter((u): u is (typeof gunlukUrunleri)[number] => Boolean(u))
     const ekstraIdler = ekstraUrunler[m.id] ?? []
     const ekstra = gunlukUrunleri.filter((u) => ekstraIdler.includes(u.id) && !taban.some((t) => t.id === u.id))
     return [...taban, ...ekstra]
@@ -135,7 +167,7 @@ export default function GunlukGirisListesiPage() {
     }
   }
 
-  if (musteriYukleniyor) return <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
+  if (musteriYukleniyor || sablonYukleniyor) return <p className="text-sm text-bakery-ink-500">Yükleniyor…</p>
 
   return (
     <div className="space-y-4 pb-24">

@@ -14,10 +14,17 @@ import { useUrunler } from '../urunler/data'
 import BosDurum from '../../shared/BosDurum'
 import ConfirmModal from '../../shared/ConfirmModal'
 import MusteriSecici from '../../shared/MusteriSecici'
+import GunlukMusteriSecici from '../gunluk/GunlukMusteriSecici'
 import { useToast } from '../../shared/Toast'
 
-export default function GirisSablonuPage() {
-  const { sablonlar, yukleniyor, hata } = useVeresiyeSablonlar()
+interface Props {
+  // true: Günlük Veresiye'nin şablonu (gunluk_sablonlar, Günlük müşteri/ürünleri)
+  gunluk?: boolean
+}
+
+export default function GirisSablonuPage({ gunluk = false }: Props = {}) {
+  const koleksiyon = gunluk ? 'gunluk_sablonlar' : 'veresiye_sablonlar'
+  const { sablonlar, yukleniyor, hata } = useVeresiyeSablonlar(koleksiyon)
   const { urunler } = useUrunler()
   const toast = useToast()
 
@@ -27,7 +34,10 @@ export default function GirisSablonuPage() {
   // (bkz. OzetPage.tsx) — "girebilme" ile "bilgiye erişebilme" kasıtlı olarak ayrıldı.
   const satirlar = useMemo(() => sablonSatirlariniCikar(sablonlar), [sablonlar])
   const sonrakiSira = useSonrakiSira(sablonlar)
-  const veresiyeUrunleri = useMemo(() => urunler.filter((u) => u.aktif && u.modules.includes('veresiye')), [urunler])
+  const veresiyeUrunleri = useMemo(
+    () => urunler.filter((u) => u.aktif && u.modules.includes(gunluk ? 'gunluk' : 'veresiye')),
+    [urunler, gunluk]
+  )
 
   const [yeniMusteriId, setYeniMusteriId] = useState('')
   const [yeniMusteriAdi, setYeniMusteriAdi] = useState('')
@@ -42,7 +52,7 @@ export default function GirisSablonuPage() {
     if (!urun) return
     setEkleniyor(true)
     try {
-      await sablonSatiriEkle(sablonlar, yeniMusteriId, yeniMusteriAdi, urun.id, urun.ad, sonrakiSira)
+      await sablonSatiriEkle(sablonlar, yeniMusteriId, yeniMusteriAdi, urun.id, urun.ad, sonrakiSira, koleksiyon)
       toast.basari('Satır eklendi.')
       setYeniProductId('')
     } catch (err) {
@@ -54,7 +64,7 @@ export default function GirisSablonuPage() {
 
   async function handleAktifDegistir(satir: SablonSatiri, aktif: boolean) {
     try {
-      await sablonSatiriAktifDegistir(sablonlar, satir.sablonId, satir.kalemIndex, aktif)
+      await sablonSatiriAktifDegistir(sablonlar, satir.sablonId, satir.kalemIndex, aktif, koleksiyon)
     } catch (err) {
       toast.hata(err instanceof Error ? err.message : 'Güncellenemedi.')
     }
@@ -64,7 +74,7 @@ export default function GirisSablonuPage() {
     const digeri = satirlar[index + yon]
     if (!digeri) return
     try {
-      await sablonSatiriSiraDegistir(sablonlar, satirlar[index], digeri)
+      await sablonSatiriSiraDegistir(sablonlar, satirlar[index], digeri, koleksiyon)
     } catch (err) {
       toast.hata(err instanceof Error ? err.message : 'Sıra değiştirilemedi.')
     }
@@ -73,7 +83,7 @@ export default function GirisSablonuPage() {
   async function handleSil() {
     if (!silinecek) return
     try {
-      await sablonSatiriSil(sablonlar, silinecek.sablonId, silinecek.kalemIndex)
+      await sablonSatiriSil(sablonlar, silinecek.sablonId, silinecek.kalemIndex, koleksiyon)
       toast.basari('Satır silindi.')
     } catch (err) {
       toast.hata(err instanceof Error ? err.message : 'Silinemedi.')
@@ -88,14 +98,23 @@ export default function GirisSablonuPage() {
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-semibold text-bakery-ink-900">Giriş Şablonu</h2>
-        <p className="mt-1 text-sm text-bakery-ink-500">
-          Hangi müşterinin hangi ekmeği düzenli aldığını burada bir kere ayarla — Günlük Giriş ekranında her gün sadece adetleri
-          gireceksin, müşteri/ürün seçmene gerek kalmayacak. Bir müşteri geçici olarak almıyorsa satırı silmeye gerek yok, tikini
-          kaldır (pasif yap), tekrar aldığında tekrar işaretlersin. Bir müşterinin TÜM satırlarını pasif yaparsan, o müşteri
-          Günlük Giriş ekranından tamamen kaybolur. Bir okulun veresiye hesabı olarak bağlı müşteriler (Okul &gt; Okullar'da
-          seçilenler) zaten otomatik olarak Günlük Giriş'te görünmez — burada şablon eklemenize gerek yok, onların kayıtları
-          Okul &gt; Ekstre'deki "Günü Kapat" ile gelir.
-        </p>
+        {gunluk ? (
+          <p className="mt-1 text-sm text-bakery-ink-500">
+            Kasadan veresiye alan hangi müşterinin hangi ürünü düzenli aldığını burada bir kere ayarla — Günlük Giriş ekranında
+            her müşterinin kartında yalnızca bu ürünler, bu sırayla görünür; sen sadece adetleri girersin. Geçici olarak almıyorsa
+            tikini kaldır (pasif yap). Bir müşterinin TÜM satırları pasifse o müşteri Günlük Giriş'te görünmez. Şablonu olmayan
+            müşteriler listenin sonunda boş kart olarak çıkar, kartın "+ Ürün" seçimiyle o güne ürün eklenebilir.
+          </p>
+        ) : (
+          <p className="mt-1 text-sm text-bakery-ink-500">
+            Hangi müşterinin hangi ekmeği düzenli aldığını burada bir kere ayarla — Günlük Giriş ekranında her gün sadece adetleri
+            gireceksin, müşteri/ürün seçmene gerek kalmayacak. Bir müşteri geçici olarak almıyorsa satırı silmeye gerek yok, tikini
+            kaldır (pasif yap), tekrar aldığında tekrar işaretlersin. Bir müşterinin TÜM satırlarını pasif yaparsan, o müşteri
+            Günlük Giriş ekranından tamamen kaybolur. Bir okulun veresiye hesabı olarak bağlı müşteriler (Okul &gt; Okullar'da
+            seçilenler) zaten otomatik olarak Günlük Giriş'te görünmez — burada şablon eklemenize gerek yok, onların kayıtları
+            Okul &gt; Ekstre'deki "Günü Kapat" ile gelir.
+          </p>
+        )}
       </div>
 
       {yukleniyor ? (
@@ -161,14 +180,24 @@ export default function GirisSablonuPage() {
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
           <div>
             <label className="mb-1 block text-xs font-medium text-bakery-ink-500">Müşteri</label>
-            <MusteriSecici
-              modul="veresiye"
-              seciliMusteriId={yeniMusteriId || null}
-              onSec={(m) => {
-                setYeniMusteriId(m.id)
-                setYeniMusteriAdi(m.ad)
-              }}
-            />
+            {gunluk ? (
+              <GunlukMusteriSecici
+                seciliMusteriId={yeniMusteriId || null}
+                onSec={(m) => {
+                  setYeniMusteriId(m.id)
+                  setYeniMusteriAdi(m.ad)
+                }}
+              />
+            ) : (
+              <MusteriSecici
+                modul="veresiye"
+                seciliMusteriId={yeniMusteriId || null}
+                onSec={(m) => {
+                  setYeniMusteriId(m.id)
+                  setYeniMusteriAdi(m.ad)
+                }}
+              />
+            )}
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-bakery-ink-500">Ekmek Türü</label>

@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 const SEKMELER = [
   { yol: '/gunluk', etiket: 'Veresiye' },
   { yol: '/gunluk/giris', etiket: 'Günlük Giriş' },
+  { yol: '/gunluk/giris-sablonu', etiket: 'Giriş Şablonu' },
   { yol: '/gunluk/musteriler', etiket: 'Müşteriler' },
   { yol: '/gunluk/urunler', etiket: 'Ürünler' }
 ]
