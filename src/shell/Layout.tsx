@@ -72,8 +72,10 @@ export default function Layout() {
               onClick={async () => {
                 if (kontrolEdiliyor) return
                 const yenileniyor = await guncelle()
-                if (yenileniyor === false) toast.basari(`Uygulama güncel (v${__APP_VERSION__}).`)
-                else if (yenileniyor === null) toast.hata('Sunucuya ulaşılamadı, güncelleme kontrol edilemedi.')
+                // Yeni sürüm yoksa sayfayı yine de yenile — aşağı çekerek yenileme kapalı
+                // olduğu için (bkz. index.css) elle yenilemenin tek yolu bu buton.
+                if (yenileniyor === false) window.location.reload()
+                else if (yenileniyor === null) toast.hata('Sunucuya ulaşılamadı, sayfa yenilenemedi.')
               }}
               disabled={kontrolEdiliyor}
               className={
@@ -81,8 +83,8 @@ export default function Layout() {
                   ? 'flex animate-pulse items-center gap-1.5 rounded-full bg-bakery-amber-500 p-2.5 ring-2 ring-white/70 sm:px-3 text-xs font-bold text-white shadow-soft hover:bg-bakery-amber-600'
                   : 'rounded-full bg-bakery-surface/10 p-2.5 text-white hover:bg-bakery-surface/20 disabled:opacity-60'
               }
-              aria-label={guncellemeVar ? 'Yeni sürüm hazır — güncelle' : 'Güncelleme kontrol et'}
-              title={guncellemeVar ? 'Yeni sürüm hazır — güncellemek için tıklayın' : 'Güncelleme kontrol et'}
+              aria-label={guncellemeVar ? 'Yeni sürüm hazır — güncelle' : 'Sayfayı yenile'}
+              title={guncellemeVar ? 'Yeni sürüm hazır — güncellemek için tıklayın' : 'Sayfayı yenile (yeni sürüm varsa yükler)'}
             >
               <RefreshCw size={16} className={kontrolEdiliyor ? 'animate-spin' : ''} />
               {guncellemeVar && <span className="hidden sm:inline">Güncelle</span>}
