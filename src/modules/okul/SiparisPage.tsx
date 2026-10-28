@@ -6,6 +6,7 @@ import {
   useOkulKapanis,
   okulSiparisMiktariGuncelle,
   okulSiparisNotuGuncelle,
+  okullariTatileAl,
   varsayilanSiparisleriHazirla
 } from './orderData'
 import { useUrunler } from '../urunler/data'
@@ -76,7 +77,7 @@ export default function SiparisPage() {
     for (const o of orders) if (o.not) yeniNotlar[o.lineId] = o.not
     setNotlar(yeniNotlar)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tarih, orders.length, okullar.length])
+  }, [tarih, orders.length, okullar.length, orders.map((o) => o.adet).join(',')])
 
   useEffect(() => {
     // Ekranda gösterilen varsayılanların gerçekten kaydedilmiş olduğundan emin ol
@@ -102,6 +103,16 @@ export default function SiparisPage() {
     }
   }
 
+  async function tatilUygula(geriAl: boolean) {
+    if (!geriAl && !window.confirm(`${tarih} için tüm okulların siparişleri 0 yapılsın mı? (Okul dışı müşterilere dokunulmaz.)`)) return
+    try {
+      const n = await okullariTatileAl(tarih, okullar, orders, geriAl)
+      toast.basari(geriAl ? `${n} satır standart adetlere döndürüldü.` : `${n} satır 0 yapıldı.`)
+    } catch (err) {
+      toast.hata(err instanceof Error ? err.message : 'İşlem yapılamadı.')
+    }
+  }
+
   const aktifOkullar = okullar.filter((o) => o.lines.some((l) => l.aktif))
   const gruplar = okullariGrupla(aktifOkullar, musteriler)
 
@@ -116,6 +127,25 @@ export default function SiparisPage() {
           className="rounded-lg border border-bakery-cream-200 bg-bakery-surface px-2.5 py-2 text-sm outline-none focus:border-bakery-amber-500"
         />
       </div>
+
+      {!kapanis?.kapandi && !okulYukleniyor && !ordersYukleniyor && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => tatilUygula(false)}
+            className="rounded-lg border border-bakery-cream-200 bg-bakery-surface px-3 py-1.5 text-xs font-medium text-bakery-ink-700 hover:bg-bakery-cream-100"
+          >
+            Bu günü okullar için tatil yap
+          </button>
+          <button
+            type="button"
+            onClick={() => tatilUygula(true)}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-bakery-ink-500 hover:bg-bakery-cream-100"
+          >
+            Standart adetlere dön
+          </button>
+        </div>
+      )}
 
       {kapanis?.kapandi && (
         <p className="rounded-lg bg-bakery-cream-100 px-4 py-2.5 text-sm font-medium text-bakery-ink-600">

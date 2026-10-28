@@ -86,6 +86,17 @@ function hatDonenGunuHesapla(hat: OkulHat, tarih: string): number | null {
   return hat.donguGunleri[index]
 }
 
+// Bir hattın verilen tarihte standart olarak sipariş alıp almadığı: okulun kendi
+// açık günü VE hattın kendi gün kısıtlaması (varsa) birlikte sağlanmalı — ör. her
+// gün giden ekmeğe ek olarak yalnızca Pzt/Per simit. Dönen gün rotasyonu varsa
+// (donguGunleri) statik gunler'in yerine geçer.
+function hatBuGundeAcikMi(okul: OkulSchool, l: OkulHat, tarih: string): boolean {
+  const gunIndex = new Date(tarih).getDay()
+  const okulAcikMi = (okul.acikGunler ?? TUM_GUNLER).includes(gunIndex)
+  const donenGun = hatDonenGunuHesapla(l, tarih)
+  return okulAcikMi && (donenGun !== null ? donenGun === gunIndex : (l.gunler ?? TUM_GUNLER).includes(gunIndex))
+}
+
 export async function varsayilanSiparisleriHazirla(
   tarih: string,
   okullar: OkulSchool[],
@@ -93,25 +104,18 @@ export async function varsayilanSiparisleriHazirla(
 ): Promise<void> {
   const db = requireDb()
   const mevcutLineIds = new Set(mevcutOrders.map((o) => o.lineId))
-  const gunIndex = new Date(tarih).getDay()
   const batch = writeBatch(db)
   let sayac = 0
 
   for (const okul of okullar) {
-    const okulAcikMi = (okul.acikGunler ?? TUM_GUNLER).includes(gunIndex)
     for (const l of okul.lines) {
       if (!l.aktif || mevcutLineIds.has(l.id)) continue
-      // Okulun kendi açık günü VE hattın kendi gün kısıtlaması (varsa) birlikte
-      // sağlanmalı — ör. her gün giden ekmeğe ek olarak yalnızca Pzt/Per simit.
-      // Dönen gün rotasyonu varsa (donguGunleri) statik gunler'in yerine geçer.
-      const donenGun = hatDonenGunuHesapla(l, tarih)
-      const hatAcikMi = okulAcikMi && (donenGun !== null ? donenGun === gunIndex : (l.gunler ?? TUM_GUNLER).includes(gunIndex))
       batch.set(doc(collection(db, ORDERS)), {
         tarih,
         schoolId: okul.id,
         lineId: l.id,
         productId: l.productId,
-        adet: hatAcikMi ? l.adet : 0,
+        adet: hatBuGundeAcikMi(okul, l, tarih) ? l.adet : 0,
         kapandiMi: false
       })
       sayac += 1
@@ -119,6 +123,48 @@ export async function varsayilanSiparisleriHazirla(
   }
 
   if (sayac > 0) await batch.commit()
+}
+
+// "Bu günü okullar için tatil yap": seçili tarihte yalnızca gerçek okulların
+// (okulDegil olmayan) aktif hatlarını 0'lar. Okul dışı müşterilere ve zaten
+// kapanmış satırlara dokunmaz. Kayıt yoksa 0 adetle oluşturur (bkz.
+// okulSiparisMiktariGuncelle'deki "0 da gerçek kayıt" notu).
+// geriAl=true ise aynı satırları o günün standart adetlerine döndürür.
+export async function okullariTatileAl(
+  tarih: string,
+  okullar: OkulSchool[],
+  mevcutOrders: OkulOrder[],
+  geriAl = false
+): Promise<number> {
+  const db = requireDb()
+  const batch = writeBatch(db)
+  let sayac = 0
+
+  for (const okul of okullar) {
+    if (okul.okulDegil) continue
+    for (const l of okul.lines) {
+      if (!l.aktif) continue
+      const adet = geriAl && hatBuGundeAcikMi(okul, l, tarih) ? l.adet : 0
+      const mevcut = mevcutOrders.find((o) => o.lineId === l.id)
+      if (mevcut) {
+        if (mevcut.kapandiMi || mevcut.adet === adet) continue
+        batch.update(doc(db, ORDERS, mevcut.id), { adet })
+      } else {
+        batch.set(doc(collection(db, ORDERS)), {
+          tarih,
+          schoolId: okul.id,
+          lineId: l.id,
+          productId: l.productId,
+          adet,
+          kapandiMi: false
+        })
+      }
+      sayac += 1
+    }
+  }
+
+  if (sayac > 0) await batch.commit()
+  return sayac
 }
 
 // Auto-id + sorgu tabanlı upsert (FIRESTORE_SCHEMA.md §8) — deterministik
