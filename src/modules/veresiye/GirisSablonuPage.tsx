@@ -110,9 +110,9 @@ export default function GirisSablonuPage({ gunluk = false }: Props = {}) {
             Hangi müşterinin hangi ekmeği düzenli aldığını burada bir kere ayarla — Günlük Giriş ekranında her gün sadece adetleri
             gireceksin, müşteri/ürün seçmene gerek kalmayacak. Bir müşteri geçici olarak almıyorsa satırı silmeye gerek yok, tikini
             kaldır (pasif yap), tekrar aldığında tekrar işaretlersin. Bir müşterinin TÜM satırlarını pasif yaparsan, o müşteri
-            Günlük Giriş ekranından tamamen kaybolur. Bir okulun veresiye hesabı olarak bağlı müşteriler (Okul &gt; Okullar'da
-            seçilenler) zaten otomatik olarak Günlük Giriş'te görünmez — burada şablon eklemenize gerek yok, onların kayıtları
-            Okul &gt; Ekstre'deki "Günü Kapat" ile gelir.
+            Günlük Giriş ekranından tamamen kaybolur. Bir okulun veresiye hesabı olarak bağlı müşterilerin (Okul &gt; Okullar'da
+            seçilenler) okul hatlarındaki ürünleri Okul &gt; Ekstre'deki "Günü Kapat" ile gelir ve Günlük Giriş'te gösterilmez;
+            bu müşteriler yalnızca burada eklediğiniz diğer ürünler için Günlük Giriş'te görünür.
           </p>
         )}
       </div>

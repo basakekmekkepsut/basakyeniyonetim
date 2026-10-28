@@ -100,12 +100,32 @@ export default function GunlukGirisPage() {
     return Boolean(sablon && sablon.kalemler.length > 0 && musterininAktifKalemleri(musteriId).length === 0)
   }
 
-  // Bir okulun veresiye hesabı olarak bağlanmış müşteriler (musteriId) —
-  // bunların veresiye kayıtları YALNIZCA Okul modülünün "Günü Kapat" akışından
-  // gelir; manuel Günlük Giriş'te görünmeleri "hiç şablon eklemedim ama tüm
-  // ürünlerle otomatik çıktı" şaşkınlığına yol açıyordu, o yüzden tamamen hariç
-  // tutuluyorlar (bkz. okul/orderData.ts gunuKapat).
-  const okulMusteriIdleri = useMemo(() => new Set(okullar.map((o) => o.musteriId).filter((id): id is string => Boolean(id))), [okullar])
+  // Bir okulun veresiye hesabı olarak bağlanmış müşteriler (musteriId) için o
+  // okulun hatlarındaki ürünler "Günü Kapat" ile zaten veresiyeye yazılır (bkz.
+  // okul/orderData.ts gunuKapat) — çift yazılmasın diye bu ürünler Günlük
+  // Giriş'te hiç gösterilmez. Müşteri yine de Giriş Şablonu'ndaki DİĞER aktif
+  // ürünleri için görünür (ör. Pansiyon: tost Okul'dan, baston elle). Şablonu
+  // olmayan okul müşterisi ise "tüm ürünlerle otomatik çıktı" şaşkınlığı
+  // yaşanmasın diye eskisi gibi hiç görünmez.
+  const okulUrunleri = useMemo(() => {
+    const harita = new Map<string, Set<string>>()
+    for (const o of okullar) {
+      if (!o.musteriId) continue
+      const set = harita.get(o.musteriId) ?? new Set<string>()
+      o.lines.filter((l) => l.aktif).forEach((l) => set.add(l.productId))
+      harita.set(o.musteriId, set)
+    }
+    return harita
+  }, [okullar])
+
+  function okuldanGelirMi(musteriId: string, productId: string): boolean {
+    return okulUrunleri.get(musteriId)?.has(productId) ?? false
+  }
+
+  function okulMusterisiGizliMi(musteriId: string): boolean {
+    if (!okulUrunleri.has(musteriId)) return false
+    return !musterininAktifKalemleri(musteriId).some((k) => !okuldanGelirMi(musteriId, k.productId))
+  }
 
   const veresiyeMusterileri = useMemo(() => {
     const siraGetir = (m: Musteri) => {
@@ -115,7 +135,7 @@ export default function GunlukGirisPage() {
     }
     return musteriler
       .filter(
-        (m) => m.aktif && m.moduller.includes('veresiye') && !tumKalemleriPasif(m.id) && !okulMusteriIdleri.has(m.id)
+        (m) => m.aktif && m.moduller.includes('veresiye') && !tumKalemleriPasif(m.id) && !okulMusterisiGizliMi(m.id)
       )
       .sort((a, b) => {
         const sa = siraGetir(a)
@@ -126,7 +146,7 @@ export default function GunlukGirisPage() {
         return a.ad.localeCompare(b.ad, 'tr-TR')
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [musteriler, sablonlar, okulMusteriIdleri])
+  }, [musteriler, sablonlar, okulUrunleri])
   const veresiyeUrunleri = useMemo(() => urunler.filter((u) => u.aktif && u.modules.includes('veresiye')), [urunler])
 
   function satirGetir(musteriId: string): SatirState {
@@ -160,7 +180,13 @@ export default function GunlukGirisPage() {
     const taban = tabanIdler ? veresiyeUrunleri.filter((u) => tabanIdler.includes(u.id)) : veresiyeUrunleri
     const ekstraIdler = ekstraUrunler[m.id] ?? []
     const ekstra = veresiyeUrunleri.filter((u) => ekstraIdler.includes(u.id) && !taban.some((t) => t.id === u.id))
-    return [...taban, ...ekstra]
+    return [...taban, ...ekstra].filter((u) => !okuldanGelirMi(m.id, u.id))
+  }
+
+  function okuldanGelenUrunAdlari(musteriId: string): string[] {
+    const idler = okulUrunleri.get(musteriId)
+    if (!idler) return []
+    return [...idler].map((id) => urunler.find((u) => u.id === id)?.ad).filter((ad): ad is string => Boolean(ad))
   }
 
   function urunEkle(musteriId: string, productId: string) {
@@ -259,7 +285,10 @@ export default function GunlukGirisPage() {
           {veresiyeMusterileri.map((m) => {
             const satir = satirGetir(m.id)
             const gosterilenUrunler = gorunurUrunler(m)
-            const eklenebilirUrunler = veresiyeUrunleri.filter((u) => !gosterilenUrunler.some((g) => g.id === u.id))
+            const eklenebilirUrunler = veresiyeUrunleri.filter(
+              (u) => !gosterilenUrunler.some((g) => g.id === u.id) && !okuldanGelirMi(m.id, u.id)
+            )
+            const okulUrunAdlari = okuldanGelenUrunAdlari(m.id)
             const toplam = Object.entries(satir.miktarlar).reduce((s, [productId, adet]) => {
               if (!adet) return s
               const urun = veresiyeUrunleri.find((u) => u.id === productId)
@@ -273,6 +302,11 @@ export default function GunlukGirisPage() {
                   <p className="truncate text-[11px] font-medium leading-tight text-bakery-ink-900">{m.ad}</p>
                   {unMusterisi && <span className="shrink-0 text-[9px] font-medium text-blue-600">Un</span>}
                 </div>
+                {okulUrunAdlari.length > 0 && (
+                  <p className="mb-1 truncate text-[8px] leading-tight text-bakery-ink-400" title={`Okul'dan gelir: ${okulUrunAdlari.join(', ')}`}>
+                    Okul'dan: {okulUrunAdlari.join(', ')}
+                  </p>
+                )}
 
                 <div className="space-y-1">
                   {gosterilenUrunler.map((u) => (
