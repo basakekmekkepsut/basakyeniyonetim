@@ -180,7 +180,9 @@ export default function GunlukGirisPage() {
     const taban = tabanIdler ? veresiyeUrunleri.filter((u) => tabanIdler.includes(u.id)) : veresiyeUrunleri
     const ekstraIdler = ekstraUrunler[m.id] ?? []
     const ekstra = veresiyeUrunleri.filter((u) => ekstraIdler.includes(u.id) && !taban.some((t) => t.id === u.id))
-    return [...taban, ...ekstra].filter((u) => !okuldanGelirMi(m.id, u.id))
+    // Okul'dan gelen ürün kendiliğinden gösterilmez, ama "+ Ürün" ile bilerek eklenirse görünür
+    // (ör. tatil günü / elle ek tost); çift kayıt kaydederken uyarılır.
+    return [...taban.filter((u) => !okuldanGelirMi(m.id, u.id)), ...ekstra]
   }
 
   function okuldanGelenUrunAdlari(musteriId: string): string[] {
@@ -285,9 +287,7 @@ export default function GunlukGirisPage() {
           {veresiyeMusterileri.map((m) => {
             const satir = satirGetir(m.id)
             const gosterilenUrunler = gorunurUrunler(m)
-            const eklenebilirUrunler = veresiyeUrunleri.filter(
-              (u) => !gosterilenUrunler.some((g) => g.id === u.id) && !okuldanGelirMi(m.id, u.id)
-            )
+            const eklenebilirUrunler = veresiyeUrunleri.filter((u) => !gosterilenUrunler.some((g) => g.id === u.id))
             const okulUrunAdlari = okuldanGelenUrunAdlari(m.id)
             const toplam = Object.entries(satir.miktarlar).reduce((s, [productId, adet]) => {
               if (!adet) return s
